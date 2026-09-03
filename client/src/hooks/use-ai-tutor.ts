@@ -203,22 +203,21 @@ export function useAiTutor(deps: AiTutorDeps) {
   }, []);
 
   // ── Fetch server TTS voice config once on mount ───────────────────────────
-  // When the admin has configured ElevenLabs (e.g. "Bella" voice), propagate
-  // that voiceId to Afik (Female) and Dude (Male) so they also route through
-  // ElevenLabs instead of the browser SpeechSynthesis engine.
-  // The existing settings useEffect (below) picks up the voiceId change and
-  // calls ttsRef.current?.configure() automatically on next render.
+  // Admin Brain/Voice panel stores OpenAI TTS voices (nova/onyx by default).
+  // Propagate female/male voice names so personas route through /api/ai-tutor/tts
+  // instead of browser SpeechSynthesis when Voice keys are configured.
   const refreshServerVoiceConfig = useCallback(() => {
     fetch("/api/ai-tutor/voice-config", { credentials: "include" })
       .then(r => r.ok ? r.json() : null)
       .then((cfg: { provider: string; voiceId: string | null; maleVoiceId?: string | null } | null) => {
         if (!cfg) return;
         serverTtsProviderRef.current = cfg.provider || "unknown";
-        if (cfg.provider === "elevenlabs" && cfg.voiceId) {
+        const cloud = cfg.provider === "openai" || cfg.provider === "elevenlabs";
+        if (cloud && cfg.voiceId) {
           serverVoiceIdRef.current = cfg.voiceId;
           setAiSettings(s => ({ ...s, voiceId: cfg.voiceId }));
         }
-        if (cfg.provider === "elevenlabs" && cfg.maleVoiceId) {
+        if (cloud && cfg.maleVoiceId) {
           serverMaleVoiceIdRef.current = cfg.maleVoiceId;
         }
         ttsRef.current?.configure(

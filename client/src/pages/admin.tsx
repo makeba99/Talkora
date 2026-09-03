@@ -34,91 +34,80 @@ const CameraCapture = lazy(() =>
 const OWNER_EMAIL = "dj55jggg@gmail.com";
 type OwnerAnnouncement = Announcement & { viewCount?: number; dismissCount?: number };
 
-// ── AI Tutor configuration types ──────────────────────────────────────────
-type TtsProvider = "elevenlabs" | "openai" | "huggingface" | "browser";
-type AiTutorConfig = {
-  provider: TtsProvider;
-  elevenlabs: { apiKeys: string; voiceId: string; maleVoiceId?: string; modelId: string };
-  openai: { apiKey: string; model: string; voice: string; maleVoice?: string };
-  huggingface: { apiKey: string; model: string };
+// ── AI Tutor configuration types (v2 — Brain + Voice) ─────────────────────
+type AiTutorConfigPublic = {
+  version: 2;
+  brain: {
+    provider: "openai";
+    primaryKeyMasked: string;
+    secondaryKeyMasked: string;
+    hasPrimary: boolean;
+    hasSecondary: boolean;
+    model: string;
+    warnThresholdPct: number;
+  };
+  voice: {
+    provider: "openai";
+    primaryKeyMasked: string;
+    secondaryKeyMasked: string;
+    hasPrimary: boolean;
+    hasSecondary: boolean;
+    femaleVoice: string;
+    maleVoice: string;
+    model: string;
+    warnThresholdPct: number;
+  };
+};
+type KeyUsageStats = {
+  status: string;
+  requests: number;
+  failures: number;
+  rateLimitEvents: number;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  characters: number;
+  lastSuccessAt: number | null;
+  lastFailureAt: number | null;
+  lastError: string | null;
 };
 type AiConfigResponse = {
-  config: AiTutorConfig;
-  hasKeys: { elevenlabs: boolean; openai: boolean; huggingface: boolean };
+  config: AiTutorConfigPublic;
+  status: any;
+  alerts: Array<{ id: string; kind: string; severity: string; title: string; message: string; createdAt: number; read: boolean }>;
+  hasKeys: {
+    brainPrimary: boolean;
+    brainSecondary: boolean;
+    voicePrimary: boolean;
+    voiceSecondary: boolean;
+  };
 };
 
-const ELEVENLABS_MODELS = [
-  { value: "eleven_multilingual_v2", label: "Multilingual v2 (recommended)" },
-  { value: "eleven_turbo_v2_5", label: "Turbo v2.5 (fast)" },
-  { value: "eleven_monolingual_v1", label: "Monolingual v1 (English)" },
+const BRAIN_MODELS = [
+  { value: "gpt-4o", label: "gpt-4o (recommended)" },
+  { value: "gpt-4o-mini", label: "gpt-4o-mini (faster, cheaper)" },
 ];
-const OPENAI_MODELS = [
-  { value: "tts-1", label: "tts-1 (fast, lower quality)" },
-  { value: "tts-1-hd", label: "tts-1-hd (slower, higher quality)" },
+const VOICE_MODELS = [
+  { value: "tts-1-hd", label: "tts-1-hd (natural, higher quality)" },
+  { value: "tts-1", label: "tts-1 (faster)" },
 ];
 const OPENAI_VOICES = [
-  { value: "nova", label: "Nova (Maya — warm female)" },
+  { value: "nova", label: "Nova (warm female — recommended)" },
   { value: "shimmer", label: "Shimmer (soft female)" },
   { value: "alloy", label: "Alloy (neutral)" },
   { value: "echo", label: "Echo (male)" },
-  { value: "onyx", label: "Onyx (Miles — deep male)" },
+  { value: "onyx", label: "Onyx (deep male — recommended)" },
   { value: "fable", label: "Fable (British)" },
 ];
+const WARN_THRESHOLDS = [80, 90, 95];
 
-// Popular ElevenLabs voices for quick picking
-const ELEVENLABS_POPULAR_VOICES = [
-  { id: "XB0fDUnXU5powFXDhCwa", name: "Charlotte", desc: "Female, Maya-like warm" },
-  { id: "EXAVITQu4vr4xnSDxMaL", name: "Bella", desc: "Female, soft" },
-  { id: "MF3mGyEYCl7XYWbV9V6O", name: "Elli", desc: "Female, young" },
-  { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel", desc: "Female, calm" },
-  { id: "AZnzlk1XvdvUeBnXmlld", name: "Domi", desc: "Female, strong" },
-  { id: "2EiwWnXFnvU5JabPnv8n", name: "Clyde", desc: "Male, Miles-like" },
-  { id: "pNInz6obpgDQGcFmaJgB", name: "Adam", desc: "Male, deep" },
-  { id: "onwK4e9ZLuTAKqWW03F9", name: "Daniel", desc: "Male, British" },
-];
-
-function ProviderCard({
-  provider,
-  current,
-  icon,
-  title,
-  description,
-  badge,
-  onClick,
-}: {
-  provider: TtsProvider;
-  current: TtsProvider;
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  badge?: string;
-  onClick: () => void;
-}) {
-  const active = current === provider;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      data-testid={`card-provider-${provider}`}
-      className={`relative flex flex-col gap-1.5 rounded-xl border p-4 text-left transition-all hover:border-primary/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-        active
-          ? "border-primary bg-primary/10 shadow-md shadow-primary/10"
-          : "border-border/50 bg-card/60"
-      }`}
-    >
-      {active && (
-        <CheckCircle className="absolute right-3 top-3 h-4 w-4 text-primary" />
-      )}
-      <div className="text-xl">{icon}</div>
-      <p className="font-semibold text-sm leading-none">{title}</p>
-      <p className="text-xs text-muted-foreground">{description}</p>
-      {badge && (
-        <span className="mt-1 inline-block rounded-full bg-green-500/20 px-2 py-0.5 text-[10px] font-medium text-green-400">
-          {badge}
-        </span>
-      )}
-    </button>
-  );
+function statusDot(status: string) {
+  const color =
+    status === "HEALTHY" ? "bg-emerald-400" :
+    status === "WARNING" || status === "RATE_LIMITED" ? "bg-amber-400" :
+    status === "UNKNOWN" ? "bg-slate-400" :
+    "bg-red-500";
+  return <span className={`inline-block w-2 h-2 rounded-full ${color}`} />;
 }
 
 function MaskedKeyInput({
@@ -126,54 +115,49 @@ function MaskedKeyInput({
   onChange,
   placeholder,
   testId,
-  multiline,
+  hasStored,
 }: {
   value: string;
   onChange: (v: string) => void;
-  placeholder: string;
-  testId: string;
-  multiline?: boolean;
+  placeholder?: string;
+  testId?: string;
+  hasStored?: boolean;
 }) {
-  const [show, setShow] = useState(false);
-  if (multiline) {
+  const [reveal, setReveal] = useState(false);
+  const [replacing, setReplacing] = useState(!hasStored);
+  if (hasStored && !replacing && !value) {
     return (
-      <div className="relative">
-        <Textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          rows={2}
-          className={`font-mono text-xs pr-10 ${!show && value ? "blur-sm select-none" : ""}`}
+      <div className="flex items-center gap-2">
+        <Input
+          readOnly
+          value="•••••••••••• (saved)"
+          className="font-mono text-xs bg-muted/40"
           data-testid={testId}
         />
-        <button
-          type="button"
-          onClick={() => setShow((s) => !s)}
-          className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
-          data-testid={`${testId}-toggle`}
-        >
-          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </button>
+        <Button type="button" variant="outline" size="sm" onClick={() => setReplacing(true)} data-testid={`${testId}-replace`}>
+          Replace
+        </Button>
       </div>
     );
   }
   return (
     <div className="relative">
       <Input
-        type={show ? "text" : "password"}
+        type={reveal ? "text" : "password"}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
+        placeholder={placeholder || "sk-..."}
         className="font-mono text-xs pr-10"
+        autoComplete="off"
         data-testid={testId}
       />
       <button
         type="button"
-        onClick={() => setShow((s) => !s)}
-        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-        data-testid={`${testId}-toggle`}
+        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        onClick={() => setReveal((v) => !v)}
+        aria-label={reveal ? "Hide key" : "Show key"}
       >
-        {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        {reveal ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
       </button>
     </div>
   );
@@ -2203,23 +2187,75 @@ function MaintenanceTab() {
   );
 }
 
+function formatTs(ts: number | null | undefined) {
+  if (!ts) return "—";
+  try {
+    return new Date(ts).toLocaleString();
+  } catch {
+    return "—";
+  }
+}
+
+function UsageBlock({
+  primary,
+  secondary,
+  kind,
+}: {
+  primary?: KeyUsageStats;
+  secondary?: KeyUsageStats;
+  kind: "brain" | "voice";
+}) {
+  const rows = [
+    { label: "Primary", s: primary },
+    { label: "Secondary", s: secondary },
+  ];
+  return (
+    <div className="space-y-3 rounded-lg border border-border/40 bg-muted/20 p-3">
+      <p className="text-xs font-medium text-muted-foreground">Usage tracked by application</p>
+      <p className="text-[11px] text-muted-foreground/80">Provider remaining quota unavailable</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {rows.map(({ label, s }) => (
+          <div key={label} className="space-y-1 text-xs">
+            <p className="font-medium flex items-center gap-1.5">
+              {statusDot(s?.status || "UNKNOWN")} {label}
+              <span className="text-muted-foreground font-normal">({s?.status || "UNKNOWN"})</span>
+            </p>
+            {kind === "brain" ? (
+              <>
+                <p>Input tokens: {(s?.inputTokens ?? 0).toLocaleString()}</p>
+                <p>Output tokens: {(s?.outputTokens ?? 0).toLocaleString()}</p>
+                <p>Total tokens: {(s?.totalTokens ?? 0).toLocaleString()}</p>
+              </>
+            ) : (
+              <p>Characters: {(s?.characters ?? 0).toLocaleString()}</p>
+            )}
+            <p>Requests: {s?.requests ?? 0} · Failures: {s?.failures ?? 0} · Rate limits: {s?.rateLimitEvents ?? 0}</p>
+            <p className="text-muted-foreground">Last OK: {formatTs(s?.lastSuccessAt)}</p>
+            <p className="text-muted-foreground">Last fail: {formatTs(s?.lastFailureAt)}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function AiTutorTab() {
   const { toast } = useToast();
-
-  const [provider, setProvider] = useState<TtsProvider>("browser");
-  const [elKeys, setElKeys] = useState("");
-  const [elVoiceId, setElVoiceId] = useState("XB0fDUnXU5powFXDhCwa");
-  const [elMaleVoiceId, setElMaleVoiceId] = useState("pNInz6obpgDQGcFmaJgB");
-  const [elModelId, setElModelId] = useState("eleven_multilingual_v2");
-  const [oaiKey, setOaiKey] = useState("");
-  const [oaiModel, setOaiModel] = useState("tts-1-hd");
-  const [oaiVoice, setOaiVoice] = useState("nova");
-  const [oaiMaleVoice, setOaiMaleVoice] = useState("onyx");
-  const [hfKey, setHfKey] = useState("");
-  const [hfModel, setHfModel] = useState("facebook/mms-tts-eng");
-
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [testPlaying, setTestPlaying] = useState(false);
+
+  const [brainPrimaryKey, setBrainPrimaryKey] = useState("");
+  const [brainSecondaryKey, setBrainSecondaryKey] = useState("");
+  const [brainModel, setBrainModel] = useState("gpt-4o");
+  const [brainWarn, setBrainWarn] = useState(80);
+
+  const [voicePrimaryKey, setVoicePrimaryKey] = useState("");
+  const [voiceSecondaryKey, setVoiceSecondaryKey] = useState("");
+  const [voiceModel, setVoiceModel] = useState("tts-1-hd");
+  const [femaleVoice, setFemaleVoice] = useState("nova");
+  const [maleVoice, setMaleVoice] = useState("onyx");
+  const [voiceWarn, setVoiceWarn] = useState(80);
+
+  const [testing, setTesting] = useState<string | null>(null);
 
   const { data, isLoading, refetch } = useQuery<AiConfigResponse>({
     queryKey: ["/api/admin/ai-config"],
@@ -2228,485 +2264,439 @@ function AiTutorTab() {
   useEffect(() => {
     if (!data?.config) return;
     const c = data.config;
-    setProvider(c.provider);
-    setElKeys(c.elevenlabs.apiKeys);
-    setElVoiceId(c.elevenlabs.voiceId);
-    setElMaleVoiceId((c.elevenlabs as any).maleVoiceId || "pNInz6obpgDQGcFmaJgB");
-    setElModelId(c.elevenlabs.modelId);
-    setOaiKey(c.openai.apiKey);
-    setOaiModel(c.openai.model);
-    setOaiVoice(c.openai.voice);
-    setOaiMaleVoice((c.openai as any).maleVoice || "onyx");
-    setHfKey(c.huggingface.apiKey);
-    setHfModel(c.huggingface.model);
+    setBrainModel(c.brain.model || "gpt-4o");
+    setBrainWarn(c.brain.warnThresholdPct || 80);
+    setVoiceModel(c.voice.model || "tts-1-hd");
+    setFemaleVoice(c.voice.femaleVoice || "nova");
+    setMaleVoice(c.voice.maleVoice || "onyx");
+    setVoiceWarn(c.voice.warnThresholdPct || 80);
+    // Never hydrate full secrets into inputs — only Replace flow sets new values.
+    setBrainPrimaryKey("");
+    setBrainSecondaryKey("");
+    setVoicePrimaryKey("");
+    setVoiceSecondaryKey("");
   }, [data]);
 
   const saveMutation = useMutation({
     mutationFn: () =>
       apiRequest("PATCH", "/api/admin/ai-config", {
         config: {
-          provider,
-          elevenlabs: { apiKeys: elKeys, voiceId: elVoiceId, maleVoiceId: elMaleVoiceId, modelId: elModelId },
-          openai: { apiKey: oaiKey, model: oaiModel, voice: oaiVoice, maleVoice: oaiMaleVoice },
-          huggingface: { apiKey: hfKey, model: hfModel },
+          version: 2,
+          brain: {
+            primaryKey: brainPrimaryKey,
+            secondaryKey: brainSecondaryKey,
+            model: brainModel,
+            warnThresholdPct: brainWarn,
+          },
+          voice: {
+            primaryKey: voicePrimaryKey,
+            secondaryKey: voiceSecondaryKey,
+            model: voiceModel,
+            femaleVoice,
+            maleVoice,
+            warnThresholdPct: voiceWarn,
+          },
         },
       }),
     onSuccess: () => {
+      setBrainPrimaryKey("");
+      setBrainSecondaryKey("");
+      setVoicePrimaryKey("");
+      setVoiceSecondaryKey("");
       queryClient.invalidateQueries({ queryKey: ["/api/admin/ai-config"] });
-      toast({ title: "AI Tutor config saved", description: "Settings will take effect within 30 seconds." });
+      toast({ title: "AI Tutor config saved", description: "Brain and Voice keys apply to live requests immediately." });
     },
     onError: (err: any) => {
       toast({ title: "Save failed", description: err?.message, variant: "destructive" });
     },
   });
 
-  // Client-side browser TTS test (no server round-trip needed)
-  const testBrowserTts = () => {
-    if (!("speechSynthesis" in window)) {
-      toast({ title: "Not supported", description: "Your browser does not support the Web Speech API.", variant: "destructive" });
-      return;
-    }
-    window.speechSynthesis.cancel();
-    const utt = new SpeechSynthesisUtterance("Hello! Eva here. The AI Tutor voice is working perfectly.");
-    utt.rate = 1.0;
-    utt.pitch = 1.1;
-    setTestPlaying(true);
-    utt.onend = () => setTestPlaying(false);
-    utt.onerror = () => setTestPlaying(false);
-    window.speechSynthesis.speak(utt);
-  };
+  const markAlertsRead = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/admin/ai-config/alerts/read", {}),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/admin/ai-config"] }),
+  });
 
-  const testMutation = useMutation({
-    mutationFn: async () => {
-      // Send current (possibly unsaved) form state so the admin can test before saving
+  async function runKeyTest(kind: "brain" | "voice", slot: "primary" | "secondary") {
+    const testId = `${kind}-${slot}`;
+    setTesting(testId);
+    try {
+      const override =
+        kind === "brain"
+          ? (slot === "primary" ? brainPrimaryKey : brainSecondaryKey)
+          : (slot === "primary" ? voicePrimaryKey : voiceSecondaryKey);
       const res = await fetch("/api/admin/ai-config/test", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          config: {
-            provider,
-            elevenlabs: { apiKeys: elKeys, voiceId: elVoiceId, maleVoiceId: elMaleVoiceId, modelId: elModelId },
-            openai: { apiKey: oaiKey, model: oaiModel, voice: oaiVoice, maleVoice: oaiMaleVoice },
-            huggingface: { apiKey: hfKey, model: hfModel },
-          },
+          kind,
+          slot,
+          key: override || undefined,
         }),
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `HTTP ${res.status}`);
-      }
       const contentType = res.headers.get("content-type") || "";
-      if (contentType.includes("application/json")) {
-        return { kind: "info" as const, message: (await res.json()).message };
-      }
-      const blob = await res.blob();
-      return { kind: "audio" as const, url: URL.createObjectURL(blob) };
-    },
-    onSuccess: (data) => {
-      if (data.kind === "info") {
-        toast({ title: "Test result", description: data.message });
+      if (contentType.includes("audio/")) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        if (audioRef.current) {
+          audioRef.current.pause();
+          URL.revokeObjectURL(audioRef.current.src);
+        }
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = () => URL.revokeObjectURL(url);
+        await audio.play().catch(() => undefined);
+        toast({ title: "✓ Connection successful", description: `${kind} ${slot} voice key works.` });
+        refetch();
         return;
       }
-      setTestPlaying(true);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        URL.revokeObjectURL(audioRef.current.src);
+      const body = await res.json().catch(() => ({}));
+      if (body.ok || res.ok) {
+        toast({ title: "✓ Connection successful", description: body.message || `${kind} ${slot} OK` });
+      } else {
+        toast({
+          title: `✗ ${body.message || "Test failed"}`,
+          description: `${kind} ${slot}`,
+          variant: "destructive",
+        });
       }
-      const audio = new Audio(data.url);
-      audioRef.current = audio;
-      audio.onended = () => {
-        setTestPlaying(false);
-        URL.revokeObjectURL(data.url);
-      };
-      audio.onerror = () => { setTestPlaying(false); };
-      audio.play().catch(() => setTestPlaying(false));
-    },
-    onError: (err: any) => {
-      toast({ title: "Test failed", description: err?.message, variant: "destructive" });
-    },
-  });
+      refetch();
+    } catch (err: any) {
+      toast({ title: "✗ Provider unavailable", description: err?.message, variant: "destructive" });
+    } finally {
+      setTesting(null);
+    }
+  }
 
-  // Warn when the ElevenLabs voice ID looks like an API key
-  const elVoiceIdLooksLikeKey = /^sk_[A-Za-z0-9]{10,}/.test(elVoiceId);
-
-  const hasKey = data?.hasKeys;
+  const cfg = data?.config;
+  const status = data?.status;
+  const alerts = data?.alerts || [];
+  const unread = alerts.filter((a) => !a.read);
 
   return (
     <div className="space-y-6">
-      {/* Header card */}
       <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Bot className="w-5 h-5 text-cyan-400" />
-            AI Tutor Voice Configuration
+            AI Tutor Configuration
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Two tutors: <strong>Maya</strong> (female) and <strong>Miles</strong> (male).
-            Sesame Maya has no public free API — use OpenAI (same chat key) or free Browser voices.
-            ElevenLabs free keys often expire or run out of credits.
+            Two areas only: <strong>Brain</strong> (chat AI) and <strong>Voice</strong> (TTS).
+            Primary key is used first; Secondary fails over automatically on recoverable provider errors.
+            Keys are stored server-side and never returned in full.
           </p>
         </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <ProviderCard
-                provider="browser"
-                current={provider}
-                icon={<Globe2 className="h-5 w-5 text-blue-400" />}
-                title="Browser (Free)"
-                description="On-device neural voices. Free forever — never expires. Recommended when keys fail."
-                badge="Never expires"
-                onClick={() => setProvider("browser")}
-              />
-              <ProviderCard
-                provider="openai"
-                current={provider}
-                icon={<Cpu className="h-5 w-5 text-green-400" />}
-                title="OpenAI TTS"
-                description="Maya=nova, Miles=onyx. Uses your existing OPENAI_API_KEY from Railway."
-                badge="Recommended"
-                onClick={() => setProvider("openai")}
-              />
-              <ProviderCard
-                provider="elevenlabs"
-                current={provider}
-                icon={<Zap className="h-5 w-5 text-yellow-400" />}
-                title="ElevenLabs"
-                description="Highest quality, but free keys expire / hit quota. Paid plans needed for reliability."
-                badge="Quota expires"
-                onClick={() => setProvider("elevenlabs")}
-              />
-              <ProviderCard
-                provider="huggingface"
-                current={provider}
-                icon={<Key className="h-5 w-5 text-orange-400" />}
-                title="Hugging Face"
-                description="Open-source TTS models via HF Inference API."
-                onClick={() => setProvider("huggingface")}
-              />
-            </div>
-          )}
-        </CardContent>
       </Card>
 
-      {/* Provider settings */}
-      {!isLoading && provider !== "browser" && (
-        <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
-          <CardHeader className="pb-3">
+      {unread.length > 0 && (
+        <Card className="border-amber-500/30 bg-amber-500/5">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between gap-2">
             <CardTitle className="text-base flex items-center gap-2">
-              {provider === "elevenlabs" && <Zap className="h-4 w-4 text-yellow-400" />}
-              {provider === "openai" && <Cpu className="h-4 w-4 text-green-400" />}
-              {provider === "huggingface" && <Key className="h-4 w-4 text-orange-400" />}
-              {provider === "elevenlabs" && "ElevenLabs Settings"}
-              {provider === "openai" && "OpenAI TTS Settings"}
-              {provider === "huggingface" && "Hugging Face Settings"}
+              <BellRing className="w-4 h-4 text-amber-400" />
+              Alerts ({unread.length})
             </CardTitle>
+            <Button variant="outline" size="sm" onClick={() => markAlertsRead.mutate()} disabled={markAlertsRead.isPending}>
+              Mark all read
+            </Button>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {provider === "elevenlabs" && (
-              <>
-                <div className="space-y-1.5">
-                  <Label>
-                    API Keys
-                    <span className="ml-1.5 text-xs text-muted-foreground">(comma-separated for rotation)</span>
-                    {hasKey?.elevenlabs && (
-                      <span className="ml-2 inline-flex items-center gap-1 text-xs text-green-400">
-                        <CheckCircle className="h-3 w-3" /> configured
-                      </span>
-                    )}
-                  </Label>
-                  <MaskedKeyInput
-                    value={elKeys}
-                    onChange={setElKeys}
-                    placeholder="sk_xxxx, sk_yyyy"
-                    testId="input-elevenlabs-keys"
-                    multiline
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Get keys at{" "}
-                    <a href="https://elevenlabs.io" target="_blank" rel="noreferrer" className="underline hover:text-foreground">
-                      elevenlabs.io
-                    </a>. Multiple keys rotate automatically to spread quota.
-                  </p>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="el-voice-id">Voice ID</Label>
-                    <Input
-                      id="el-voice-id"
-                      value={elVoiceId}
-                      onChange={(e) => setElVoiceId(e.target.value)}
-                      placeholder="XB0fDUnXU5powFXDhCwa"
-                      className={`font-mono text-xs ${elVoiceIdLooksLikeKey ? "border-red-500/60 focus-visible:ring-red-500/40" : ""}`}
-                      data-testid="input-elevenlabs-voice-id"
-                    />
-                    {elVoiceIdLooksLikeKey && (
-                      <p className="text-xs text-red-400 flex items-center gap-1">
-                        <AlertTriangle className="h-3 w-3 shrink-0" />
-                        This looks like an API key, not a voice ID. Put the API key above and enter a voice ID here (e.g. XB0fDUnXU5powFXDhCwa).
-                      </p>
-                    )}
-                    {!elVoiceIdLooksLikeKey && (
-                      <p className="text-xs text-muted-foreground">
-                        Default is Charlotte (Eva). Pick a popular voice below or find IDs in your ElevenLabs dashboard.
-                      </p>
-                    )}
-                    {/* Female voice quick-picker */}
-                    <div className="flex flex-wrap gap-1.5 pt-0.5">
-                      {ELEVENLABS_POPULAR_VOICES.filter(v => v.desc.startsWith("Female")).map((v) => (
-                        <button
-                          key={v.id}
-                          type="button"
-                          onClick={() => setElVoiceId(v.id)}
-                          title={`${v.desc}\n${v.id}`}
-                          className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
-                            elVoiceId === v.id
-                              ? "border-cyan-500/60 bg-cyan-500/15 text-cyan-300"
-                              : "border-border/50 bg-background/40 text-muted-foreground hover:border-cyan-500/40 hover:text-foreground"
-                          }`}
-                          data-testid={`button-el-voice-${v.id}`}
-                        >
-                          {v.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Male voice ID */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="el-male-voice-id">Male Voice ID</Label>
-                    <Input
-                      id="el-male-voice-id"
-                      value={elMaleVoiceId}
-                      onChange={(e) => setElMaleVoiceId(e.target.value)}
-                      placeholder="pNInz6obpgDQGcFmaJgB"
-                      className="font-mono text-xs"
-                      data-testid="input-elevenlabs-male-voice-id"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Used when the Male (Dude) persona is active. Defaults to Adam.
-                    </p>
-                    {/* Male voice quick-picker */}
-                    <div className="flex flex-wrap gap-1.5 pt-0.5">
-                      {ELEVENLABS_POPULAR_VOICES.filter(v => v.desc.startsWith("Male")).map((v) => (
-                        <button
-                          key={v.id}
-                          type="button"
-                          onClick={() => setElMaleVoiceId(v.id)}
-                          title={`${v.desc}\n${v.id}`}
-                          className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
-                            elMaleVoiceId === v.id
-                              ? "border-blue-500/60 bg-blue-500/15 text-blue-300"
-                              : "border-border/50 bg-background/40 text-muted-foreground hover:border-blue-500/40 hover:text-foreground"
-                          }`}
-                          data-testid={`button-el-male-voice-${v.id}`}
-                        >
-                          {v.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="el-model">Model</Label>
-                    <Select value={elModelId} onValueChange={setElModelId}>
-                      <SelectTrigger id="el-model" data-testid="select-elevenlabs-model">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ELEVENLABS_MODELS.map((m) => (
-                          <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {provider === "openai" && (
-              <>
-                <div className="space-y-1.5">
-                  <Label>
-                    API Key
-                    {hasKey?.openai && (
-                      <span className="ml-2 inline-flex items-center gap-1 text-xs text-green-400">
-                        <CheckCircle className="h-3 w-3" /> configured
-                      </span>
-                    )}
-                  </Label>
-                  <MaskedKeyInput
-                    value={oaiKey}
-                    onChange={setOaiKey}
-                    placeholder="sk-..."
-                    testId="input-openai-key"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Get a key at{" "}
-                    <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="underline hover:text-foreground">
-                      platform.openai.com
-                    </a>.
-                  </p>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="oai-model">Model</Label>
-                    <Select value={oaiModel} onValueChange={setOaiModel}>
-                      <SelectTrigger id="oai-model" data-testid="select-openai-model">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {OPENAI_MODELS.map((m) => (
-                          <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="oai-voice">Maya voice (female)</Label>
-                    <Select value={oaiVoice} onValueChange={setOaiVoice}>
-                      <SelectTrigger id="oai-voice" data-testid="select-openai-voice">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {OPENAI_VOICES.map((v) => (
-                          <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="oai-male-voice">Miles voice (male)</Label>
-                    <Select value={oaiMaleVoice} onValueChange={setOaiMaleVoice}>
-                      <SelectTrigger id="oai-male-voice" data-testid="select-openai-male-voice">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {OPENAI_VOICES.map((v) => (
-                          <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Leave the API key blank to use <code className="text-foreground/80">OPENAI_API_KEY</code> from Railway (same key as Talking AI chat).
+          <CardContent className="space-y-2 max-h-48 overflow-y-auto">
+            {unread.slice(0, 12).map((a) => (
+              <div key={a.id} className="rounded-md border border-border/40 bg-background/40 px-3 py-2 text-xs">
+                <p className="font-medium">
+                  <span className="uppercase text-[10px] text-muted-foreground mr-2">{a.severity}</span>
+                  {a.title}
                 </p>
-              </>
-            )}
-
-            {provider === "huggingface" && (
-              <>
-                <div className="space-y-1.5">
-                  <Label>
-                    API Key (HF Token)
-                    {hasKey?.huggingface && (
-                      <span className="ml-2 inline-flex items-center gap-1 text-xs text-green-400">
-                        <CheckCircle className="h-3 w-3" /> configured
-                      </span>
-                    )}
-                  </Label>
-                  <MaskedKeyInput
-                    value={hfKey}
-                    onChange={setHfKey}
-                    placeholder="hf_..."
-                    testId="input-hf-key"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Get a token at{" "}
-                    <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noreferrer" className="underline hover:text-foreground">
-                      huggingface.co/settings/tokens
-                    </a>.
-                  </p>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="hf-model">Model (HF model ID)</Label>
-                  <Input
-                    id="hf-model"
-                    value={hfModel}
-                    onChange={(e) => setHfModel(e.target.value)}
-                    placeholder="facebook/mms-tts-eng"
-                    className="font-mono text-xs"
-                    data-testid="input-hf-model"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Recommended free models: <code className="bg-muted rounded px-1">facebook/mms-tts-eng</code>,{" "}
-                    <code className="bg-muted rounded px-1">microsoft/speecht5_tts</code>
-                  </p>
-                </div>
-              </>
-            )}
+                <p className="text-muted-foreground mt-0.5">{a.message}</p>
+              </div>
+            ))}
           </CardContent>
         </Card>
       )}
 
-      {/* Browser TTS note */}
-      {!isLoading && provider === "browser" && (
-        <Card className="bg-card/75 backdrop-blur-xl border-blue-500/20">
-          <CardContent className="pt-5 pb-4 flex items-start gap-3">
-            <Globe2 className="h-5 w-5 text-blue-400 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-medium">Free on-device voices (never expire)</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Maya and Miles use your browser/OS neural voices (best on Chrome/Edge with Microsoft Online Natural voices).
-                No API key, no quota, no expiry. Cloud providers are optional upgrades.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Actions */}
-      {!isLoading && (
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending}
-            className="gap-2"
-            data-testid="button-save-ai-config"
-          >
-            {saveMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            Save Configuration
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => provider === "browser" ? testBrowserTts() : testMutation.mutate()}
-            disabled={testMutation.isPending || testPlaying}
-            className="gap-2"
-            data-testid="button-test-ai-config"
-          >
-            {testMutation.isPending || testPlaying ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Play className="h-4 w-4" />
-            )}
-            {testPlaying ? "Playing…" : "Test Voice"}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => refetch()}
-            className="text-muted-foreground hover:text-foreground"
-            title="Refresh"
-            data-testid="button-refresh-ai-config"
-          >
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-          <p className="text-xs text-muted-foreground">
-            {provider === "browser"
-              ? "Browser TTS plays directly in your browser — no API key needed."
-              : "Tests your current settings (no need to save first)."}
-          </p>
+      {isLoading ? (
+        <div className="space-y-3">
+          <Skeleton className="h-64 rounded-xl" />
+          <Skeleton className="h-64 rounded-xl" />
         </div>
+      ) : (
+        <>
+          {/* ── BRAIN ─────────────────────────────────────────────── */}
+          <Card className="bg-card/75 backdrop-blur-xl border-primary/15" data-testid="card-ai-brain">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <BrainCircuit className="h-4 w-4 text-cyan-400" />
+                AI Brain
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Provider: OpenAI · Model controls chat replies for the AI Tutor.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Primary Brain API Key</Label>
+                  <MaskedKeyInput
+                    key={`bp-${cfg?.brain.primaryKeyMasked || "none"}`}
+                    value={brainPrimaryKey}
+                    onChange={setBrainPrimaryKey}
+                    hasStored={!!cfg?.brain.hasPrimary}
+                    testId="input-brain-primary"
+                    placeholder="sk-..."
+                  />
+                  {cfg?.brain.primaryKeyMasked && (
+                    <p className="text-[11px] font-mono text-muted-foreground">{cfg.brain.primaryKeyMasked}</p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Secondary Brain API Key</Label>
+                  <MaskedKeyInput
+                    key={`bs-${cfg?.brain.secondaryKeyMasked || "none"}`}
+                    value={brainSecondaryKey}
+                    onChange={setBrainSecondaryKey}
+                    hasStored={!!cfg?.brain.hasSecondary}
+                    testId="input-brain-secondary"
+                    placeholder="sk-..."
+                  />
+                  {cfg?.brain.secondaryKeyMasked && (
+                    <p className="text-[11px] font-mono text-muted-foreground">{cfg.brain.secondaryKeyMasked}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Model</Label>
+                  <Select value={brainModel} onValueChange={setBrainModel}>
+                    <SelectTrigger data-testid="select-brain-model">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BRAIN_MODELS.map((m) => (
+                        <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Warning threshold (app-tracked)</Label>
+                  <Select value={String(brainWarn)} onValueChange={(v) => setBrainWarn(Number(v))}>
+                    <SelectTrigger data-testid="select-brain-warn">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {WARN_THRESHOLDS.map((t) => (
+                        <SelectItem key={t} value={String(t)}>{t}% of tracked usage baseline</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <span className="flex items-center gap-1.5">
+                  {statusDot(status?.brain?.primary?.status || "UNKNOWN")}
+                  Primary: {status?.brain?.primary?.status || "UNKNOWN"}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  {statusDot(status?.brain?.secondary?.status || "UNKNOWN")}
+                  Secondary: {status?.brain?.secondary?.status || "UNKNOWN"}
+                </span>
+              </div>
+
+              <UsageBlock kind="brain" primary={status?.brain?.primary} secondary={status?.brain?.secondary} />
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={testing === "brain-primary"}
+                  onClick={() => runKeyTest("brain", "primary")}
+                  data-testid="button-test-brain-primary"
+                >
+                  {testing === "brain-primary" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Play className="h-3.5 w-3.5 mr-1" />}
+                  Test Primary
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={testing === "brain-secondary"}
+                  onClick={() => runKeyTest("brain", "secondary")}
+                  data-testid="button-test-brain-secondary"
+                >
+                  {testing === "brain-secondary" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Play className="h-3.5 w-3.5 mr-1" />}
+                  Test Secondary
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ── VOICE ─────────────────────────────────────────────── */}
+          <Card className="bg-card/75 backdrop-blur-xl border-primary/15" data-testid="card-ai-voice">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <AudioLines className="h-4 w-4 text-emerald-400" />
+                Voice
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Provider: OpenAI TTS · Natural conversational voices for Maya (female) and Miles (male).
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Primary Voice API Key</Label>
+                  <MaskedKeyInput
+                    key={`vp-${cfg?.voice.primaryKeyMasked || "none"}`}
+                    value={voicePrimaryKey}
+                    onChange={setVoicePrimaryKey}
+                    hasStored={!!cfg?.voice.hasPrimary}
+                    testId="input-voice-primary"
+                    placeholder="sk-..."
+                  />
+                  {cfg?.voice.primaryKeyMasked && (
+                    <p className="text-[11px] font-mono text-muted-foreground">{cfg.voice.primaryKeyMasked}</p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Secondary Voice API Key</Label>
+                  <MaskedKeyInput
+                    key={`vs-${cfg?.voice.secondaryKeyMasked || "none"}`}
+                    value={voiceSecondaryKey}
+                    onChange={setVoiceSecondaryKey}
+                    hasStored={!!cfg?.voice.hasSecondary}
+                    testId="input-voice-secondary"
+                    placeholder="sk-..."
+                  />
+                  {cfg?.voice.secondaryKeyMasked && (
+                    <p className="text-[11px] font-mono text-muted-foreground">{cfg.voice.secondaryKeyMasked}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="space-y-1.5">
+                  <Label>Voice 1 (female)</Label>
+                  <Select value={femaleVoice} onValueChange={setFemaleVoice}>
+                    <SelectTrigger data-testid="select-voice-female">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {OPENAI_VOICES.map((v) => (
+                        <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Voice 2 (male)</Label>
+                  <Select value={maleVoice} onValueChange={setMaleVoice}>
+                    <SelectTrigger data-testid="select-voice-male">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {OPENAI_VOICES.map((v) => (
+                        <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>TTS model</Label>
+                  <Select value={voiceModel} onValueChange={setVoiceModel}>
+                    <SelectTrigger data-testid="select-voice-model">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VOICE_MODELS.map((m) => (
+                        <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Warning threshold (app-tracked)</Label>
+                  <Select value={String(voiceWarn)} onValueChange={(v) => setVoiceWarn(Number(v))}>
+                    <SelectTrigger data-testid="select-voice-warn">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {WARN_THRESHOLDS.map((t) => (
+                        <SelectItem key={t} value={String(t)}>{t}%</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <span className="flex items-center gap-1.5">
+                  {statusDot(status?.voice?.primary?.status || "UNKNOWN")}
+                  Primary: {status?.voice?.primary?.status || "UNKNOWN"}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  {statusDot(status?.voice?.secondary?.status || "UNKNOWN")}
+                  Secondary: {status?.voice?.secondary?.status || "UNKNOWN"}
+                </span>
+              </div>
+
+              <UsageBlock kind="voice" primary={status?.voice?.primary} secondary={status?.voice?.secondary} />
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={testing === "voice-primary"}
+                  onClick={() => runKeyTest("voice", "primary")}
+                  data-testid="button-test-voice-primary"
+                >
+                  {testing === "voice-primary" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Play className="h-3.5 w-3.5 mr-1" />}
+                  Test Primary
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={testing === "voice-secondary"}
+                  onClick={() => runKeyTest("voice", "secondary")}
+                  data-testid="button-test-voice-secondary"
+                >
+                  {testing === "voice-secondary" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Play className="h-3.5 w-3.5 mr-1" />}
+                  Test Secondary
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending}
+              className="gap-2"
+              data-testid="button-save-ai-config"
+            >
+              {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save Configuration
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => refetch()}
+              className="text-muted-foreground hover:text-foreground"
+              title="Refresh"
+              data-testid="button-refresh-ai-config"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Leave key fields blank (or use Replace only when changing) to keep existing secrets.
+              Env fallbacks: OPENAI_API_KEY / AI_BRAIN_KEY_1·2 / AI_VOICE_KEY_1·2.
+            </p>
+          </div>
+        </>
       )}
     </div>
   );
