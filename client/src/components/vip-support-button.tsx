@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { Coffee, Crown, Loader2, Lock } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Coffee, Crown, Loader2, Lock, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { VIP_PLANS, vipRank } from "@shared/constants";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { isAdminUser, isVipUser } from "@/lib/vip";
 
 type VipConfig = {
@@ -16,11 +17,26 @@ type VipConfig = {
   plans: Array<{ id: string; amount: number; label: string; tagline: string }>;
 };
 
+function openPaypalPopup(): Window | null {
+  const w = 480;
+  const h = 720;
+  const left = Math.max(0, Math.round(window.screenX + (window.outerWidth - w) / 2));
+  const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - h) / 2));
+  // Open synchronously on the click path so popup blockers allow it.
+  return window.open(
+    "about:blank",
+    "vextorn-paypal",
+    `popup=yes,width=${w},height=${h},left=${left},top=${top},noopener=no,noreferrer=no`,
+  );
+}
+
 export function VipSupportButton({ guest = false }: { guest?: boolean }) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [paying, setPaying] = useState<number | null>(null);
+  const [awaitingPaypal, setAwaitingPaypal] = useState(false);
+  const popupRef = useRef<Window | null>(null);
   const { data: config } = useQuery<VipConfig>({
     queryKey: ["/api/vip/config"],
     queryFn: async () => {
@@ -29,6 +45,49 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
     },
     staleTime: 60_000,
   });
+
+  const finishPaypalFlow = (status: "thanks" | "cancel" | "closed") => {
+    try { popupRef.current?.close(); } catch { /* ignore */ }
+    popupRef.current = null;
+    setPaying(null);
+    setAwaitingPaypal(false);
+    queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    if (status === "thanks") {
+      toast({
+        title: "Payment submitted",
+        description: "VIP unlocks after PayPal confirms (usually within a minute). Refresh if it doesn’t appear yet.",
+      });
+      setOpen(false);
+    } else if (status === "cancel") {
+      toast({ title: "Payment canceled", description: "No charge was made. You can try again anytime." });
+    }
+  };
+  const finishRef = useRef(finishPaypalFlow);
+  finishRef.current = finishPaypalFlow;
+
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      const data = event.data;
+      if (!data || data.type !== "vextorn-vip-paypal") return;
+      const status = data.status === "cancel" ? "cancel" : "thanks";
+      finishRef.current(status);
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+
+  // If the user closes the PayPal popup manually, clear the waiting state.
+  useEffect(() => {
+    if (!awaitingPaypal) return;
+    const timer = window.setInterval(() => {
+      const popup = popupRef.current;
+      if (popup && popup.closed) {
+        finishRef.current("closed");
+      }
+    }, 700);
+    return () => window.clearInterval(timer);
+  }, [awaitingPaypal]);
 
   const admin = isAdminUser(user);
   const show = config?.showSupport !== false || admin;
@@ -46,7 +105,26 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
       window.location.href = "/api/login";
       return;
     }
+
+    // Must open on the same tick as the click (before await) or blockers win.
+    const popup = openPaypalPopup();
+    if (!popup) {
+      toast({
+        title: "Popup blocked",
+        description: "Allow popups for Vextorn, then try again. PayPal opens in a small window so this page stays open.",
+        variant: "destructive",
+      });
+      return;
+    }
+    popupRef.current = popup;
+    try {
+      popup.document.write(
+        `<!DOCTYPE html><title>Opening PayPal…</title><body style="margin:0;background:#0f0b18;color:#fff;font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh">Opening PayPal…</body>`,
+      );
+    } catch { /* cross-origin / closed */ }
+
     setPaying(amount);
+    setAwaitingPaypal(true);
     try {
       const res = await fetch("/api/vip/checkout", {
         method: "POST",
@@ -56,10 +134,20 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || "PayPal checkout failed");
-      window.location.href = data.url;
+      if (!data.url) throw new Error("PayPal URL missing");
+
+      try {
+        popup.location.href = data.url;
+      } catch {
+        // If we can't navigate the existing popup, open the URL as a fallback.
+        window.open(data.url, "vextorn-paypal");
+      }
     } catch (err: any) {
-      toast({ title: "Could not open PayPal", description: err?.message, variant: "destructive" });
+      try { popup.close(); } catch { /* ignore */ }
+      popupRef.current = null;
+      setAwaitingPaypal(false);
       setPaying(null);
+      toast({ title: "Could not open PayPal", description: err?.message, variant: "destructive" });
     }
   };
 
@@ -80,7 +168,14 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
         )}
       </button>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(next) => {
+        if (!next && awaitingPaypal) {
+          // Keep dialog usable while PayPal popup is open — user can dismiss UI.
+          setOpen(false);
+          return;
+        }
+        setOpen(next);
+      }}>
         <DialogContent className="max-w-[420px] border-amber-500/20 bg-[#14101f]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
@@ -88,7 +183,7 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
               Buy Me a Coffee
             </DialogTitle>
             <DialogDescription>
-              Support Vextorn and unlock VIP. Payment is via PayPal (Buy Me a Coffee is unavailable in some regions).
+              Support Vextorn and unlock VIP. PayPal opens in a small popup — this page stays open.
             </DialogDescription>
           </DialogHeader>
 
@@ -96,6 +191,16 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
             <p className="text-xs text-amber-300/90 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2" data-testid="text-vip-status">
               VIP status: {user?.vipTier === "elite" ? "VIP Elite" : user?.vipTier === "plus" ? "VIP Plus" : user?.vipTier === "coffee" ? "VIP Coffee" : "Active"}
               {currentRank > 0 ? " — pick a higher tier to upgrade." : ""}
+            </p>
+          )}
+
+          {awaitingPaypal && (
+            <p
+              className="text-xs text-sky-200/90 rounded-md border border-sky-500/30 bg-sky-500/10 px-3 py-2 flex items-start gap-2"
+              data-testid="text-paypal-popup-waiting"
+            >
+              <ExternalLink className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+              <span>Complete payment in the PayPal window (login / one-time code). This tab will stay on Vextorn.</span>
             </p>
           )}
 

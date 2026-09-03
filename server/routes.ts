@@ -2680,8 +2680,8 @@ export async function registerRoutes(
         no_shipping: "1",
         no_note: "1",
         rm: "1",
-        return: `${origin}/?vip=thanks`,
-        cancel_return: `${origin}/?vip=cancel`,
+        return: `${origin}/vip/paypal-return?status=thanks`,
+        cancel_return: `${origin}/vip/paypal-return?status=cancel`,
         notify_url: `${origin}/api/paypal/ipn`,
       });
       res.json({ url: `${paypalCheckoutHost()}/cgi-bin/webscr?${params.toString()}` });
@@ -2689,6 +2689,40 @@ export async function registerRoutes(
       console.error("VIP checkout error:", err);
       res.status(500).json({ message: "Could not start PayPal checkout." });
     }
+  });
+
+  // Lightweight popup return page — posts status to opener and closes itself
+  // so the main Vextorn tab never navigates away during PayPal checkout.
+  app.get("/vip/paypal-return", (_req, res) => {
+    const status = String(_req.query?.status || "done").replace(/[^a-z]/gi, "").slice(0, 20) || "done";
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "no-store");
+    res.send(`<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PayPal — Vextorn</title>
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    font-family:system-ui,-apple-system,sans-serif;background:#0f0b18;color:#f5f5f5;text-align:center;padding:24px}
+  .card{max-width:360px}
+  h1{font-size:1.15rem;margin:0 0 8px}
+  p{margin:0;opacity:.7;font-size:.9rem;line-height:1.4}
+</style></head><body>
+<div class="card">
+  <h1>${status === "cancel" ? "Payment canceled" : "Thanks — finishing up"}</h1>
+  <p>${status === "cancel" ? "You can close this window and return to Vextorn." : "VIP unlocks after PayPal confirms. This window will close automatically."}</p>
+</div>
+<script>
+(function () {
+  var status = ${JSON.stringify(status)};
+  try {
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage({ type: "vextorn-vip-paypal", status: status }, window.location.origin);
+    }
+  } catch (e) {}
+  setTimeout(function () { try { window.close(); } catch (e) {} }, 700);
+})();
+</script>
+</body></html>`);
   });
 
   app.post("/api/paypal/ipn", async (req: any, res) => {
