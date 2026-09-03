@@ -2397,11 +2397,12 @@ export async function registerRoutes(
     res.end();
   });
 
-  // GIPHY is the source of truth for chat GIFs. The key must live in
-  // GIPHY_API_KEY (Railway / local .env) and is never sent to the browser.
-  // The old public beta key (dc6zaTOxFJmzC) is retired and returns 401.
+  // Giphy is preferred when GIPHY_API_KEY is set. There is no unlimited public
+  // Giphy key (the old beta key dc6zaTOxFJmzC is retired). Without a key we
+  // fall back to Wikimedia Commons, which needs no API key and does not expire.
   const RETIRED_GIPHY_PUBLIC_BETA_KEY = "dc6zaTOxFJmzC";
-  const GIPHY_PAGE_SIZE = 24;
+  const GIF_PAGE_SIZE = 24;
+  const WIKIMEDIA_UA = "Vextorn/1.0 (https://vextorn.com; GIF search)";
 
   function getGiphyApiKey(): string | null {
     const key = process.env.GIPHY_API_KEY?.trim() || "";
@@ -2411,8 +2412,23 @@ export async function registerRoutes(
     return key;
   }
 
+  function gifProvider(): "giphy" | "wikimedia" {
+    return getGiphyApiKey() ? "giphy" : "wikimedia";
+  }
+
   if (!getGiphyApiKey()) {
-    console.warn("[gifs] GIPHY_API_KEY is missing or is the retired public beta key. GIF search will stay unavailable until a valid key is set on Railway.");
+    console.warn("[gifs] GIPHY_API_KEY is unset; using Wikimedia Commons (no key). Set a Giphy key on Railway for a larger catalog.");
+  }
+
+  function stripUrlTracking(url: string): string {
+    try {
+      const parsed = new URL(url);
+      parsed.search = "";
+      parsed.hash = "";
+      return parsed.toString();
+    } catch {
+      return url;
+    }
   }
 
   function mapGiphyResults(items: any[]): any[] {
@@ -2434,17 +2450,34 @@ export async function registerRoutes(
       .filter(Boolean);
   }
 
+  function mapWikimediaResults(pages: Record<string, any> | undefined): any[] {
+    return Object.values(pages || {})
+      .sort((a: any, b: any) => Number(a.index || 0) - Number(b.index || 0))
+      .map((page: any) => {
+        const info = page.imageinfo?.[0];
+        if (!info?.url || info.mime !== "image/gif") return null;
+        if (Number(info.size || 0) > 8 * 1024 * 1024) return null;
+        const preview = info.thumburl || info.url;
+        return {
+          id: `wm-${page.pageid}`,
+          url: stripUrlTracking(info.url),
+          preview: stripUrlTracking(preview),
+          title: String(page.title || "").replace(/^File:/, "").replace(/\.gif$/i, ""),
+          width: Number(info.thumbwidth || info.width || 320),
+          height: Number(info.thumbheight || info.height || 200),
+        };
+      })
+      .filter(Boolean);
+  }
+
   async function fetchGiphy(path: string, params: Record<string, string>): Promise<{ results: any[]; next: string }> {
     const apiKey = getGiphyApiKey();
     if (!apiKey) {
-      throw Object.assign(
-        new Error("GIF search is not configured. Add a Giphy API key as GIPHY_API_KEY in Railway (and local .env)."),
-        { status: 503 },
-      );
+      throw Object.assign(new Error("Giphy API key is not configured."), { status: 503 });
     }
     const searchParams = new URLSearchParams({
       api_key: apiKey,
-      limit: String(GIPHY_PAGE_SIZE),
+      limit: String(GIF_PAGE_SIZE),
       rating: "pg-13",
       lang: "en",
       ...params,
@@ -2479,6 +2512,46 @@ export async function registerRoutes(
     return { results, next };
   }
 
+  async function fetchWikimedia(kind: "search" | "trending", params: Record<string, string>): Promise<{ results: any[]; next: string }> {
+    const offset = Number(params.offset || "0");
+    const query = kind === "search" ? String(params.q || "").trim() : "funny";
+    const gsrsearch = query
+      ? `filemime:image/gif ${query}`
+      : "filemime:image/gif";
+    const searchParams = new URLSearchParams({
+      action: "query",
+      format: "json",
+      origin: "*",
+      generator: "search",
+      gsrsearch,
+      gsrnamespace: "6",
+      gsrlimit: String(GIF_PAGE_SIZE),
+      gsroffset: String(offset),
+      prop: "imageinfo",
+      iiprop: "url|size|mime",
+      iiurlwidth: "200",
+    });
+    const response = await fetch(`https://commons.wikimedia.org/w/api.php?${searchParams.toString()}`, {
+      headers: { "User-Agent": WIKIMEDIA_UA, Accept: "application/json" },
+    });
+    if (!response.ok) {
+      throw Object.assign(
+        new Error(`GIF search is temporarily unavailable (${response.status}). Try again shortly.`),
+        { status: 502 },
+      );
+    }
+    const data = await response.json();
+    const results = mapWikimediaResults(data.query?.pages);
+    const nextOffset = data.continue?.gsroffset;
+    const next = nextOffset != null && results.length > 0 ? String(nextOffset) : "";
+    return { results, next };
+  }
+
+  async function fetchGifs(kind: "search" | "trending", params: Record<string, string>): Promise<{ results: any[]; next: string }> {
+    if (getGiphyApiKey()) return fetchGiphy(kind, params);
+    return fetchWikimedia(kind, params);
+  }
+
   app.get("/api/gifs/search", isAuthenticated, async (req: any, res) => {
     try {
       const query = req.query.q as string;
@@ -2487,10 +2560,10 @@ export async function registerRoutes(
         return res.json({ results: [], next: "" });
       }
       const offset = pos ? Math.max(0, parseInt(pos, 10) || 0) : 0;
-      const cacheKey = `gif:search:giphy:${query.toLowerCase().trim()}:${offset}`;
+      const cacheKey = `gif:search:${gifProvider()}:${query.toLowerCase().trim()}:${offset}`;
       const cached = externalCache.get(cacheKey);
       if (cached) return res.json(cached);
-      const result = await fetchGiphy("search", { q: query.trim(), offset: String(offset) });
+      const result = await fetchGifs("search", { q: query.trim(), offset: String(offset) });
       externalCache.set(cacheKey, result);
       res.json(result);
     } catch (err: any) {
@@ -2503,10 +2576,10 @@ export async function registerRoutes(
     try {
       const pos = req.query.pos as string | undefined;
       const offset = pos ? Math.max(0, parseInt(pos, 10) || 0) : 0;
-      const cacheKey = `gif:trending:giphy:${offset}`;
+      const cacheKey = `gif:trending:${gifProvider()}:${offset}`;
       const cached = externalCache.get(cacheKey);
       if (cached) return res.json(cached);
-      const result = await fetchGiphy("trending", { offset: String(offset) });
+      const result = await fetchGifs("trending", { offset: String(offset) });
       externalCache.set(cacheKey, result);
       res.json(result);
     } catch (err: any) {

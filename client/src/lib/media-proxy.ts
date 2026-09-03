@@ -24,6 +24,8 @@ const PROXIED_HOSTNAMES = new Set([
   "lh5.googleusercontent.com",
   "lh6.googleusercontent.com",
   "i.imgur.com",
+  "upload.wikimedia.org",
+  "thumb.wikimedia.org",
 ]);
 
 export function proxyMediaUrl(src: string): string {

@@ -405,6 +405,8 @@ const IMAGE_CDN_HOSTNAMES = new Set([
   "lh4.googleusercontent.com",
   "lh5.googleusercontent.com",
   "lh6.googleusercontent.com",
+  "upload.wikimedia.org",
+  "thumb.wikimedia.org",
 ]);
 
 function isImageMedia(src: string): boolean {
@@ -435,6 +437,8 @@ const PROXIED_HOSTNAMES = new Set([
   "media3.giphy.com",
   "media4.giphy.com",
   "i.giphy.com",
+  "upload.wikimedia.org",
+  "thumb.wikimedia.org",
 ]);
 
 /**
