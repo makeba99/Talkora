@@ -38,7 +38,7 @@ type OwnerAnnouncement = Announcement & { viewCount?: number; dismissCount?: num
 type AiTutorConfigPublic = {
   version: 2;
   brain: {
-    provider: "openai";
+    provider: "openai" | "groq";
     primaryKeyMasked: string;
     secondaryKeyMasked: string;
     hasPrimary: boolean;
@@ -47,7 +47,7 @@ type AiTutorConfigPublic = {
     warnThresholdPct: number;
   };
   voice: {
-    provider: "openai";
+    provider: "openai" | "browser";
     primaryKeyMasked: string;
     secondaryKeyMasked: string;
     hasPrimary: boolean;
@@ -83,9 +83,13 @@ type AiConfigResponse = {
   };
 };
 
-const BRAIN_MODELS = [
+const BRAIN_MODELS_OPENAI = [
   { value: "gpt-4o", label: "gpt-4o (recommended)" },
   { value: "gpt-4o-mini", label: "gpt-4o-mini (faster, cheaper)" },
+];
+const BRAIN_MODELS_GROQ = [
+  { value: "llama-3.1-8b-instant", label: "llama-3.1-8b-instant (free, fast)" },
+  { value: "llama-3.3-70b-versatile", label: "llama-3.3-70b-versatile (free, smarter)" },
 ];
 const VOICE_MODELS = [
   { value: "tts-1-hd", label: "tts-1-hd (natural, higher quality)" },
@@ -2243,11 +2247,13 @@ function AiTutorTab() {
   const { toast } = useToast();
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  const [brainProvider, setBrainProvider] = useState<"openai" | "groq">("groq");
   const [brainPrimaryKey, setBrainPrimaryKey] = useState("");
   const [brainSecondaryKey, setBrainSecondaryKey] = useState("");
-  const [brainModel, setBrainModel] = useState("gpt-4o");
+  const [brainModel, setBrainModel] = useState("llama-3.1-8b-instant");
   const [brainWarn, setBrainWarn] = useState(80);
 
+  const [voiceProvider, setVoiceProvider] = useState<"openai" | "browser">("browser");
   const [voicePrimaryKey, setVoicePrimaryKey] = useState("");
   const [voiceSecondaryKey, setVoiceSecondaryKey] = useState("");
   const [voiceModel, setVoiceModel] = useState("tts-1-hd");
@@ -2264,8 +2270,10 @@ function AiTutorTab() {
   useEffect(() => {
     if (!data?.config) return;
     const c = data.config;
-    setBrainModel(c.brain.model || "gpt-4o");
+    setBrainProvider(c.brain.provider || "groq");
+    setBrainModel(c.brain.model || (c.brain.provider === "groq" ? "llama-3.1-8b-instant" : "gpt-4o"));
     setBrainWarn(c.brain.warnThresholdPct || 80);
+    setVoiceProvider(c.voice.provider || "browser");
     setVoiceModel(c.voice.model || "tts-1-hd");
     setFemaleVoice(c.voice.femaleVoice || "nova");
     setMaleVoice(c.voice.maleVoice || "onyx");
@@ -2277,18 +2285,22 @@ function AiTutorTab() {
     setVoiceSecondaryKey("");
   }, [data]);
 
+  const brainModels = brainProvider === "groq" ? BRAIN_MODELS_GROQ : BRAIN_MODELS_OPENAI;
+
   const saveMutation = useMutation({
     mutationFn: () =>
       apiRequest("PATCH", "/api/admin/ai-config", {
         config: {
           version: 2,
           brain: {
+            provider: brainProvider,
             primaryKey: brainPrimaryKey,
             secondaryKey: brainSecondaryKey,
             model: brainModel,
             warnThresholdPct: brainWarn,
           },
           voice: {
+            provider: voiceProvider,
             primaryKey: voicePrimaryKey,
             secondaryKey: voiceSecondaryKey,
             model: voiceModel,
@@ -2304,7 +2316,7 @@ function AiTutorTab() {
       setVoicePrimaryKey("");
       setVoiceSecondaryKey("");
       queryClient.invalidateQueries({ queryKey: ["/api/admin/ai-config"] });
-      toast({ title: "AI Tutor config saved", description: "Brain and Voice keys apply to live requests immediately." });
+      toast({ title: "AI Tutor config saved", description: "Brain and Voice settings apply to live requests immediately." });
     },
     onError: (err: any) => {
       toast({ title: "Save failed", description: err?.message, variant: "destructive" });
@@ -2382,9 +2394,9 @@ function AiTutorTab() {
             AI Tutor Configuration
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Two areas only: <strong>Brain</strong> (chat AI) and <strong>Voice</strong> (TTS).
-            Primary key is used first; Secondary fails over automatically on recoverable provider errors.
-            Keys are stored server-side and never returned in full.
+            Free path: <strong>Groq</strong> brain (no credit card) + <strong>Browser</strong> voice.
+            Optional OpenAI keys for higher quality. Primary fails over to Secondary on recoverable errors.
+            Keys stay server-side and are never returned in full.
           </p>
         </CardHeader>
       </Card>
@@ -2429,10 +2441,49 @@ function AiTutorTab() {
                 AI Brain
               </CardTitle>
               <p className="text-xs text-muted-foreground">
-                Provider: OpenAI · Model controls chat replies for the AI Tutor.
+                Recommended free: Groq — get a key at{" "}
+                <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" className="underline hover:text-foreground">
+                  console.groq.com/keys
+                </a>
+                {" "}(no credit card). Keys starting with <code className="text-[10px]">gsk_</code> auto-route to Groq.
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Provider</Label>
+                  <Select
+                    value={brainProvider}
+                    onValueChange={(v) => {
+                      const p = v as "openai" | "groq";
+                      setBrainProvider(p);
+                      setBrainModel(p === "groq" ? "llama-3.1-8b-instant" : "gpt-4o");
+                    }}
+                  >
+                    <SelectTrigger data-testid="select-brain-provider">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="groq">Groq (free tier)</SelectItem>
+                      <SelectItem value="openai">OpenAI (paid)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Model</Label>
+                  <Select value={brainModel} onValueChange={setBrainModel}>
+                    <SelectTrigger data-testid="select-brain-model">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {brainModels.map((m) => (
+                        <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label>Primary Brain API Key</Label>
@@ -2442,7 +2493,7 @@ function AiTutorTab() {
                     onChange={setBrainPrimaryKey}
                     hasStored={!!cfg?.brain.hasPrimary}
                     testId="input-brain-primary"
-                    placeholder="sk-..."
+                    placeholder={brainProvider === "groq" ? "gsk_..." : "sk-..."}
                   />
                   {cfg?.brain.primaryKeyMasked && (
                     <p className="text-[11px] font-mono text-muted-foreground">{cfg.brain.primaryKeyMasked}</p>
@@ -2456,7 +2507,7 @@ function AiTutorTab() {
                     onChange={setBrainSecondaryKey}
                     hasStored={!!cfg?.brain.hasSecondary}
                     testId="input-brain-secondary"
-                    placeholder="sk-..."
+                    placeholder="optional failover key"
                   />
                   {cfg?.brain.secondaryKeyMasked && (
                     <p className="text-[11px] font-mono text-muted-foreground">{cfg.brain.secondaryKeyMasked}</p>
@@ -2464,21 +2515,7 @@ function AiTutorTab() {
                 </div>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label>Model</Label>
-                  <Select value={brainModel} onValueChange={setBrainModel}>
-                    <SelectTrigger data-testid="select-brain-model">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {BRAIN_MODELS.map((m) => (
-                        <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
+              <div className="space-y-1.5 max-w-xs">
                   <Label>Warning threshold (app-tracked)</Label>
                   <Select value={String(brainWarn)} onValueChange={(v) => setBrainWarn(Number(v))}>
                     <SelectTrigger data-testid="select-brain-warn">
@@ -2490,7 +2527,6 @@ function AiTutorTab() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-4 text-sm">
@@ -2541,10 +2577,30 @@ function AiTutorTab() {
                 Voice
               </CardTitle>
               <p className="text-xs text-muted-foreground">
-                Provider: OpenAI TTS · Natural conversational voices for Maya (female) and Miles (male).
+                Free: <strong>Browser</strong> uses on-device voices (never expires). Optional OpenAI TTS for cloud quality.
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-1.5 max-w-sm">
+                <Label>Provider</Label>
+                <Select value={voiceProvider} onValueChange={(v) => setVoiceProvider(v as "openai" | "browser")}>
+                  <SelectTrigger data-testid="select-voice-provider">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="browser">Browser (free forever)</SelectItem>
+                    <SelectItem value="openai">OpenAI TTS (paid)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {voiceProvider === "browser" ? (
+                <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3 text-xs text-muted-foreground">
+                  Maya / Miles speak with the device&apos;s built-in neural voices. No API key or quota.
+                  Cloud TTS keys below are ignored while Browser is selected.
+                </div>
+              ) : (
+                <>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label>Primary Voice API Key</Label>
@@ -2630,7 +2686,11 @@ function AiTutorTab() {
                   </Select>
                 </div>
               </div>
+                </>
+              )}
 
+              {voiceProvider === "openai" && (
+                <>
               <div className="flex flex-wrap items-center gap-4 text-sm">
                 <span className="flex items-center gap-1.5">
                   {statusDot(status?.voice?.primary?.status || "UNKNOWN")}
@@ -2668,6 +2728,8 @@ function AiTutorTab() {
                   Test Secondary
                 </Button>
               </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -2692,8 +2754,7 @@ function AiTutorTab() {
               <RefreshCw className="h-4 w-4" />
             </Button>
             <p className="text-xs text-muted-foreground">
-              Leave key fields blank (or use Replace only when changing) to keep existing secrets.
-              Env fallbacks: OPENAI_API_KEY / AI_BRAIN_KEY_1·2 / AI_VOICE_KEY_1·2.
+              Free setup: Groq brain key + Browser voice. Env: GROQ_API_KEY, OPENAI_API_KEY, AI_BRAIN_KEY_2.
             </p>
           </div>
         </>

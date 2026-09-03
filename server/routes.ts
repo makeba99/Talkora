@@ -15,7 +15,7 @@ import webpush from "web-push";
 import { externalCache } from "./cache";
 import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, aiTutorRateLimiter, messageRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
 import { setCleanupContext, getCleanupStats, runCleanupNow } from "./cleanup";
-import { getAiTutorConfig, setAiTutorConfig, maskConfig, mergeIncoming, sanitizeKey, voiceConfigPublic, type AiTutorConfig } from "./ai-config";
+import { getAiTutorConfig, setAiTutorConfig, maskConfig, mergeIncoming, sanitizeKey, voiceConfigPublic, resolveBrainEndpoint, type AiTutorConfig } from "./ai-config";
 import {
   generateAIResponse,
   generateSpeech,
@@ -2148,8 +2148,9 @@ export async function registerRoutes(
       const cfg = await getAiTutorConfig();
       const hasVoice = !!(sanitizeKey(cfg.voice.primaryKey) || sanitizeKey(cfg.voice.secondaryKey));
       const publicCfg = voiceConfigPublic(cfg);
+      const useBrowser = cfg.voice.provider === "browser" || !hasVoice;
       res.json({
-        provider: hasVoice ? "openai" : "browser",
+        provider: useBrowser ? "browser" : "openai",
         voiceId: publicCfg.voiceId || null,
         maleVoiceId: publicCfg.maleVoiceId || null,
       });
@@ -2201,6 +2202,12 @@ export async function registerRoutes(
         voiceId: typeof voiceId === "string" && /^[a-z0-9_-]{2,32}$/i.test(voiceId) ? voiceId : null,
       });
       if (!result.ok || !result.body) {
+        if (result.error === "browser-tts" || result.status === 501) {
+          return res.status(501).json({
+            error: "browser-tts",
+            message: "Use free browser voice (no cloud TTS key configured).",
+          });
+        }
         console.error("[AI Tutor TTS] Provider error:", result.status, result.error);
         const status = result.status >= 500 ? 502 : result.status || 502;
         return res.status(status).json({
@@ -2439,21 +2446,22 @@ export async function registerRoutes(
 
       const cfg = await getAiTutorConfig();
       const brainKeys = await listUsableProviderKeys("brain");
-      const model = cfg.brain.model || "gpt-4o";
       const openaiBaseUrl = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1";
 
       if (!brainKeys.length) {
         sendEvent({
-          error: "AI is not configured. Add Brain API keys in Admin → AI Tutor.",
+          error: "AI is not configured. Add a free Groq key (console.groq.com) or OpenAI key in Admin → AI Tutor.",
           code: "missing_api_configuration",
         });
         return res.end();
       }
 
       for (const { key, slot } of brainKeys) {
-        streamed = await streamTokens("openai", model, openaiBaseUrl, key);
+        const endpoint = resolveBrainEndpoint(key, cfg);
+        const model = endpoint.model;
+        streamed = await streamTokens("openai", model, endpoint.baseUrl || openaiBaseUrl, key);
         if (streamed) {
-          console.log(`[AI Stream] brain/${slot}/${model} streamed OK`);
+          console.log(`[AI Stream] brain/${slot}/${endpoint.provider}/${model} streamed OK`);
           break;
         }
         console.warn(`[AI Stream] brain/${slot} stream failed — trying next key if available`);
@@ -2461,7 +2469,8 @@ export async function registerRoutes(
 
       if (streamed) {
         await incrementTalkingAiUsage(callerId);
-        sendEvent({ done: true, model, latencyMs: Date.now() - startTime });
+        const usedModel = resolveBrainEndpoint(brainKeys[0].key, cfg).model;
+        sendEvent({ done: true, model: usedModel, latencyMs: Date.now() - startTime });
       } else {
         // Streaming failed on both keys — fall back to non-stream completion and emit as tokens.
         const aiResult = await generateAIResponse({
@@ -2474,7 +2483,7 @@ export async function registerRoutes(
           await incrementTalkingAiUsage(callerId);
           sendEvent({
             done: true,
-            model: aiResult.model || model,
+            model: aiResult.model || cfg.brain.model,
             latencyMs: Date.now() - startTime,
             failover: true,
           });

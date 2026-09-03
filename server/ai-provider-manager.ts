@@ -10,6 +10,7 @@ import { storage } from "./storage";
 import {
   getAiTutorConfig,
   sanitizeKey,
+  resolveBrainEndpoint,
   type AiTutorConfig,
   type KeyHealth,
 } from "./ai-config";
@@ -309,7 +310,8 @@ async function maybeWarnThreshold(kind: ProviderKind, cfg: AiTutorConfig) {
 }
 
 /**
- * Run an OpenAI chat completion with primary→secondary brain key failover.
+ * Run an OpenAI-compatible chat completion with primary→secondary brain key failover.
+ * Supports OpenAI and free Groq (auto-detected via gsk_ keys / provider setting).
  */
 export async function generateAIResponse(opts: {
   messages: Array<{ role: string; content: string }>;
@@ -331,32 +333,53 @@ export async function generateAIResponse(opts: {
 }> {
   await ensureUsageLoaded();
   const cfg = await getAiTutorConfig();
-  const baseUrl = opts.baseUrl || process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1";
-  const model = cfg.brain.model || "gpt-4o";
 
   const order: KeySlot[] = ["primary", "secondary"];
-  let failover = false;
-  let lastError = "No brain API keys configured";
+  const configured = order.filter((slot) => !!getKey(cfg, "brain", slot));
+  if (!configured.length) {
+    return {
+      ok: false,
+      status: 503,
+      content: "",
+      model: cfg.brain.model,
+      inputTokens: 0,
+      outputTokens: 0,
+      usedSlot: null,
+      failover: false,
+      error:
+        "No brain API keys configured. Add a free Groq key (console.groq.com) or OpenAI key in Admin → AI Tutor.",
+    };
+  }
 
-  for (const slot of order) {
+  // Prefer healthy keys; if all are cooling down, still try them (last resort)
+  // so a new/recovered key is not stuck behind a stale RATE_LIMITED label.
+  let attempts = configured.filter((slot) => isUsable(brainState[slot]));
+  if (!attempts.length) {
+    console.warn("[ai-provider] All brain keys on cooldown — retrying anyway");
+    attempts = configured;
+  }
+
+  let failover = false;
+  let lastError = "Brain provider unavailable";
+  let lastModel = cfg.brain.model;
+
+  for (const slot of attempts) {
     const key = getKey(cfg, "brain", slot);
     if (!key) continue;
-    const st = brainState[slot];
-    if (!isUsable(st) && slot === "primary") {
-      // try secondary
-      continue;
-    }
-    if (!isUsable(st) && slot === "secondary") continue;
+    const endpoint = opts.baseUrl
+      ? { baseUrl: opts.baseUrl, model: cfg.brain.model, provider: cfg.brain.provider }
+      : resolveBrainEndpoint(key, cfg);
+    lastModel = endpoint.model;
 
     try {
-      const r = await fetch(`${baseUrl}/chat/completions`, {
+      const r = await fetch(`${endpoint.baseUrl}/chat/completions`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${key}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model,
+          model: endpoint.model,
           messages: opts.messages,
           max_tokens: opts.maxTokens ?? 160,
           temperature: opts.temperature ?? 0.62,
@@ -368,8 +391,8 @@ export async function generateAIResponse(opts: {
         const classified = classifyProviderError(r.status, raw);
         markFailure("brain", slot, classified.status, classified.message);
         lastError = classified.message;
-        console.warn(`[ai-provider] Brain ${slot} failed: ${classified.message}`);
-        if (classified.failover && slot === "primary") {
+        console.warn(`[ai-provider] Brain ${slot} (${endpoint.provider}) failed: ${classified.message}`);
+        if (classified.failover && slot === "primary" && attempts.includes("secondary")) {
           failover = true;
           await pushAiAlert({
             kind: "brain",
@@ -384,7 +407,7 @@ export async function generateAIResponse(opts: {
             ok: false,
             status: r.status,
             content: "",
-            model,
+            model: endpoint.model,
             inputTokens: 0,
             outputTokens: 0,
             usedSlot: slot,
@@ -422,7 +445,7 @@ export async function generateAIResponse(opts: {
         ok: true,
         status: 200,
         content,
-        model,
+        model: endpoint.model,
         inputTokens,
         outputTokens,
         usedSlot: slot,
@@ -433,7 +456,7 @@ export async function generateAIResponse(opts: {
       markFailure("brain", slot, "ERROR", err?.message || "network error");
       lastError = err?.message || "network error";
       console.warn(`[ai-provider] Brain ${slot} exception: ${lastError}`);
-      if (slot === "primary") {
+      if (slot === "primary" && attempts.includes("secondary")) {
         failover = true;
         continue;
       }
@@ -451,7 +474,7 @@ export async function generateAIResponse(opts: {
     ok: false,
     status: 503,
     content: "",
-    model,
+    model: lastModel,
     inputTokens: 0,
     outputTokens: 0,
     usedSlot: null,
@@ -462,6 +485,7 @@ export async function generateAIResponse(opts: {
 
 /**
  * Generate speech with primary→secondary voice key failover (OpenAI TTS).
+ * When voice.provider is "browser", cloud TTS is skipped (client uses free SpeechSynthesis).
  */
 export async function generateSpeech(opts: {
   text: string;
@@ -482,8 +506,6 @@ export async function generateSpeech(opts: {
   const cfg = await getAiTutorConfig();
   const isMale = /male|dude|miles/i.test(String(opts.personaVoice || ""));
   const configured = isMale ? cfg.voice.maleVoice : cfg.voice.femaleVoice;
-  // Prefer admin-configured voices. Accept a client voiceId only if it matches
-  // one of the two admin-selected OpenAI voice names (never secrets).
   const clientVid = typeof opts.voiceId === "string" ? opts.voiceId.trim() : "";
   const voiceName =
     clientVid &&
@@ -496,15 +518,41 @@ export async function generateSpeech(opts: {
     return { ok: false, status: 400, contentType: "", error: "empty text", usedSlot: null, failover: false, voiceUsed: voiceName };
   }
 
+  if (cfg.voice.provider === "browser") {
+    return {
+      ok: false,
+      status: 501,
+      contentType: "",
+      error: "browser-tts",
+      usedSlot: null,
+      failover: false,
+      voiceUsed: voiceName,
+    };
+  }
+
   const order: KeySlot[] = ["primary", "secondary"];
+  const configuredSlots = order.filter((slot) => !!getKey(cfg, "voice", slot));
+  if (!configuredSlots.length) {
+    return {
+      ok: false,
+      status: 501,
+      contentType: "",
+      error: "browser-tts",
+      usedSlot: null,
+      failover: false,
+      voiceUsed: voiceName,
+    };
+  }
+
+  let attempts = configuredSlots.filter((slot) => isUsable(voiceState[slot]));
+  if (!attempts.length) attempts = configuredSlots;
+
   let failover = false;
   let lastError = "No voice API keys configured";
 
-  for (const slot of order) {
+  for (const slot of attempts) {
     const key = getKey(cfg, "voice", slot);
     if (!key) continue;
-    if (!isUsable(voiceState[slot]) && slot === "primary") continue;
-    if (!isUsable(voiceState[slot]) && slot === "secondary") continue;
 
     const result = await openAiSynthesize(text, voiceName, model, key);
     if (!result.ok) {
@@ -512,7 +560,7 @@ export async function generateSpeech(opts: {
       markFailure("voice", slot, classified.status, classified.message);
       lastError = classified.message;
       console.warn(`[ai-provider] Voice ${slot} failed: ${classified.message}`);
-      if (classified.failover && slot === "primary") {
+      if (classified.failover && slot === "primary" && attempts.includes("secondary")) {
         failover = true;
         await pushAiAlert({
           kind: "voice",
@@ -595,7 +643,8 @@ export async function testBrainKey(slot: KeySlot, overrideKey?: string): Promise
   }
 
   try {
-    const r = await fetch("https://api.openai.com/v1/models", {
+    const endpoint = resolveBrainEndpoint(key, cfg);
+    const r = await fetch(`${endpoint.baseUrl}/models`, {
       headers: { Authorization: `Bearer ${key}` },
     });
     if (r.ok) {
@@ -603,13 +652,13 @@ export async function testBrainKey(slot: KeySlot, overrideKey?: string): Promise
         markSuccess("brain", slot);
         brainState[slot].status = "HEALTHY";
       }
-      return { ok: true, message: "Connection successful", status: "HEALTHY" };
+      return { ok: true, message: `Connection successful (${endpoint.provider})`, status: "HEALTHY" };
     }
     const classified = classifyProviderError(r.status, await r.text().catch(() => ""));
     if (!probeOnly) markFailure("brain", slot, classified.status, classified.message);
     const msg =
       classified.status === "INVALID" ? "Invalid API key" :
-      classified.status === "QUOTA_EXHAUSTED" ? "Quota exceeded (OpenAI billing/credits)" :
+      classified.status === "QUOTA_EXHAUSTED" ? "Quota exceeded (billing/credits)" :
       classified.status === "RATE_LIMITED" ? "Rate limited — wait a minute and retry" :
       "Provider unavailable";
     return { ok: false, message: msg, status: classified.status };
