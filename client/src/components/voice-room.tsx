@@ -1160,6 +1160,7 @@ function ParticipantCard({
               <div className="flex flex-col min-w-0 flex-1">
                 <div className="flex items-center gap-1 min-w-0">
                   {isRoomOwner && <Crown className="w-2.5 h-2.5 text-yellow-300 flex-shrink-0" />}
+                  {(p as any).vipTier && !isRoomOwner && <span className="text-[9px] flex-shrink-0" title="VIP">👑</span>}
                   <span className="text-[10px] font-semibold text-white leading-tight truncate drop-shadow-md" data-testid={`text-yt-card-name-${p.id}`}>
                     {isMe ? "You" : getUserDisplayName(p)}
                   </span>

@@ -1195,6 +1195,11 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                           {getUserInitials(p)}
                         </AvatarFallback>
                       </Avatar>
+                      {(p as any).vipTier ? (
+                        <div className="absolute -top-1 -right-1 z-[2] text-[10px] leading-none drop-shadow" title="VIP">
+                          👑
+                        </div>
+                      ) : null}
                       <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
                         <UserBadgePips badges={badges} userId={p.id} compact />
                       </div>

@@ -29,6 +29,8 @@ export const users = pgTable("users", {
   socialsPinned: boolean("socials_pinned").notNull().default(false),
   status: text("status").notNull().default("online"),
   role: varchar("role", { length: 20 }).notNull().default("user"),
+  vipTier: varchar("vip_tier", { length: 20 }),
+  vipSince: timestamp("vip_since"),
   warningCount: integer("warning_count").notNull().default(0),
   restrictedUntil: timestamp("restricted_until"),
   restrictedReason: text("restricted_reason"),

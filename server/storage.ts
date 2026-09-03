@@ -68,6 +68,8 @@ import {
   transactions,
   type Transaction,
   type InsertTransaction,
+  paypalPayments,
+  type PaypalPayment,
   themeVisibility,
   themeOrders,
   type ThemeOrder,
@@ -274,6 +276,8 @@ export interface IStorage {
   getPushSubscribersWithUsers(): Promise<Array<{ userId: string; displayName: string | null; email: string | null; deviceCount: number }>>;
 
   createTransaction(data: InsertTransaction): Promise<Transaction>;
+  getPaypalPaymentByTxnId(txnId: string): Promise<PaypalPayment | undefined>;
+  recordPaypalPayment(data: { userId: string; txnId: string; amountCents: number; currency: string; vipTier: string }): Promise<PaypalPayment>;
   getTransactionsByUser(userId: string): Promise<Transaction[]>;
   getAllTransactions(limit?: number): Promise<Transaction[]>;
   updateTransactionStatus(id: string, status: string, confirmedById?: string): Promise<Transaction | undefined>;
@@ -1940,6 +1944,29 @@ export class DatabaseStorage implements IStorage {
       email: r.email ?? null,
       deviceCount: Number(r.device_count),
     }));
+  }
+
+  async getPaypalPaymentByTxnId(txnId: string): Promise<PaypalPayment | undefined> {
+    const [row] = await db.select().from(paypalPayments).where(eq(paypalPayments.txnId, txnId)).limit(1);
+    return row;
+  }
+
+  async recordPaypalPayment(data: {
+    userId: string;
+    txnId: string;
+    amountCents: number;
+    currency: string;
+    vipTier: string;
+  }): Promise<PaypalPayment> {
+    const [row] = await db.insert(paypalPayments).values({
+      userId: data.userId,
+      txnId: data.txnId,
+      amountCents: data.amountCents,
+      currency: data.currency,
+      vipTier: data.vipTier,
+      status: "completed",
+    }).returning();
+    return row;
   }
 
   async createTransaction(data: InsertTransaction): Promise<Transaction> {

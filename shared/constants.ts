@@ -107,7 +107,65 @@ export const BADGE_TYPES = {
     color: "#06b6d4",
     quote: "A month of mastery! You're a true language learning legend.",
   },
+  vip_coffee: {
+    id: "vip_coffee",
+    label: "VIP Coffee",
+    emoji: "☕",
+    color: "#d97706",
+    quote: "You bought the house a coffee. The room is warmer because of you.",
+  },
+  vip_plus: {
+    id: "vip_plus",
+    label: "VIP Plus",
+    emoji: "✨",
+    color: "#a855f7",
+    quote: "A true supporter. Your glow is now part of the platform.",
+  },
+  vip_elite: {
+    id: "vip_elite",
+    label: "VIP Elite",
+    emoji: "👑",
+    color: "#f59e0b",
+    quote: "Elite VIP. You didn't just join the room — you own the night.",
+  },
 } as const;
+
+export const VIP_PLANS = [
+  {
+    id: "coffee" as const,
+    amount: 5,
+    label: "Coffee",
+    tagline: "VIP badge + gold name",
+    badgeType: "vip_coffee" as const,
+    rank: 1,
+  },
+  {
+    id: "plus" as const,
+    amount: 15,
+    label: "VIP Plus",
+    tagline: "Exclusive rings + lobby boost",
+    badgeType: "vip_plus" as const,
+    rank: 2,
+  },
+  {
+    id: "elite" as const,
+    amount: 25,
+    label: "VIP Elite",
+    tagline: "Crown glow + top of the lobby",
+    badgeType: "vip_elite" as const,
+    rank: 3,
+  },
+] as const;
+
+export type VipPlanId = (typeof VIP_PLANS)[number]["id"];
+
+export function vipPlanFromAmount(amount: number): (typeof VIP_PLANS)[number] | null {
+  return VIP_PLANS.find((p) => p.amount === Math.round(amount)) ?? null;
+}
+
+export function vipRank(tier: string | null | undefined): number {
+  return VIP_PLANS.find((p) => p.id === tier)?.rank ?? 0;
+}
 
 export type BadgeType = keyof typeof BADGE_TYPES;
 

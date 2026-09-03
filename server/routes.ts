@@ -3,7 +3,7 @@ import { type Server } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { storage } from "./storage";
 import { isAuthenticated } from "./replit_integrations/auth";
-import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema, insertUserCommentSchema, insertBadgeApplicationSchema, insertAnnouncementSchema, BADGE_TYPES } from "@shared/schema";
+import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema, insertUserCommentSchema, insertBadgeApplicationSchema, insertAnnouncementSchema, BADGE_TYPES, VIP_PLANS, vipPlanFromAmount, vipRank } from "@shared/schema";
 import type { User } from "@shared/schema";
 import { z } from "zod";
 import multer, { type StorageEngine } from "multer";
@@ -2405,7 +2405,7 @@ export async function registerRoutes(
   const WIKIMEDIA_UA = "Vextorn/1.0 (https://vextorn.com; GIF search)";
 
   function getGiphyApiKey(): string | null {
-    const key = process.env.GIPHY_API_KEY?.trim() || "";
+    const key = (process.env.GIPHY_API_KEY || process.env.GIPHY_KEY || "").trim();
     if (!key || key === RETIRED_GIPHY_PUBLIC_BETA_KEY || key === "your-giphy-key") {
       return null;
     }
@@ -2547,9 +2547,10 @@ export async function registerRoutes(
     return { results, next };
   }
 
-  async function fetchGifs(kind: "search" | "trending", params: Record<string, string>): Promise<{ results: any[]; next: string }> {
-    if (getGiphyApiKey()) return fetchGiphy(kind, params);
-    return fetchWikimedia(kind, params);
+  async function fetchGifs(kind: "search" | "trending", params: Record<string, string>): Promise<{ results: any[]; next: string; provider: "giphy" | "wikimedia" }> {
+    const provider = gifProvider();
+    const result = provider === "giphy" ? await fetchGiphy(kind, params) : await fetchWikimedia(kind, params);
+    return { ...result, provider };
   }
 
   app.get("/api/gifs/search", isAuthenticated, async (req: any, res) => {
@@ -2557,7 +2558,7 @@ export async function registerRoutes(
       const query = req.query.q as string;
       const pos = req.query.pos as string | undefined;
       if (!query || query.trim().length === 0) {
-        return res.json({ results: [], next: "" });
+        return res.json({ results: [], next: "", provider: gifProvider() });
       }
       const offset = pos ? Math.max(0, parseInt(pos, 10) || 0) : 0;
       const cacheKey = `gif:search:${gifProvider()}:${query.toLowerCase().trim()}:${offset}`;
@@ -2585,6 +2586,141 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("GIF trending error:", err);
       res.status(err?.status || 500).json({ message: err?.message || "Failed to load trending GIFs" });
+    }
+  });
+
+  function paypalMerchantId(): string {
+    return (process.env.PAYPAL_MERCHANT_ID || "").trim();
+  }
+
+  function paypalCheckoutHost(): string {
+    return process.env.PAYPAL_SANDBOX === "true"
+      ? "https://www.sandbox.paypal.com"
+      : "https://www.paypal.com";
+  }
+
+  function paypalIpnHost(): string {
+    return process.env.PAYPAL_SANDBOX === "true"
+      ? "https://ipnpb.sandbox.paypal.com"
+      : "https://ipnpb.paypal.com";
+  }
+
+  function publicAppOrigin(req: any): string {
+    const fromEnv = process.env.PUBLIC_APP_URL || process.env.CALLBACK_URL || "";
+    if (fromEnv) {
+      try { return new URL(fromEnv).origin; } catch { /* ignore */ }
+    }
+    const host = String(req.get?.("x-forwarded-host") || req.get?.("host") || "vextorn.com");
+    const proto = String(req.get?.("x-forwarded-proto") || "https");
+    return `${proto}://${host.split(",")[0].trim()}`;
+  }
+
+  async function grantVipFromPayment(userId: string, amount: number, txnId: string) {
+    const plan = vipPlanFromAmount(amount);
+    if (!plan) return null;
+    const existing = await storage.getPaypalPaymentByTxnId(txnId);
+    if (existing) return existing;
+    const user = await storage.getUser(userId);
+    if (!user) return null;
+    await storage.recordPaypalPayment({
+      userId,
+      txnId,
+      amountCents: Math.round(amount * 100),
+      currency: "USD",
+      vipTier: plan.id,
+    });
+    const nextTier = vipRank(plan.id) >= vipRank(user.vipTier) ? plan.id : user.vipTier;
+    await storage.updateUser(userId, {
+      vipTier: nextTier || plan.id,
+      vipSince: user.vipSince || new Date(),
+    } as any);
+    const badgeType = plan.badgeType;
+    const already = await storage.hasUserBadge(userId, badgeType);
+    if (!already) {
+      await storage.awardBadge({ userId, badgeType, awardedById: "system" });
+    }
+    for (const parts of roomParticipants.values()) {
+      const live = parts.get(userId);
+      if (live) parts.set(userId, { ...live, vipTier: nextTier || plan.id, vipSince: user.vipSince || new Date() } as any);
+    }
+    return plan;
+  }
+
+  app.get("/api/vip/config", (_req, res) => {
+    res.json({
+      configured: !!paypalMerchantId(),
+      plans: VIP_PLANS.map((p) => ({ id: p.id, amount: p.amount, label: p.label, tagline: p.tagline })),
+    });
+  });
+
+  app.post("/api/vip/checkout", isAuthenticated, async (req: any, res) => {
+    try {
+      const merchant = paypalMerchantId();
+      if (!merchant) {
+        return res.status(503).json({ message: "PayPal is not configured yet. Add PAYPAL_MERCHANT_ID on Railway." });
+      }
+      const amount = Number(req.body?.amount);
+      const plan = vipPlanFromAmount(amount);
+      if (!plan) return res.status(400).json({ message: "Choose $5, $15, or $25." });
+      const userId = String((req.user as any).id);
+      const origin = publicAppOrigin(req);
+      const params = new URLSearchParams({
+        cmd: "_xclick",
+        business: merchant,
+        item_name: `Vextorn ${plan.label}`,
+        item_number: plan.id,
+        amount: String(plan.amount),
+        currency_code: "USD",
+        custom: userId,
+        no_shipping: "1",
+        no_note: "1",
+        rm: "1",
+        return: `${origin}/?vip=thanks`,
+        cancel_return: `${origin}/?vip=cancel`,
+        notify_url: `${origin}/api/paypal/ipn`,
+      });
+      res.json({ url: `${paypalCheckoutHost()}/cgi-bin/webscr?${params.toString()}` });
+    } catch (err: any) {
+      console.error("VIP checkout error:", err);
+      res.status(500).json({ message: "Could not start PayPal checkout." });
+    }
+  });
+
+  app.post("/api/paypal/ipn", async (req: any, res) => {
+    res.status(200).send("OK");
+    try {
+      const body = req.body && typeof req.body === "object" ? req.body : {};
+      const params = new URLSearchParams({ cmd: "_notify-validate" });
+      for (const [key, value] of Object.entries(body)) {
+        if (typeof value === "string") params.append(key, value);
+      }
+      const verifyRes = await fetch(`${paypalIpnHost()}/cgi-bin/webscr`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: params.toString(),
+      });
+      const verified = (await verifyRes.text()).trim() === "VERIFIED";
+      if (!verified) {
+        console.warn("[paypal] IPN not verified");
+        return;
+      }
+      if (String(body.payment_status || "") !== "Completed") return;
+      if (String(body.mc_currency || "").toUpperCase() !== "USD") return;
+      const merchant = paypalMerchantId();
+      const receiverId = String(body.receiver_id || "");
+      const receiverEmail = String(body.receiver_email || "");
+      if (merchant && receiverId && receiverId !== merchant && receiverEmail.toLowerCase() !== merchant.toLowerCase()) {
+        console.warn("[paypal] IPN receiver mismatch");
+        return;
+      }
+      const userId = String(body.custom || "");
+      const txnId = String(body.txn_id || "");
+      const amount = parseFloat(String(body.mc_gross || "0"));
+      if (!userId || !txnId) return;
+      const plan = await grantVipFromPayment(userId, amount, txnId);
+      if (plan) console.log(`[paypal] granted ${plan.id} VIP to ${userId} (${txnId})`);
+    } catch (err) {
+      console.error("PayPal IPN error:", err);
     }
   });
 
@@ -3962,7 +4098,12 @@ export async function registerRoutes(
       const updateData: any = {};
       if (displayName !== undefined) updateData.displayName = displayName;
       if (profileImageUrl !== undefined) updateData.profileImageUrl = normalizeProfileImageUrl(profileImageUrl);
-      if (avatarRing !== undefined) updateData.avatarRing = avatarRing;
+      if (avatarRing !== undefined) {
+        if (String(avatarRing).startsWith("vip-") && !vipRank(_profileUser?.vipTier)) {
+          return res.status(403).json({ message: "VIP rings are for supporters. Buy a coffee to unlock them." });
+        }
+        updateData.avatarRing = avatarRing;
+      }
       if (flairBadge !== undefined) updateData.flairBadge = flairBadge;
       if (bio !== undefined) updateData.bio = bio;
       if (profileDecoration !== undefined) updateData.profileDecoration = profileDecoration;

@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, Coffee, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, BellOff, Palette, Users as UsersIcon, PinOff, Anchor, ArrowRight, LayoutGrid, Hammer } from "lucide-react";
+import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, BellOff, Palette, Users as UsersIcon, PinOff, Anchor, ArrowRight, LayoutGrid, Hammer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
+import { VipSupportButton } from "@/components/vip-support-button";
 import { VextornMark } from "@/components/vextorn-logo";
 import { showHintOnce } from "@/lib/hints";
 
@@ -70,7 +71,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useSocket } from "@/lib/socket-context";
 import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { LANGUAGES, FLAG_EMOJI } from "@shared/constants";
+import { LANGUAGES, FLAG_EMOJI, vipRank } from "@shared/constants";
 import type { Announcement, Follow, Room, User } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import {
@@ -471,6 +472,22 @@ export default function Lobby() {
   useLowBandwidthHint();
   const isMobileScreen = useIsMobile();
   const [, navigate] = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const vip = params.get("vip");
+    if (vip === "thanks") {
+      toast({
+        title: "Thank you!",
+        description: "PayPal is confirming your payment. VIP usually unlocks within a minute — refresh if it is not there yet.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      window.history.replaceState({}, "", window.location.pathname + window.location.hash);
+    } else if (vip === "cancel") {
+      toast({ title: "Payment cancelled", description: "No charge was made." });
+      window.history.replaceState({}, "", window.location.pathname + window.location.hash);
+    }
+  }, [toast]);
   const isAdminUser = user?.role === "admin" || user?.role === "superadmin" || user?.email === "dj55jggg@gmail.com";
   const [selectedLanguage, setSelectedLanguage] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -1423,11 +1440,22 @@ export default function Lobby() {
           return matchesLang && matchesSearch;
         })
         .sort((a, b) => {
+          const aParts = mergedRoomParticipants[a.id] || [];
+          const bParts = mergedRoomParticipants[b.id] || [];
+          const aVip = Math.max(
+            vipRank((aParts.find((p) => p.id === a.ownerId) as any)?.vipTier),
+            ...aParts.map((p) => vipRank((p as any).vipTier)),
+          );
+          const bVip = Math.max(
+            vipRank((bParts.find((p) => p.id === b.ownerId) as any)?.vipTier),
+            ...bParts.map((p) => vipRank((p as any).vipTier)),
+          );
+          if (aVip !== bVip) return bVip - aVip;
           const aVotes = voteData?.counts?.[a.id] || 0;
           const bVotes = voteData?.counts?.[b.id] || 0;
           return bVotes - aVotes;
         }),
-    [rooms, selectedLanguage, searchQuery, voteData]
+    [rooms, selectedLanguage, searchQuery, voteData, mergedRoomParticipants]
   );
   // Deferred copy: React renders the room grid with this value. When
   // filteredRooms changes (new data / filter) React first commits the cheap
@@ -1599,18 +1627,7 @@ export default function Lobby() {
           <nav aria-label="Site navigation" className="flex items-center gap-1 flex-shrink-0">
             {user ? (
               <>
-                <a
-                  href="https://www.buymeacoffee.com/vextorn"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="header-pro-btn inline-flex items-center h-9 px-3.5 rounded-full text-[12px] font-semibold"
-                  data-testid="button-buy-me-coffee-nav"
-                  title="Buy me a coffee"
-                  aria-label="Buy me a coffee"
-                >
-                  <Coffee className="w-4 h-4 sm:mr-1.5 text-neu-orange" />
-                  <span className="hidden sm:inline">Buy Me a Coffee</span>
-                </a>
+                <VipSupportButton />
                 {isAdminUser && (
                   <button
                     onClick={() => navigate("/admin")}
@@ -1848,17 +1865,7 @@ export default function Lobby() {
               </>
             ) : (
               <>
-                <a
-                  href="https://www.buymeacoffee.com/vextorn"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="neu-btn inline-flex items-center h-8 px-3 rounded-full text-xs font-semibold"
-                  data-testid="button-buy-me-coffee-nav-guest"
-                  aria-label="Buy me a coffee"
-                >
-                  <Coffee className="w-3.5 h-3.5 mr-1.5 text-neu-orange" />
-                  <span className="hidden sm:inline" aria-hidden="true">Buy Me a Coffee</span>
-                </a>
+                <VipSupportButton guest />
                 <a
                   href="/api/login"
                   data-testid="button-sign-in"

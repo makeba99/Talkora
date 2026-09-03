@@ -92,7 +92,7 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const currentQueryRef = useRef<string>("");
   const searchAbortRef = useRef<AbortController | null>(null);
-  const searchRequestIdRef = useRef(0);
+  const [gifSource, setGifSource] = useState<"giphy" | "wikimedia" | null>(null);
 
   const searchGifs = useCallback(async (query: string) => {
     if (!query.trim()) {
@@ -121,6 +121,7 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
       if (requestId !== searchRequestIdRef.current) return;
       setGifs(data.results || []);
       setNextPos(data.next || "");
+      if (data.provider === "giphy" || data.provider === "wikimedia") setGifSource(data.provider);
     } catch (err: any) {
       if (err?.name === "AbortError") return;
       setGifError(err.message || "Failed to search GIFs");
@@ -144,6 +145,7 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
       const data = await res.json();
       setGifs(data.results || []);
       setNextPos(data.next || "");
+      if (data.provider === "giphy" || data.provider === "wikimedia") setGifSource(data.provider);
     } catch (err: any) {
       setGifError(err.message || "GIF search unavailable");
       setGifs([]);
@@ -342,7 +344,9 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
           </div>
         </div>
         <div className="flex-shrink-0 px-2 pb-1.5 pt-0.5 border-t">
-          <p className="text-[10px] text-muted-foreground text-right">Powered by Imgur</p>
+          <p className="text-[10px] text-muted-foreground text-right">
+            {gifSource === "wikimedia" ? "Powered by Wikimedia Commons" : "Powered by GIPHY"}
+          </p>
         </div>
       </PopoverContent>
     </Popover>

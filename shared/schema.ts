@@ -7,8 +7,8 @@ export * from "./models/auth";
 // Re-export pure data constants from the zero-dependency constants module.
 // This lets server code import them from @shared/schema as before, while
 // client code can import from @shared/constants to avoid bundling drizzle/zod.
-export { TALK_PERMISSIONS, FEATURE_PERMISSIONS, BADGE_TYPES, BADGE_TYPES as BADGE_TYPE_MAP, LANGUAGES, LEVELS, SPECIALIZATIONS } from "./constants";
-export type { TalkPermission, FeaturePermission, BadgeType } from "./constants";
+export { TALK_PERMISSIONS, FEATURE_PERMISSIONS, BADGE_TYPES, BADGE_TYPES as BADGE_TYPE_MAP, LANGUAGES, LEVELS, SPECIALIZATIONS, VIP_PLANS, vipPlanFromAmount, vipRank } from "./constants";
+export type { TalkPermission, FeaturePermission, BadgeType, VipPlanId } from "./constants";
 
 export const rooms = pgTable("rooms", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
@@ -495,6 +495,21 @@ export const roomJoins = pgTable("room_joins", {
   rjCountryIdx: index("room_joins_country_idx").on(table.country),
 }));
 export type RoomJoin = typeof roomJoins.$inferSelect;
+
+export const paypalPayments = pgTable("paypal_payments", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  txnId: varchar("txn_id", { length: 64 }).notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  currency: varchar("currency", { length: 8 }).notNull().default("USD"),
+  vipTier: varchar("vip_tier", { length: 20 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("completed"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  paypalTxnIdx: uniqueIndex("paypal_payments_txn_id_idx").on(table.txnId),
+  paypalUserIdx: index("paypal_payments_user_id_idx").on(table.userId),
+}));
+export type PaypalPayment = typeof paypalPayments.$inferSelect;
 
 export const transactions = pgTable("transactions", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),

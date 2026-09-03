@@ -35,6 +35,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PROFILE_DECORATIONS, ProfileDecoration } from "@/components/profile-decorations";
 import { PROFILE_ANIMATIONS, ProfileAnimationOverlay } from "@/lib/profile-animations";
 import { BADGE_TYPES } from "@shared/constants";
+import { isVipUser, vipNameClass } from "@/lib/vip";
 
 // AVATAR_RINGS / FLAIR_BADGES / getAvatarRingClass / getFlairIcon now live
 // in @/lib/avatar-ring so the lobby's room cards can import the small lookup
@@ -736,8 +737,8 @@ export function ProfileDropdown({
               </Avatar>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-semibold truncate" data-testid="text-dropdown-user-name">
-                {getUserDisplayName(user)}
+              <p className={`text-[13px] font-semibold truncate ${vipNameClass(user)}`} data-testid="text-dropdown-user-name">
+                {isVipUser(user) ? "👑 " : ""}{getUserDisplayName(user)}
               </p>
               <p
                 className="text-[10.5px] truncate"
@@ -1070,14 +1071,23 @@ export function ProfileDropdown({
                   )}
                 </div>
                 <div className="grid grid-cols-4 gap-2">
-                  {AVATAR_RINGS.map((ring, idx) => (
+                  {AVATAR_RINGS.map((ring, idx) => {
+                    const vipOnly = "vip" in ring && Boolean((ring as { vip?: boolean }).vip);
+                    const locked = vipOnly && !isVipUser(user);
+                    return (
                     <button
                       key={ring.id}
-                      onClick={() => setSelectedRing(ring.id)}
-                      className={`neu-deco-tile ${selectedRing === ring.id ? "is-active" : ""}`}
+                      onClick={() => {
+                        if (locked) {
+                          toast({ title: "VIP only", description: "Buy a coffee ($5+) to unlock this ring." });
+                          return;
+                        }
+                        setSelectedRing(ring.id);
+                      }}
+                      className={`neu-deco-tile ${selectedRing === ring.id ? "is-active" : ""} ${locked ? "opacity-50" : ""}`}
                       style={{ ["--neu-deco-delay" as any]: `${idx * 35}ms` }}
                       data-testid={`ring-option-${ring.id}`}
-                      title={ring.label}
+                      title={locked ? `${ring.label} (VIP)` : ring.label}
                     >
                       {ring.id === "none" ? (
                         <span className="neu-deco-tile-none" />
@@ -1086,12 +1096,13 @@ export function ProfileDropdown({
                           <span className={`block w-5 h-5 rounded-full bg-background ${ring.className}`} />
                         </span>
                       )}
-                      <span className="neu-deco-tile-label">{ring.label}</span>
+                      <span className="neu-deco-tile-label">{locked ? `🔒 ${ring.label}` : ring.label}</span>
                       {selectedRing === ring.id && (
                         <span className="neu-deco-tile-check"><Check /></span>
                       )}
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 

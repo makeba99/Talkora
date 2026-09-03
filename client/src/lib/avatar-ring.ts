@@ -16,6 +16,8 @@ export const AVATAR_RINGS = [
   { id: "rainbow", label: "Rainbow", className: "ring-2 ring-transparent bg-gradient-to-r from-red-500 via-yellow-500 to-blue-500 bg-clip-border" },
   { id: "fire", label: "Fire", className: "ring-2 ring-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.7)] animate-pulse" },
   { id: "ice", label: "Ice", className: "ring-2 ring-sky-300 shadow-[0_0_10px_rgba(125,211,252,0.6)]" },
+  { id: "vip-crown", label: "VIP Crown", className: "ring-2 ring-amber-400 shadow-[0_0_14px_rgba(251,191,36,0.85)] animate-pulse", vip: true },
+  { id: "vip-aurora", label: "VIP Aurora", className: "ring-2 ring-fuchsia-400 shadow-[0_0_16px_rgba(232,121,249,0.75)]", vip: true },
 ] as const;
 
 export function getAvatarRingClass(ringId: string | null | undefined): string {
