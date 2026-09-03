@@ -5523,13 +5523,17 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   useEffect(() => {
     const el = remoteVideoRef.current;
-    if (remoteVideoUserId && el) {
-      const stream = remoteVideoStreams.current.get(remoteVideoUserId);
-      if (stream && el.srcObject !== stream) {
-        el.srcObject = stream;
-      }
+    if (!remoteVideoUserId || !el) return;
+    if (user?.id && remoteVideoUserId === user.id) {
+      const local = localVideoStreamRef.current || videoStream.current;
+      if (local && el.srcObject !== local) el.srcObject = local;
+      return;
     }
-  }, [remoteVideoUserId]);
+    const stream = remoteVideoStreams.current.get(remoteVideoUserId);
+    if (stream && el.srcObject !== stream) {
+      el.srcObject = stream;
+    }
+  }, [remoteVideoUserId, localVideoStreamObj, user?.id]);
 
   useEffect(() => {
     const el = remoteScreenRef.current;
@@ -5562,11 +5566,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   const attachRemoteVideo = useCallback((el: HTMLVideoElement | null) => {
     remoteVideoRef.current = el;
-    if (el && remoteVideoUserId) {
-      const stream = remoteVideoStreams.current.get(remoteVideoUserId);
-      if (stream && el.srcObject !== stream) el.srcObject = stream;
+    if (!el || !remoteVideoUserId) return;
+    // Watching yourself: use the local camera stream (mirrored via CSS below).
+    if (user?.id && remoteVideoUserId === user.id) {
+      const local = localVideoStreamRef.current || videoStream.current;
+      if (local && el.srcObject !== local) el.srcObject = local;
+      return;
     }
-  }, [remoteVideoUserId]);
+    const stream = remoteVideoStreams.current.get(remoteVideoUserId);
+    if (stream && el.srcObject !== stream) el.srcObject = stream;
+  }, [remoteVideoUserId, user?.id]);
 
   // Sharer's own local screen preview. Same stability rule applies — the
   // previous implementation used an inline arrow function as `ref`, which
@@ -7876,6 +7885,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       setMiniCameraMode(false);
       setHideLocalCameraPreview(false);
       setLocalCameraExpanded(false);
+      setRemoteVideoUserId((prev) => (prev === user?.id ? null : prev));
       setCameraFacing("user");
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = null;
@@ -7949,6 +7959,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       setLocalVideoStreamObj(stream);
       setHideLocalCameraPreview(false);
       setLocalCameraExpanded(false);
+      // Open self-cam in the same large media panel others use when watching a cam.
+      if (user?.id) {
+        setRemoteVideoUserId(user.id);
+        setFocusedUserId(null);
+        setMiniCameraMode(false);
+      }
       requestAnimationFrame(() => {
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
@@ -8567,7 +8583,20 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       return;
     }
 
-    // If the clicked participant has their camera on, expand it like YouTube view
+    // Camera on: expand large media view for that participant (self or remote)
+    // — same size / behavior for the person who opened cam and for others.
+    if (isVideoOn && peerId === user?.id && localVideoStreamObj) {
+      if (remoteVideoUserId === peerId) {
+        setRemoteVideoUserId(null);
+        if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+      } else {
+        setRemoteVideoUserId(peerId);
+        setFocusedUserId(null);
+        setMiniCameraMode(false);
+      }
+      return;
+    }
+
     if (isClickingOther && availableVideoUsers.has(peerId) && !activeYoutubeId && !isScreenSharing && !remoteScreenShareUserId) {
       const stream = remoteVideoStreams.current.get(peerId);
       if (remoteVideoUserId === peerId) {
@@ -16023,10 +16052,25 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 ref={attachRemoteVideo}
                 autoPlay
                 playsInline
-                className="w-full h-full object-contain"
+                muted={!!(user?.id && remoteVideoUserId === user.id)}
+                className={`w-full h-full object-contain ${user?.id && remoteVideoUserId === user.id && cameraFacing === "user" ? "scale-x-[-1]" : ""}`}
               />
+              {user?.id && remoteVideoUserId === user.id && (
+                <button
+                  onClick={handleFlipCamera}
+                  disabled={isFlippingCamera}
+                  data-testid="button-flip-camera-expanded"
+                  title={cameraFacing === "user" ? "Switch to back camera" : "Switch to front camera"}
+                  aria-label="Flip camera"
+                  className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <RotateCcw className={`w-4 h-4 text-white ${isFlippingCamera ? "animate-spin" : ""}`} />
+                </button>
+              )}
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-background/70 backdrop-blur-sm rounded-full px-3 py-1 text-xs">
-                {getUserDisplayName(remoteVideoUserId ? participantById.get(remoteVideoUserId) : undefined)}
+                {user?.id && remoteVideoUserId === user.id
+                  ? "You"
+                  : getUserDisplayName(remoteVideoUserId ? participantById.get(remoteVideoUserId) : undefined)}
               </div>
             </div>
           )}
@@ -18078,81 +18122,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         );
       })()}
 
-      {isVideoOn && localVideoStreamObj && !hideLocalCameraPreview && (
-        <div
-          className="fixed z-50 select-none"
-          style={localCameraExpanded
-            ? {
-                left: "50%",
-                top: "50%",
-                transform: "translate(-50%, -50%)",
-                width: "min(72vw, 720px)",
-                height: "min(56vh, 460px)",
-              }
-            : { left: 12, top: 70, width: 200, height: 130 }}
-          data-testid={localCameraExpanded ? "expanded-camera-player" : "mini-camera-player"}
-        >
-          <div
-            className="relative w-full h-full rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-black cursor-pointer"
-            onClick={() => setLocalCameraExpanded((v) => !v)}
-            title={localCameraExpanded ? "Click to shrink" : "Click to enlarge"}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                setLocalCameraExpanded((v) => !v);
-              }
-            }}
-          >
-            <div className={`w-full h-full pointer-events-none ${cameraFacing === "user" ? "scale-x-[-1]" : ""}`}>
-              <RemoteVideoPreview stream={localVideoStreamObj} />
-            </div>
-            <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 text-[10px] text-white/70 bg-black/40 px-2 py-0.5 rounded-full pointer-events-none">
-              You {localCameraExpanded ? "· Click to shrink" : "· Click to enlarge"}
-            </div>
-            {/* Flip camera — top-left */}
-            <button
-              className={`${localCameraExpanded ? "w-8 h-8 top-2 left-2" : "w-6 h-6 top-1.5 left-1.5"} absolute bg-black/60 hover:bg-black/85 rounded-full flex items-center justify-center shadow-lg transition-colors z-10 disabled:opacity-40`}
-              onClick={(e) => { e.stopPropagation(); handleFlipCamera(); }}
-              disabled={isFlippingCamera}
-              data-testid="button-flip-camera-mini"
-              aria-label="Flip camera"
-              title={cameraFacing === "user" ? "Switch to back camera" : "Switch to front camera"}
-            >
-              <RotateCcw className={`${localCameraExpanded ? "w-4 h-4" : "w-3 h-3"} text-white ${isFlippingCamera ? "animate-spin" : ""}`} />
-            </button>
-            {/* Expand / shrink */}
-            <button
-              className={`${localCameraExpanded ? "w-8 h-8 top-2 right-12" : "w-6 h-6 top-1.5 right-8"} absolute bg-black/60 hover:bg-black/85 rounded-full flex items-center justify-center shadow-lg transition-colors z-10`}
-              onClick={(e) => { e.stopPropagation(); setLocalCameraExpanded((v) => !v); }}
-              data-testid="button-mini-camera-expand"
-              aria-label={localCameraExpanded ? "Shrink camera preview" : "Enlarge camera preview"}
-              title={localCameraExpanded ? "Shrink" : "Enlarge"}
-            >
-              {localCameraExpanded
-                ? <Minimize2 className="w-4 h-4 text-white" />
-                : <Maximize2 className="w-3 h-3 text-white" />}
-            </button>
-            {/* Close / hide */}
-            <button
-              className={`${localCameraExpanded ? "w-8 h-8 top-2 right-2" : "w-6 h-6 top-1.5 right-1.5"} absolute bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center shadow-lg transition-colors z-10`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setHideLocalCameraPreview(true);
-                setLocalCameraExpanded(false);
-                setMiniCameraMode(false);
-                setFocusedUserId(null);
-              }}
-              data-testid="button-mini-camera-close"
-              aria-label="Hide your camera preview"
-              title="Hide preview (camera stays on)"
-            >
-              <X className={`${localCameraExpanded ? "w-4 h-4" : "w-3 h-3"} text-white`} />
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Self-camera uses the same large media panel as remote cams (click your card). No floating mini popup. */}
 
       {/* Persistent YouTube player wrapper.
           Mounted whenever activeYoutubeId is set, so playback never restarts when a viewer

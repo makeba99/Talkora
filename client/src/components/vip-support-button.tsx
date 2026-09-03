@@ -67,7 +67,7 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
 
   const { data: allUsers = [] } = useQuery<User[]>({
     queryKey: ["/api/users"],
-    enabled: !!user?.id && open && isVipUser(user),
+    enabled: !!user?.id && open,
     staleTime: 60_000,
   });
 
@@ -87,7 +87,7 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
     if (status === "thanks") {
       toast({
         title: "Payment submitted",
-        description: "VIP unlocks after PayPal confirms (usually within a minute). Then you can shout out someone you follow to every live room.",
+        description: "VIP unlocks after PayPal confirms (usually within a minute). Your coffee message will appear in live rooms for people online now.",
       });
       setOpen(true);
     } else if (status === "cancel") {
@@ -163,7 +163,11 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify({
+          amount,
+          shoutMessage: shoutMessage.trim() || undefined,
+          mentionUserId: mentionUserId || undefined,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || "PayPal checkout failed");
@@ -207,7 +211,7 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
       if (!res.ok) throw new Error(data.message || "Shoutout failed");
       toast({
         title: "Shoutout sent!",
-        description: `Your message is now in every live room.${typeof data.remainingToday === "number" ? ` ${data.remainingToday} left today.` : ""}`,
+        description: `Your message appeared in rooms that are live right now.${typeof data.remainingToday === "number" ? ` ${data.remainingToday} left today.` : ""}`,
       });
       setShoutMessage("");
       setMentionUserId("");
@@ -271,6 +275,49 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
             </p>
           )}
 
+          {!!user && (
+            <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-3 space-y-2.5" data-testid="vip-checkout-shoutout-panel">
+              <div>
+                <p className="text-sm font-semibold text-amber-100 flex items-center gap-1.5">
+                  <Coffee className="w-3.5 h-3.5" />
+                  Message for live rooms
+                </p>
+                <p className="text-[11px] text-white/50 mt-0.5">
+                  Optional — like an admin announcement. After you buy coffee, this appears once in rooms that are live right now (for currently online users).
+                </p>
+              </div>
+              <label className="block space-y-1">
+                <span className="text-[10px] uppercase tracking-wide text-white/45 font-semibold">Mention (someone you follow)</span>
+                <select
+                  value={mentionUserId}
+                  onChange={(e) => setMentionUserId(e.target.value)}
+                  className="w-full h-9 rounded-md border border-white/10 bg-[#0f0b18] px-2 text-sm text-white"
+                  data-testid="select-checkout-shoutout-mention"
+                >
+                  <option value="">
+                    {followingPeople.length === 0 ? "Follow someone first (optional)…" : "Choose who to shout out…"}
+                  </option>
+                  {followingPeople.map((p) => (
+                    <option key={p.id} value={p.id}>{displayNameOf(p)}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block space-y-1">
+                <span className="text-[10px] uppercase tracking-wide text-white/45 font-semibold">Message</span>
+                <textarea
+                  value={shoutMessage}
+                  onChange={(e) => setShoutMessage(e.target.value.slice(0, 160))}
+                  rows={3}
+                  maxLength={160}
+                  placeholder="Thanks for the great conversations…"
+                  className="w-full rounded-md border border-white/10 bg-[#0f0b18] px-2.5 py-2 text-sm text-white placeholder:text-white/30 resize-none"
+                  data-testid="input-checkout-shoutout-message"
+                />
+                <span className="text-[10px] text-white/35">{shoutMessage.length}/160</span>
+              </label>
+            </div>
+          )}
+
           <div className="space-y-2">
             {VIP_PLANS.map((plan) => (
               <button
@@ -299,10 +346,10 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
               <div>
                 <p className="text-sm font-semibold text-amber-100 flex items-center gap-1.5">
                   <Coffee className="w-3.5 h-3.5" />
-                  Coffee shoutout
+                  Extra shoutout
                 </p>
                 <p className="text-[11px] text-white/50 mt-0.5">
-                  Mention someone you follow — your message appears in every live room (up to 3/day).
+                  Already VIP? Send another shoutout to rooms that are live right now.
                 </p>
               </div>
               <label className="block space-y-1">
@@ -342,7 +389,7 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
                 data-testid="button-send-shoutout"
               >
                 {sendingShout ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                Send to all live rooms
+                Send to live rooms now
               </button>
             </div>
           )}

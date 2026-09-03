@@ -613,10 +613,19 @@ export function useAiTutor(deps: AiTutorDeps) {
         socket?.emit("room:ai-tutor-message", { roomId, userId, text: fallback.reply, voice: aiSettings.voice, voiceId: aiSettings.voiceId, speed: aiSettings.speed, avatarId: aiSettings.avatarId });
         ttsRef.current?.enqueue(fallback.reply);
       } else {
-        const errText = "Talking AI is unavailable right now. Please try again in a moment.";
+        const errDetail = (fallback as any)?.error || err?.message || "";
+        const needsKey = /not configured|missing_api|OPENAI|no_openai|503/i.test(String(errDetail));
+        const errText = needsKey
+          ? "My brain is offline — an admin needs to set an OpenAI API key in Admin → AI Tutor (or OPENAI_API_KEY on the server)."
+          : "Talking AI is unavailable right now. Please try again in a moment.";
         const fbMsg: ConversationEntry = { id: `a-${Date.now()}`, role: "ai", text: errText };
         setAiConversation(prev => [...prev, fbMsg]);
-        addDebug("error", "All AI calls failed — no fake fallback reply.");
+        // Always speak the error so the tutor never goes silent (browser TTS fallback).
+        try {
+          ttsRef.current?.configure(aiSettings.voice, aiSettings.speed, null, "browser");
+          ttsRef.current?.enqueue(errText);
+        } catch { /* ignore */ }
+        addDebug("error", `All AI calls failed: ${errDetail || "unknown"}`);
       }
     } finally {
       clearTimeout(thinkingTimer);

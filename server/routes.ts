@@ -713,6 +713,8 @@ export async function registerRoutes(
   app.use("/api", privilegeCheckMiddleware);
 
   const vipShoutoutTimestamps = new Map<string, number[]>();
+  /** Pending coffee shoutout written at checkout — fired once when PayPal confirms. Live rooms only. */
+  const pendingVipShoutouts = new Map<string, { mentionUserId: string; message: string; createdAt: number }>();
 
   const emitBadgeChatToAllActiveRooms = (payload: {
     badgeUserId: string;
@@ -2152,10 +2154,19 @@ export async function registerRoutes(
   app.get("/api/ai-tutor/voice-config", isAuthenticated, async (_req, res) => {
     try {
       const cfg = await getAiTutorConfig();
+      let provider = cfg.provider;
+      // Don't tell the client ElevenLabs is active when no keys are configured —
+      // otherwise every sentence hits a failing proxy before browser fallback.
+      if (provider === "elevenlabs" && !sanitizeSecretList(cfg.elevenlabs.apiKeys).length) {
+        provider = sanitizeSecretList(cfg.openai.apiKey).length ? "openai" : "browser";
+      }
+      if (provider === "openai" && !sanitizeSecretList(cfg.openai.apiKey).length) {
+        provider = "browser";
+      }
       res.json({
-        provider: cfg.provider,
-        voiceId: cfg.provider === "elevenlabs" ? (cfg.elevenlabs.voiceId || null) : null,
-        maleVoiceId: cfg.provider === "elevenlabs" ? (cfg.elevenlabs.maleVoiceId || null) : null,
+        provider,
+        voiceId: provider === "elevenlabs" ? (cfg.elevenlabs.voiceId || null) : null,
+        maleVoiceId: provider === "elevenlabs" ? (cfg.elevenlabs.maleVoiceId || null) : null,
       });
     } catch {
       res.json({ provider: "browser", voiceId: null, maleVoiceId: null });
@@ -2775,6 +2786,41 @@ export async function registerRoutes(
       const live = parts.get(userId);
       if (live) parts.set(userId, { ...live, vipTier: nextTier || plan.id, vipSince: user.vipSince || new Date() } as any);
     }
+
+    // One-shot shoutout from checkout form → currently active rooms only (not stored for days).
+    const pending = pendingVipShoutouts.get(userId);
+    pendingVipShoutouts.delete(userId);
+    if (pending && pending.message && pending.mentionUserId) {
+      try {
+        const mentioned = await storage.getUser(pending.mentionUserId);
+        if (mentioned) {
+          const fromName =
+            user.displayName ||
+            [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+            user.email ||
+            "A supporter";
+          const mentionName =
+            mentioned.displayName ||
+            [mentioned.firstName, mentioned.lastName].filter(Boolean).join(" ") ||
+            mentioned.email ||
+            "friend";
+          const event = {
+            fromUserId: userId,
+            fromUserName: fromName,
+            fromUserAvatar: user.profileImageUrl || null,
+            mentionUserId: pending.mentionUserId,
+            mentionUserName: mentionName,
+            message: pending.message,
+            gifUrl: VIP_SHOUTOUT_GIF,
+          };
+          emitVipShoutoutToAllActiveRooms(event);
+          io.emit("vip:shoutout", event);
+        }
+      } catch (e) {
+        console.warn("[vip] pending shoutout failed:", (e as any)?.message || e);
+      }
+    }
+
     return plan;
   }
 
@@ -2822,6 +2868,30 @@ export async function registerRoutes(
       const plan = vipPlanFromAmount(amount);
       if (!plan) return res.status(400).json({ message: "Choose $5, $15, or $25." });
       const userId = String((req.user as any).id);
+
+      // Optional shoutout written at buy time — broadcast to live rooms when payment confirms.
+      const shoutMessage = String(req.body?.shoutMessage || "").trim().slice(0, 160);
+      const shoutMentionUserId = String(req.body?.mentionUserId || "").trim();
+      if (shoutMessage.length >= 2 && shoutMentionUserId && shoutMentionUserId !== userId) {
+        const filter = checkContent(shoutMessage, "vip_shoutout", {
+          userId,
+          displayName: (req.user as any)?.displayName ?? undefined,
+          avatarUrl: (req.user as any)?.profileImageUrl ?? undefined,
+        });
+        if (!filter.flagged) {
+          const followsThem = await storage.isFollowing(userId, shoutMentionUserId).catch(() => false);
+          if (followsThem) {
+            pendingVipShoutouts.set(userId, {
+              mentionUserId: shoutMentionUserId,
+              message: shoutMessage,
+              createdAt: Date.now(),
+            });
+          }
+        }
+      } else {
+        pendingVipShoutouts.delete(userId);
+      }
+
       const origin = publicAppOrigin(req);
       const params = new URLSearchParams({
         cmd: "_xclick",
