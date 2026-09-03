@@ -3504,10 +3504,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           const isKnownSharer = screenSharingPeerIds.current.has(peerId);
           const alreadyHasCamera = remoteVideoStreams.current.has(peerId);
           const alreadyHasScreen = remoteScreenStreams.current.has(peerId);
+          // Only classify as screen if the label says so, or the peer is a
+          // known screen-sharer AND we don't already have their screen stream.
+          // The old heuristic `(alreadyHasCamera && !alreadyHasScreen)` caused
+          // camera tracks to be misclassified as screen during renegotiation.
           const isScreenTrack =
-            (isKnownSharer && !alreadyHasScreen) ||
             labelSaysScreen ||
-            (alreadyHasCamera && !alreadyHasScreen);
+            (isKnownSharer && !alreadyHasScreen);
 
           if (isScreenTrack) {
             remoteScreenStreams.current.set(peerId, stream);
