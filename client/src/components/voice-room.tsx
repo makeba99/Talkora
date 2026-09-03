@@ -586,12 +586,24 @@ function MicVoiceBar({ analyserNode, isSpeaking }: { analyserNode?: AnalyserNode
   );
 }
 
-function RemoteVideoPreview({ stream, className }: { stream: MediaStream; className?: string }) {
+function RemoteVideoPreview({ stream, className, objectFit = "cover" }: { stream: MediaStream; className?: string; objectFit?: "cover" | "contain" }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.srcObject = stream;
-    }
+    const el = videoRef.current;
+    if (!el) return;
+    if (el.srcObject !== stream) el.srcObject = stream;
+    // Some browsers need an explicit play() after attaching a reused local stream
+    // to a second <video> (card preview + expanded panel).
+    const play = () => { el.play().catch(() => {}); };
+    play();
+    stream.getVideoTracks().forEach((t) => {
+      t.addEventListener("unmute", play);
+    });
+    return () => {
+      stream.getVideoTracks().forEach((t) => {
+        t.removeEventListener("unmute", play);
+      });
+    };
   }, [stream]);
   return (
     <video
@@ -599,7 +611,7 @@ function RemoteVideoPreview({ stream, className }: { stream: MediaStream; classN
       autoPlay
       playsInline
       muted
-      className={`w-full h-full object-cover ${className || ""}`}
+      className={`w-full h-full ${objectFit === "contain" ? "object-contain" : "object-cover"} ${className || ""}`}
     />
   );
 }
@@ -8603,6 +8615,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         setRemoteVideoUserId(null);
         if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
       } else {
+        // Same layout as YouTube/book: big media on top, profiles strip at bottom.
+        if (showEReader || selectedBook) {
+          handleCloseBook();
+        }
+        setFocusedUserId(null);
+        setMiniCameraMode(false);
         setRemoteVideoUserId(peerId);
         if (stream && remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = stream;
@@ -16046,34 +16064,72 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </div>
           )}
 
-          {remoteVideoUserId && !(activeYoutubeId && showYoutube) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && (
-            <div className="flex-1 min-h-0 bg-black relative" data-testid="media-remote-video">
-              <video
-                ref={attachRemoteVideo}
-                autoPlay
-                playsInline
-                muted={!!(user?.id && remoteVideoUserId === user.id)}
-                className={`w-full h-full object-contain ${user?.id && remoteVideoUserId === user.id && cameraFacing === "user" ? "scale-x-[-1]" : ""}`}
-              />
-              {user?.id && remoteVideoUserId === user.id && (
-                <button
-                  onClick={handleFlipCamera}
-                  disabled={isFlippingCamera}
-                  data-testid="button-flip-camera-expanded"
-                  title={cameraFacing === "user" ? "Switch to back camera" : "Switch to front camera"}
-                  aria-label="Flip camera"
-                  className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <RotateCcw className={`w-4 h-4 text-white ${isFlippingCamera ? "animate-spin" : ""}`} />
-                </button>
-              )}
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-background/70 backdrop-blur-sm rounded-full px-3 py-1 text-xs">
-                {user?.id && remoteVideoUserId === user.id
-                  ? "You"
-                  : getUserDisplayName(remoteVideoUserId ? participantById.get(remoteVideoUserId) : undefined)}
+          {remoteVideoUserId && !(activeYoutubeId && showYoutube) && !showEReader && !isScreenSharing && !remoteScreenShareUserId && (() => {
+            const isSelfCam = !!(user?.id && remoteVideoUserId === user.id);
+            const watched = participantById.get(remoteVideoUserId);
+            const expandedStream = isSelfCam
+              ? (localVideoStreamObj || localVideoStreamRef.current || videoStream.current)
+              : (remoteVideoStreams.current.get(remoteVideoUserId) || null);
+            return (
+              <div className="flex-1 min-h-0 bg-black relative flex flex-col" data-testid="media-remote-video">
+                {/* Profile of the person whose cam you're watching — same idea as YT/book host strip */}
+                <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 bg-black/70 border-b border-white/10 z-10">
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-muted flex items-center justify-center ring-2 ring-sky-400/50 flex-shrink-0">
+                    {watched?.profileImageUrl ? (
+                      <img src={watched.profileImageUrl} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                    ) : (
+                      <span className="text-[11px] font-bold text-white">{getUserInitials(watched as any)}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-white truncate">
+                      {isSelfCam ? "You" : getUserDisplayName(watched)}
+                    </p>
+                    <p className="text-[10px] text-sky-300/90 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+                      Camera live · tap their card again to close
+                    </p>
+                  </div>
+                  {isSelfCam && (
+                    <button
+                      onClick={handleFlipCamera}
+                      disabled={isFlippingCamera}
+                      data-testid="button-flip-camera-expanded"
+                      title={cameraFacing === "user" ? "Switch to back camera" : "Switch to front camera"}
+                      aria-label="Flip camera"
+                      className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center transition-colors disabled:opacity-40"
+                    >
+                      <RotateCcw className={`w-3.5 h-3.5 text-white ${isFlippingCamera ? "animate-spin" : ""}`} />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRemoteVideoUserId(null);
+                      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+                    }}
+                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-red-500/80 border border-white/15 flex items-center justify-center text-white transition-colors"
+                    data-testid="button-close-expanded-camera"
+                    aria-label="Close expanded camera"
+                    title="Close"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="relative flex-1 min-h-0">
+                  {expandedStream ? (
+                    <div className={`absolute inset-0 ${isSelfCam && cameraFacing === "user" ? "scale-x-[-1]" : ""}`}>
+                      <RemoteVideoPreview stream={expandedStream} objectFit="contain" />
+                    </div>
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-white/45 text-sm">
+                      Waiting for camera…
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {false && isVideoOn && localVideoStreamObj && !miniCameraMode && !isScreenSharing && !(activeYoutubeId && showYoutube) && !showEReader && !remoteVideoUserId && (
             <div className="flex-1 min-h-0 bg-black relative" data-testid="media-local-camera">
