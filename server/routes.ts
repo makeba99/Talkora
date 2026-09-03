@@ -2397,39 +2397,22 @@ export async function registerRoutes(
     res.end();
   });
 
-  // Giphy is preferred when GIPHY_API_KEY is set. There is no unlimited public
-  // Giphy key (the old beta key dc6zaTOxFJmzC is retired). Without a key we
-  // fall back to Wikimedia Commons, which needs no API key and does not expire.
+  // GIPHY GIF search (server-side only). The key must be set on Railway.
+  // When configured, search uses api.giphy.com exclusively — never Tenor/Wikimedia.
   const RETIRED_GIPHY_PUBLIC_BETA_KEY = "dc6zaTOxFJmzC";
   const GIF_PAGE_SIZE = 24;
-  const WIKIMEDIA_UA = "Vextorn/1.0 (https://vextorn.com; GIF search)";
 
   function getGiphyApiKey(): string | null {
-    const key = (process.env.GIPHY_API_KEY || process.env.GIPHY_KEY || "").trim();
+    const raw = (process.env.GIPHY_API_KEY || process.env.GIPHY_KEY || "").trim();
+    const key = raw.replace(/^["']+|["']+$/g, "").trim();
     if (!key || key === RETIRED_GIPHY_PUBLIC_BETA_KEY || key === "your-giphy-key") {
       return null;
     }
     return key;
   }
 
-  function gifProvider(): "giphy" | "wikimedia" {
-    return getGiphyApiKey() ? "giphy" : "wikimedia";
-  }
-
-  if (!getGiphyApiKey()) {
-    console.warn("[gifs] GIPHY_API_KEY is unset; using Wikimedia Commons (no key). Set a Giphy key on Railway for a larger catalog.");
-  }
-
-  function stripUrlTracking(url: string): string {
-    try {
-      const parsed = new URL(url);
-      parsed.search = "";
-      parsed.hash = "";
-      return parsed.toString();
-    } catch {
-      return url;
-    }
-  }
+  const giphyReady = !!getGiphyApiKey();
+  console.log(`[gifs] provider=${giphyReady ? "giphy" : "unavailable"} keyConfigured=${giphyReady}`);
 
   function mapGiphyResults(items: any[]): any[] {
     return items
@@ -2450,30 +2433,13 @@ export async function registerRoutes(
       .filter(Boolean);
   }
 
-  function mapWikimediaResults(pages: Record<string, any> | undefined): any[] {
-    return Object.values(pages || {})
-      .sort((a: any, b: any) => Number(a.index || 0) - Number(b.index || 0))
-      .map((page: any) => {
-        const info = page.imageinfo?.[0];
-        if (!info?.url || info.mime !== "image/gif") return null;
-        if (Number(info.size || 0) > 8 * 1024 * 1024) return null;
-        const preview = info.thumburl || info.url;
-        return {
-          id: `wm-${page.pageid}`,
-          url: stripUrlTracking(info.url),
-          preview: stripUrlTracking(preview),
-          title: String(page.title || "").replace(/^File:/, "").replace(/\.gif$/i, ""),
-          width: Number(info.thumbwidth || info.width || 320),
-          height: Number(info.thumbheight || info.height || 200),
-        };
-      })
-      .filter(Boolean);
-  }
-
-  async function fetchGiphy(path: string, params: Record<string, string>): Promise<{ results: any[]; next: string }> {
+  async function fetchGiphy(path: string, params: Record<string, string>): Promise<{ results: any[]; next: string; provider: "giphy" }> {
     const apiKey = getGiphyApiKey();
     if (!apiKey) {
-      throw Object.assign(new Error("Giphy API key is not configured."), { status: 503 });
+      throw Object.assign(
+        new Error("GIF search is not configured. Set GIPHY_API_KEY on Railway and redeploy."),
+        { status: 503 },
+      );
     }
     const searchParams = new URLSearchParams({
       api_key: apiKey,
@@ -2494,7 +2460,7 @@ export async function registerRoutes(
       if (response.status === 401 || response.status === 403) {
         throw Object.assign(
           new Error(
-            "Giphy rejected the API key (unauthorized). Create a new key at https://developers.giphy.com/dashboard and set GIPHY_API_KEY on Railway, then redeploy.",
+            "Giphy rejected the API key (unauthorized). Create a key at https://developers.giphy.com/dashboard, set GIPHY_API_KEY on the Railway web service, then redeploy.",
           ),
           { status: 502 },
         );
@@ -2509,67 +2475,33 @@ export async function registerRoutes(
     const offset = Number(params.offset || "0");
     const total = Number(data.pagination?.total_count || 0);
     const next = offset + results.length < total && results.length > 0 ? String(offset + results.length) : "";
-    return { results, next };
+    return { results, next, provider: "giphy" };
   }
 
-  async function fetchWikimedia(kind: "search" | "trending", params: Record<string, string>): Promise<{ results: any[]; next: string }> {
-    const offset = Number(params.offset || "0");
-    const query = kind === "search" ? String(params.q || "").trim() : "funny";
-    const gsrsearch = query
-      ? `filemime:image/gif ${query}`
-      : "filemime:image/gif";
-    const searchParams = new URLSearchParams({
-      action: "query",
-      format: "json",
-      origin: "*",
-      generator: "search",
-      gsrsearch,
-      gsrnamespace: "6",
-      gsrlimit: String(GIF_PAGE_SIZE),
-      gsroffset: String(offset),
-      prop: "imageinfo",
-      iiprop: "url|size|mime",
-      iiurlwidth: "200",
+  app.get("/api/gifs/status", isAuthenticated, (_req, res) => {
+    res.json({
+      provider: getGiphyApiKey() ? "giphy" : "none",
+      keyConfigured: !!getGiphyApiKey(),
     });
-    const response = await fetch(`https://commons.wikimedia.org/w/api.php?${searchParams.toString()}`, {
-      headers: { "User-Agent": WIKIMEDIA_UA, Accept: "application/json" },
-    });
-    if (!response.ok) {
-      throw Object.assign(
-        new Error(`GIF search is temporarily unavailable (${response.status}). Try again shortly.`),
-        { status: 502 },
-      );
-    }
-    const data = await response.json();
-    const results = mapWikimediaResults(data.query?.pages);
-    const nextOffset = data.continue?.gsroffset;
-    const next = nextOffset != null && results.length > 0 ? String(nextOffset) : "";
-    return { results, next };
-  }
-
-  async function fetchGifs(kind: "search" | "trending", params: Record<string, string>): Promise<{ results: any[]; next: string; provider: "giphy" | "wikimedia" }> {
-    const provider = gifProvider();
-    const result = provider === "giphy" ? await fetchGiphy(kind, params) : await fetchWikimedia(kind, params);
-    return { ...result, provider };
-  }
+  });
 
   app.get("/api/gifs/search", isAuthenticated, async (req: any, res) => {
     try {
       const query = req.query.q as string;
       const pos = req.query.pos as string | undefined;
       if (!query || query.trim().length === 0) {
-        return res.json({ results: [], next: "", provider: gifProvider() });
+        return res.json({ results: [], next: "", provider: "giphy" });
       }
       const offset = pos ? Math.max(0, parseInt(pos, 10) || 0) : 0;
-      const cacheKey = `gif:search:${gifProvider()}:${query.toLowerCase().trim()}:${offset}`;
+      const cacheKey = `gif:search:giphy:v2:${query.toLowerCase().trim()}:${offset}`;
       const cached = externalCache.get(cacheKey);
       if (cached) return res.json(cached);
-      const result = await fetchGifs("search", { q: query.trim(), offset: String(offset) });
+      const result = await fetchGiphy("search", { q: query.trim(), offset: String(offset) });
       externalCache.set(cacheKey, result);
       res.json(result);
     } catch (err: any) {
-      console.error("GIF search error:", err);
-      res.status(err?.status || 500).json({ message: err?.message || "Failed to search GIFs" });
+      console.error("GIF search error:", err?.message || err);
+      res.status(err?.status || 500).json({ message: err?.message || "Failed to search GIFs", provider: "giphy" });
     }
   });
 
@@ -2577,20 +2509,33 @@ export async function registerRoutes(
     try {
       const pos = req.query.pos as string | undefined;
       const offset = pos ? Math.max(0, parseInt(pos, 10) || 0) : 0;
-      const cacheKey = `gif:trending:${gifProvider()}:${offset}`;
+      const cacheKey = `gif:trending:giphy:v2:${offset}`;
       const cached = externalCache.get(cacheKey);
       if (cached) return res.json(cached);
-      const result = await fetchGifs("trending", { offset: String(offset) });
+      const result = await fetchGiphy("trending", { offset: String(offset) });
       externalCache.set(cacheKey, result);
       res.json(result);
     } catch (err: any) {
-      console.error("GIF trending error:", err);
-      res.status(err?.status || 500).json({ message: err?.message || "Failed to load trending GIFs" });
+      console.error("GIF trending error:", err?.message || err);
+      res.status(err?.status || 500).json({ message: err?.message || "Failed to load trending GIFs", provider: "giphy" });
     }
   });
 
-  function paypalMerchantId(): string {
-    return (process.env.PAYPAL_MERCHANT_ID || "").trim();
+  let cachedMerchantFromDb: { value: string; ts: number } | null = null;
+
+  async function paypalMerchantId(): Promise<string> {
+    const fromEnv = (process.env.PAYPAL_MERCHANT_ID || "").trim().replace(/^["']+|["']+$/g, "");
+    if (fromEnv && fromEnv !== "your-paypal-merchant-id") return fromEnv.toUpperCase();
+    const now = Date.now();
+    if (cachedMerchantFromDb && now - cachedMerchantFromDb.ts < 30_000) return cachedMerchantFromDb.value;
+    try {
+      const fromDb = (await storage.getSetting("paypal_merchant_id")) || "";
+      const cleaned = fromDb.trim().toUpperCase();
+      cachedMerchantFromDb = { value: cleaned, ts: now };
+      return cleaned;
+    } catch {
+      return "";
+    }
   }
 
   function paypalCheckoutHost(): string {
@@ -2646,18 +2591,36 @@ export async function registerRoutes(
     return plan;
   }
 
-  app.get("/api/vip/config", (_req, res) => {
-    res.json({
-      configured: !!paypalMerchantId(),
-      plans: VIP_PLANS.map((p) => ({ id: p.id, amount: p.amount, label: p.label, tagline: p.tagline })),
-    });
+  app.get("/api/vip/config", async (req: any, res) => {
+    try {
+      const [{ resolveSupportVariant, supportNavLabel }, country] = await Promise.all([
+        import("@shared/support-features"),
+        detectCountry(req.headers as Record<string, any>),
+      ]);
+      const merchant = await paypalMerchantId();
+      const configured = !!merchant;
+      const variant = resolveSupportVariant({
+        countryCode: country,
+        paypalConfigured: configured,
+      });
+      res.json({
+        configured,
+        showSupport: variant === "paypal-vip",
+        variant,
+        navLabel: supportNavLabel(variant, country),
+        country: country || null,
+        plans: VIP_PLANS.map((p) => ({ id: p.id, amount: p.amount, label: p.label, tagline: p.tagline })),
+      });
+    } catch (err: any) {
+      res.status(500).json({ message: err?.message || "Failed to load VIP config" });
+    }
   });
 
   app.post("/api/vip/checkout", isAuthenticated, async (req: any, res) => {
     try {
-      const merchant = paypalMerchantId();
+      const merchant = await paypalMerchantId();
       if (!merchant) {
-        return res.status(503).json({ message: "PayPal is not configured yet. Add PAYPAL_MERCHANT_ID on Railway." });
+        return res.status(503).json({ message: "PayPal is not configured yet. Add PAYPAL_MERCHANT_ID on Railway (or save it in Admin → Payments)." });
       }
       const amount = Number(req.body?.amount);
       const plan = vipPlanFromAmount(amount);
@@ -2706,7 +2669,7 @@ export async function registerRoutes(
       }
       if (String(body.payment_status || "") !== "Completed") return;
       if (String(body.mc_currency || "").toUpperCase() !== "USD") return;
-      const merchant = paypalMerchantId();
+      const merchant = await paypalMerchantId();
       const receiverId = String(body.receiver_id || "");
       const receiverEmail = String(body.receiver_email || "");
       if (merchant && receiverId && receiverId !== merchant && receiverEmail.toLowerCase() !== merchant.toLowerCase()) {
@@ -5286,6 +5249,122 @@ export async function registerRoutes(
     }
     next();
   };
+
+  // PayPal merchant ID: env PAYPAL_MERCHANT_ID wins; otherwise app_settings.
+  app.get("/api/admin/paypal/merchant", isAuthenticated, isSuperAdmin, async (_req, res) => {
+    try {
+      const merchantId = await paypalMerchantId();
+      const source = (process.env.PAYPAL_MERCHANT_ID || "").trim() ? "env" : merchantId ? "database" : "none";
+      res.json({
+        configured: !!merchantId,
+        merchantId: merchantId || null,
+        source,
+        giphyKeyConfigured: !!getGiphyApiKey(),
+      });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.post("/api/admin/paypal/merchant", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const { normalizePaypalMerchantId } = await import("@shared/support-features");
+      const merchantId = normalizePaypalMerchantId(String(req.body?.merchantId || ""));
+      if (!merchantId) {
+        return res.status(400).json({ message: "Invalid PayPal Merchant ID. Expected 10–20 letters/numbers (e.g. FBSWBH7U86YNE)." });
+      }
+      await storage.setSetting("paypal_merchant_id", merchantId);
+      cachedMerchantFromDb = { value: merchantId, ts: Date.now() };
+      res.json({ merchantId, configured: true, source: "database" });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  const merchantUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 8 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+      if (/^image\/(jpeg|png|webp|gif)$/.test(file.mimetype)) cb(null, true);
+      else cb(new Error("Only image uploads are allowed"));
+    },
+  });
+
+  app.post("/api/admin/paypal/extract-merchant", isAuthenticated, isSuperAdmin, merchantUpload.single("image"), async (req: any, res) => {
+    try {
+      const { normalizePaypalMerchantId } = await import("@shared/support-features");
+      if (!req.file?.buffer) {
+        return res.status(400).json({ message: "Upload or capture an image of your PayPal Merchant ID." });
+      }
+
+      // Preprocess for OCR/vision — keep server-side, never log image contents.
+      const prepared = await sharp(req.file.buffer)
+        .rotate()
+        .resize({ width: 1600, withoutEnlargement: true })
+        .jpeg({ quality: 85 })
+        .toBuffer();
+
+      const openaiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY || "";
+      if (!openaiKey) {
+        return res.status(503).json({
+          message: "Image extraction needs OPENAI_API_KEY (or AI_INTEGRATIONS_OPENAI_API_KEY) on Railway. You can still type the Merchant ID manually.",
+        });
+      }
+
+      const openaiBaseUrl = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1";
+      const visionRes = await fetch(`${openaiBaseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${openaiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          temperature: 0,
+          max_tokens: 80,
+          messages: [
+            {
+              role: "system",
+              content: "Extract the PayPal Merchant ID from the screenshot. Return ONLY the ID (10-20 alphanumeric chars). If none found, return NONE.",
+            },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: "Find the Merchant ID on this PayPal account settings screenshot." },
+                { type: "image_url", image_url: { url: `data:image/jpeg;base64,${prepared.toString("base64")}` } },
+              ],
+            },
+          ],
+        }),
+      });
+
+      if (!visionRes.ok) {
+        const errText = await visionRes.text().catch(() => "");
+        console.error("[paypal-ocr] vision failed:", visionRes.status, errText.slice(0, 200));
+        return res.status(502).json({ message: "Could not read the image. Try a clearer screenshot or enter the ID manually." });
+      }
+
+      const visionJson = await visionRes.json();
+      const rawText = String(visionJson?.choices?.[0]?.message?.content || "");
+      const merchantId = normalizePaypalMerchantId(rawText);
+      if (!merchantId) {
+        return res.status(422).json({
+          message: "No valid Merchant ID found in that image. Make sure the ID (like FBSWBH7U86YNE) is visible, or type it manually.",
+        });
+      }
+
+      const save = req.body?.save === "true" || req.body?.save === true;
+      if (save) {
+        await storage.setSetting("paypal_merchant_id", merchantId);
+        cachedMerchantFromDb = { value: merchantId, ts: Date.now() };
+      }
+
+      res.json({ merchantId, saved: !!save });
+    } catch (err: any) {
+      console.error("[paypal-ocr]", err?.message || err);
+      res.status(500).json({ message: err?.message || "Failed to extract Merchant ID" });
+    }
+  });
 
   // ── Cleanup / Storage admin endpoints ───────────────────────────────────
   // ── Client-side page view tracking ────────────────────────────────────────

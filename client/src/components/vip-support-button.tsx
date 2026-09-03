@@ -6,21 +6,34 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { VIP_PLANS, vipRank } from "@shared/constants";
 import { useQuery } from "@tanstack/react-query";
 
+type VipConfig = {
+  configured: boolean;
+  showSupport: boolean;
+  variant: "paypal-vip" | "hidden";
+  navLabel: string;
+  country?: string | null;
+  plans: Array<{ id: string; amount: number; label: string; tagline: string }>;
+};
+
 export function VipSupportButton({ guest = false }: { guest?: boolean }) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [paying, setPaying] = useState<number | null>(null);
-  const { data: config } = useQuery<{ configured: boolean }>({
+  const { data: config } = useQuery<VipConfig>({
     queryKey: ["/api/vip/config"],
     queryFn: async () => {
-      const res = await fetch("/api/vip/config");
+      const res = await fetch("/api/vip/config", { credentials: "include" });
       return res.json();
     },
     staleTime: 60_000,
   });
 
+  // Conditional render — no empty spacer when support is not offered for this market.
+  if (config && !config.showSupport) return null;
+
   const currentRank = vipRank(user?.vipTier);
+  const navLabel = config?.navLabel || "Become VIP";
   const triggerClass = guest
     ? "neu-btn inline-flex items-center h-8 px-3 rounded-full text-xs font-semibold"
     : "header-pro-btn inline-flex items-center h-9 px-3.5 rounded-full text-[12px] font-semibold";
@@ -54,11 +67,11 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
         className={triggerClass}
         data-testid={guest ? "button-buy-me-coffee-nav-guest" : "button-buy-me-coffee-nav"}
         title="Support Vextorn — become VIP"
-        aria-label="Buy me a coffee"
+        aria-label={navLabel}
         onClick={() => setOpen(true)}
       >
         <Coffee className={`${guest ? "w-3.5 h-3.5 mr-1.5" : "w-4 h-4 sm:mr-1.5"} text-neu-orange`} />
-        <span className="hidden sm:inline">Buy Me a Coffee</span>
+        <span className="hidden sm:inline">{navLabel}</span>
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -69,7 +82,7 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
               Support Vextorn
             </DialogTitle>
             <DialogDescription>
-              Buy Me a Coffee is not available in Armenia. PayPal unlocks VIP on the platform.
+              Choose a VIP tier. Payment goes to PayPal and unlocks exclusive platform features.
             </DialogDescription>
           </DialogHeader>
 
@@ -80,7 +93,7 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
           )}
 
           <div className="grid gap-2">
-            {VIP_PLANS.map((plan) => (
+            {(config?.plans?.length ? config.plans : VIP_PLANS).map((plan) => (
               <button
                 key={plan.id}
                 type="button"

@@ -7867,6 +7867,37 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       return;
     }
     try {
+      if (typeof window !== "undefined" && !window.isSecureContext) {
+        toast({
+          title: "Camera unavailable",
+          description: "Camera needs HTTPS (or localhost). Open the site over a secure connection.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!navigator.mediaDevices?.getUserMedia) {
+        toast({
+          title: "Camera unavailable",
+          description: "This browser cannot open the camera.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      try {
+        const perm = await (navigator.permissions as any)?.query?.({ name: "camera" });
+        if (perm?.state === "denied") {
+          toast({
+            title: "Camera permission blocked",
+            description: "Allow camera access in your browser site settings, then try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } catch {
+        // permissions.query unsupported — continue to getUserMedia prompt.
+      }
+
       // Mobile-safe camera open: use a fallback chain because combining
       // facingMode + width/height as hard constraints throws OverconstrainedError
       // on iOS Safari and many Android browsers (especially for the front camera).
@@ -7923,15 +7954,21 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         }
       }
     } catch (err: any) {
-      console.error("Camera access failed:", err);
+      console.error("Camera access failed:", err?.name || err);
+      videoStream.current?.getTracks().forEach((t) => { try { t.stop(); } catch {} });
+      videoStream.current = null;
+      setLocalVideoStreamObj(null);
       const isPermission = err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError";
       const isNotFound = err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError";
+      const isBusy = err?.name === "NotReadableError" || err?.name === "TrackStartError";
       toast({
         title: "Camera unavailable",
         description: isPermission
           ? "Allow camera access in your browser settings and try again."
           : isNotFound
           ? "No camera found on this device."
+          : isBusy
+          ? "Camera is busy in another app. Close it and try again."
           : "Could not open camera. Try reloading or check your browser permissions.",
         variant: "destructive",
       });

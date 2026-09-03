@@ -1,8 +1,8 @@
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef, Suspense, lazy } from "react";
 import { useLocation } from "wouter";
 import { useDocumentMeta } from "@/hooks/use-document-meta";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle, Wrench, BarChart2, TrendingUp, MousePointerClick, Globe, DoorOpen, UserCheck, Mail, Bell, BellRing, CreditCard, Smartphone, Building2, BadgeCheck, TrendingDown, Receipt, Monitor, Youtube, Film, Gamepad2, BookOpen, AudioLines, BrainCircuit, Settings2, ToggleLeft, ShoppingBag, Sparkles, Palette } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Crown, FileWarning, Shield, ShieldAlert, ShieldCheck, Users, GraduationCap, CheckCircle2, XCircle, Clock, DollarSign, Award, Trash2, Megaphone, Ban, Image as ImageIcon, Save, Send, Edit3, ChevronDown, Search, UserPlus, CalendarDays, X, HardDrive, Loader2, Bot, Eye, EyeOff, Zap, Globe2, Cpu, Play, Key, RefreshCw, CheckCircle, Wrench, BarChart2, TrendingUp, MousePointerClick, Globe, DoorOpen, UserCheck, Mail, Bell, BellRing, CreditCard, Smartphone, Building2, BadgeCheck, TrendingDown, Receipt, Monitor, Youtube, Film, Gamepad2, BookOpen, AudioLines, BrainCircuit, Settings2, ToggleLeft, ShoppingBag, Sparkles, Palette, Camera } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,10 @@ import { ROOM_THEMES } from "@/lib/room-theme-utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { GifPickerButton } from "@/components/chat-picker";
+
+const CameraCapture = lazy(() =>
+  import("@/components/camera-capture").then((m) => ({ default: m.CameraCapture }))
+);
 
 const OWNER_EMAIL = "dj55jggg@gmail.com";
 type OwnerAnnouncement = Announcement & { viewCount?: number; dismissCount?: number };
@@ -1272,6 +1276,138 @@ type TxData = {
   stats: { totalRevenue: number; pendingCash: number; completedCount: number; pendingCount: number };
 };
 
+function PaypalMerchantSetup() {
+  const { toast } = useToast();
+  const [manualId, setManualId] = useState("");
+  const [captureOpen, setCaptureOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const { data, isLoading, refetch } = useQuery<{
+    configured: boolean;
+    merchantId: string | null;
+    source: string;
+    giphyKeyConfigured: boolean;
+  }>({
+    queryKey: ["/api/admin/paypal/merchant"],
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async (merchantId: string) => {
+      const res = await apiRequest("POST", "/api/admin/paypal/merchant", { merchantId });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/paypal/merchant"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/vip/config"] });
+      toast({ title: "Merchant ID saved" });
+      setManualId("");
+    },
+    onError: (err: any) => toast({ title: "Save failed", description: err.message, variant: "destructive" }),
+  });
+
+  const extractFromBlob = async (blob: Blob, save: boolean) => {
+    setBusy(true);
+    try {
+      const form = new FormData();
+      form.append("image", blob, "merchant.jpg");
+      form.append("save", save ? "true" : "false");
+      const res = await fetch("/api/admin/paypal/extract-merchant", {
+        method: "POST",
+        credentials: "include",
+        body: form,
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || "Extraction failed");
+      setManualId(json.merchantId);
+      if (json.saved) {
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/paypal/merchant"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/vip/config"] });
+        toast({ title: "Merchant ID extracted & saved", description: json.merchantId });
+      } else {
+        toast({ title: "Merchant ID found", description: `${json.merchantId} — review and Save.` });
+      }
+      setCaptureOpen(false);
+    } catch (err: any) {
+      toast({ title: "Could not read Merchant ID", description: err.message, variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card className="bg-card/75 backdrop-blur-xl border-primary/15">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <CreditCard className="w-5 h-5 text-amber-300" />
+          PayPal VIP / Merchant ID
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isLoading ? (
+          <Skeleton className="h-16 w-full" />
+        ) : (
+          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">
+            <p className="text-xs text-muted-foreground">Current Merchant ID</p>
+            <p className="font-mono text-amber-200 mt-1" data-testid="text-paypal-merchant-id">
+              {data?.merchantId || "Not configured"}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Source: {data?.source || "none"}
+              {" · "}
+              GIPHY key: {data?.giphyKeyConfigured ? "configured" : "missing"}
+            </p>
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Input
+            value={manualId}
+            onChange={(e) => setManualId(e.target.value.toUpperCase())}
+            placeholder="FBSWBH7U86YNE"
+            className="font-mono"
+            data-testid="input-paypal-merchant-id"
+          />
+          <Button
+            type="button"
+            disabled={!manualId || saveMutation.isPending}
+            onClick={() => saveMutation.mutate(manualId)}
+            data-testid="button-save-paypal-merchant"
+          >
+            <Save className="w-4 h-4 mr-1.5" /> Save
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => setCaptureOpen((v) => !v)} data-testid="button-scan-merchant">
+            <Camera className="w-4 h-4 mr-1.5" /> {captureOpen ? "Hide Camera" : "Scan from Photo"}
+          </Button>
+          <Button type="button" variant="ghost" onClick={() => refetch()}>
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {captureOpen && (
+          <div className={busy ? "opacity-60 pointer-events-none" : ""}>
+            <Suspense fallback={<Skeleton className="h-48 w-full" />}>
+              <CameraCapture
+                onCapture={(blob) => extractFromBlob(blob, false)}
+                onClose={() => setCaptureOpen(false)}
+              />
+            </Suspense>
+            {busy && (
+              <p className="text-xs text-muted-foreground flex items-center gap-2 mt-2">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Reading Merchant ID…
+              </p>
+            )}
+          </div>
+        )}
+
+        <p className="text-[11px] text-muted-foreground">
+          Prefer setting <code className="text-foreground/80">PAYPAL_MERCHANT_ID</code> on Railway for production.
+          Scanning uses your server-side OpenAI key and never exposes it to the browser.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
 function TransactionsTab() {
   const { toast } = useToast();
   const { data, isLoading } = useQuery<TxData>({ queryKey: ["/api/admin/transactions"] });
@@ -1309,6 +1445,8 @@ function TransactionsTab() {
 
   return (
     <div className="space-y-5">
+      <PaypalMerchantSetup />
+
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
