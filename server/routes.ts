@@ -4814,6 +4814,8 @@ export async function registerRoutes(
         isPublic: parsed.data.isPublic ?? true,
         roomTheme: parsed.data.roomTheme || "default",
         hologramVideoUrl: parsed.data.hologramVideoUrl || null,
+        titleColor: (parsed.data as any).titleColor || null,
+        titleStyle: (parsed.data as any).titleStyle || null,
         ownerId,
       });
 

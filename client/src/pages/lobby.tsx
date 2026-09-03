@@ -999,6 +999,8 @@ export default function Lobby() {
       isPublic: boolean;
       roomTheme?: string | null;
       hologramVideoUrl?: string | null;
+      titleColor?: string | null;
+      titleStyle?: string | null;
       talkPermission?: "everyone" | "co_owners" | "owner_only" | "muted";
     }) => {
       const res = await apiRequest("POST", "/api/rooms", {

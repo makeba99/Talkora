@@ -58,6 +58,8 @@ export const insertRoomSchema = createInsertSchema(rooms).pick({
   screenPermission: true,
   youtubePermission: true,
   chatPermission: true,
+  titleColor: true,
+  titleStyle: true,
 });
 
 export type InsertRoom = z.infer<typeof insertRoomSchema>;

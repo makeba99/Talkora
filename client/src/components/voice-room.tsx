@@ -14652,22 +14652,42 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   Vextorn
                 </span>
 
-                {/* Room title — styled like a premium subtitle */}
+                {/* Room title — uses owner-chosen color/style when set */}
                 {room.title && (
                   <h2
                     className="truncate"
                     style={{
-                      fontWeight: 600,
+                      fontWeight: (room as any).titleStyle === "bold" ? 900 : 600,
                       fontSize: "12px",
                       letterSpacing: "0.005em",
                       lineHeight: 1,
                       marginTop: "3px",
-                      color: "transparent",
-                      background: "linear-gradient(90deg, rgba(255,200,100,0.95) 0%, rgba(255,160,80,0.80) 100%)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      backgroundClip: "text",
+                      fontStyle: (room as any).titleStyle === "italic" ? "italic" : undefined,
                       maxWidth: "240px",
+                      ...((room as any).titleStyle === "gradient"
+                        ? {
+                            color: "transparent",
+                            background: `linear-gradient(90deg, ${(room as any).titleColor || "#8B5CF6"}, #38bdf8)`,
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                            backgroundClip: "text",
+                          }
+                        : (room as any).titleColor
+                        ? {
+                            color: (room as any).titleColor,
+                            textShadow: (room as any).titleStyle === "glow"
+                              ? `0 0 8px ${(room as any).titleColor}, 0 0 16px ${(room as any).titleColor}55`
+                              : (room as any).titleStyle === "neon"
+                              ? `0 0 4px #fff, 0 0 10px ${(room as any).titleColor}, 0 0 20px ${(room as any).titleColor}`
+                              : undefined,
+                          }
+                        : {
+                            color: "transparent",
+                            background: "linear-gradient(90deg, rgba(255,200,100,0.95) 0%, rgba(255,160,80,0.80) 100%)",
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                            backgroundClip: "text",
+                          }),
                     }}
                     data-testid="text-voice-room-title"
                   >
