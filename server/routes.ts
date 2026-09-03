@@ -16,7 +16,7 @@ import { externalCache } from "./cache";
 import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, aiTutorRateLimiter, messageRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
 import { setCleanupContext, getCleanupStats, runCleanupNow } from "./cleanup";
 import { isElevenLabsConfigured, elevenLabsSynthesize, elevenLabsHealth } from "./elevenlabs";
-import { getAiTutorConfig, setAiTutorConfig, maskConfig, mergeIncoming, type AiTutorConfig } from "./ai-config";
+import { getAiTutorConfig, setAiTutorConfig, maskConfig, mergeIncoming, sanitizeSecretList, type AiTutorConfig } from "./ai-config";
 import { openAiSynthesize, openAiTtsHealth } from "./openai-tts";
 import { huggingFaceSynthesize, huggingFaceTtsHealth } from "./huggingface-tts";
 import { checkContent, checkFields, getBlockLog, clearBlockLog } from "./content-filter";
@@ -2077,7 +2077,7 @@ export async function registerRoutes(
       const cfg = await getAiTutorConfig();
 
       if (cfg.provider === "browser") {
-        return res.status(501).json({ error: "browser-tts-no-server" });
+        return res.status(501).json({ error: "browser-tts-no-server", message: "Browser TTS is active — the client speaks on-device (free, never expires)." });
       }
 
       const { text, voice = "Eva", speed = 1.0, language = "en", roomId } = req.body || {};
@@ -2096,72 +2096,105 @@ export async function registerRoutes(
         }
       }
 
-      let result: { ok: boolean; status: number; contentType: string; body?: ArrayBuffer; error?: string };
+      let result: { ok: boolean; status: number; contentType: string; body?: ArrayBuffer; error?: string } | undefined;
+      const isMale = voice === "Male";
+
+      const tryOpenAi = async (): Promise<typeof result> => {
+        const key =
+          sanitizeSecretList(cfg.openai.apiKey)[0] ||
+          sanitizeSecretList(process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY || "")[0] ||
+          "";
+        if (!key) return { ok: false, status: 501, contentType: "", error: "no OpenAI API key configured" };
+        const openAiVoice = isMale
+          ? (cfg.openai.maleVoice || "onyx")
+          : (cfg.openai.voice || "nova");
+        return openAiSynthesize(text.trim(), openAiVoice, cfg.openai.model || "tts-1-hd", key);
+      };
 
       if (cfg.provider === "elevenlabs") {
-        // If keys are configured in DB use them; otherwise fall back to env-var module
-        const dbKeys = cfg.elevenlabs.apiKeys.trim();
-        if (dbKeys) {
-          // Call ElevenLabs directly with DB-configured keys/voice/model
-          const keys = dbKeys.split(",").map((k) => k.trim()).filter(Boolean);
-          // Respect Male/Female voice selection — never silently swap to a random hardcoded voice.
-          const configuredVoiceId = voice === "Male"
-            ? (cfg.elevenlabs.maleVoiceId || "").trim()
-            : (cfg.elevenlabs.voiceId || "").trim();
+        const keys = sanitizeSecretList(cfg.elevenlabs.apiKeys);
+        const envKeys = sanitizeSecretList(process.env.ELEVENLABS_API_KEYS || process.env.ELEVENLABS_API_KEY || "");
+        const activeKeys = keys.length ? keys : envKeys;
+        if (activeKeys.length) {
+          const configuredVoiceId = (isMale
+            ? (cfg.elevenlabs.maleVoiceId || "")
+            : (cfg.elevenlabs.voiceId || "")).trim();
           if (!configuredVoiceId) {
-            return res.status(501).json({
-              error: "voice_not_configured",
-              message: voice === "Male"
-                ? "Male ElevenLabs voice ID is not configured. Set it in Admin → AI Tutor."
-                : "ElevenLabs voice ID is not configured. Set it in Admin → AI Tutor.",
-            });
-          }
-          const voiceId = configuredVoiceId;
-          const modelId = cfg.elevenlabs.modelId || "eleven_multilingual_v2";
-          let lastErr: typeof result | null = null;
-          const tried = new Set<string>();
-          for (const key of keys) {
-            if (tried.has(key)) continue;
-            tried.add(key);
-            const controller = new AbortController();
-            const t = setTimeout(() => controller.abort(), 30_000);
-            try {
-              const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
-                method: "POST",
-                headers: { "xi-api-key": key, "Content-Type": "application/json", Accept: "audio/mpeg" },
-                body: JSON.stringify({ text: text.trim().slice(0, 1000), model_id: modelId, voice_settings: { stability: 0.22, similarity_boost: 0.85 } }),
-                signal: controller.signal,
+            // Prefer OpenAI if available instead of failing hard
+            const oa = await tryOpenAi();
+            if (oa?.ok) {
+              result = oa;
+            } else {
+              return res.status(501).json({
+                error: "voice_not_configured",
+                message: isMale
+                  ? "Male ElevenLabs voice ID is not configured. Set it in Admin → AI Tutor, or switch provider to OpenAI / Browser."
+                  : "ElevenLabs voice ID is not configured. Set it in Admin → AI Tutor, or switch provider to OpenAI / Browser.",
               });
-              if (r.ok) {
-                result = { ok: true, status: 200, contentType: "audio/mpeg", body: await r.arrayBuffer() };
-                break;
+            }
+          } else {
+            const modelId = cfg.elevenlabs.modelId || "eleven_multilingual_v2";
+            let lastErr: NonNullable<typeof result> | null = null;
+            const tried = new Set<string>();
+            for (const key of activeKeys) {
+              if (tried.has(key)) continue;
+              tried.add(key);
+              const controller = new AbortController();
+              const t = setTimeout(() => controller.abort(), 30_000);
+              try {
+                const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${configuredVoiceId}?output_format=mp3_44100_128`, {
+                  method: "POST",
+                  headers: { "xi-api-key": key, "Content-Type": "application/json", Accept: "audio/mpeg" },
+                  body: JSON.stringify({ text: text.trim().slice(0, 1000), model_id: modelId, voice_settings: { stability: 0.22, similarity_boost: 0.85 } }),
+                  signal: controller.signal,
+                });
+                if (r.ok) {
+                  result = { ok: true, status: 200, contentType: "audio/mpeg", body: await r.arrayBuffer() };
+                  break;
+                }
+                const errBody = await r.text().catch(() => "");
+                lastErr = { ok: false, status: r.status, contentType: "", error: `ElevenLabs ${r.status}: ${errBody.slice(0, 180)}` };
+              } catch (e: any) {
+                lastErr = { ok: false, status: 502, contentType: "", error: e?.message || "ElevenLabs fetch failed" };
+              } finally {
+                clearTimeout(t);
               }
-              lastErr = { ok: false, status: r.status, contentType: "", error: `ElevenLabs ${r.status}` };
-            } catch (e: any) {
-              lastErr = { ok: false, status: 502, contentType: "", error: e?.message };
-            } finally {
-              clearTimeout(t);
+            }
+            result = result ?? lastErr ?? { ok: false, status: 501, contentType: "", error: "elevenlabs-not-configured" };
+            // If ElevenLabs quota/auth failed, automatically try OpenAI (same chat key).
+            if (!result.ok && (result.status === 401 || result.status === 403 || result.status === 429 || result.status === 402)) {
+              const oa = await tryOpenAi();
+              if (oa?.ok) result = oa;
             }
           }
-          result = result! ?? lastErr ?? { ok: false, status: 501, contentType: "", error: "elevenlabs-not-configured" };
-        } else {
-          if (!isElevenLabsConfigured()) {
-            return res.status(501).json({ error: "elevenlabs-not-configured", message: "ElevenLabs API keys are not configured." });
-          }
+        } else if (isElevenLabsConfigured()) {
           result = await elevenLabsSynthesize({ text: text.trim(), voice, speed: typeof speed === "number" ? speed : 1.0, language: typeof language === "string" ? language : "en" });
+        } else {
+          // No ElevenLabs keys — try OpenAI instead of failing silently.
+          result = await tryOpenAi();
+          if (!result?.ok) {
+            return res.status(501).json({
+              error: "elevenlabs-not-configured",
+              message: "No working ElevenLabs key. Switch Admin → AI Tutor to OpenAI (uses chat key) or Browser (free forever).",
+            });
+          }
         }
       } else if (cfg.provider === "openai") {
-        result = await openAiSynthesize(text.trim(), cfg.openai.voice, cfg.openai.model, cfg.openai.apiKey);
+        result = await tryOpenAi();
       } else if (cfg.provider === "huggingface") {
         result = await huggingFaceSynthesize(text.trim(), cfg.huggingface.model, cfg.huggingface.apiKey);
       } else {
         return res.status(501).json({ error: "unknown-tts-provider" });
       }
 
-      if (!result.ok || !result.body) {
-        console.error("[AI Tutor TTS] Provider error:", cfg.provider, result.status, result.error);
-        const status = result.status >= 500 ? 502 : result.status;
-        return res.status(status).json({ error: result.error || "tts-failed", detail: { message: result.error, status: result.status } });
+      if (!result?.ok || !result.body) {
+        console.error("[AI Tutor TTS] Provider error:", cfg.provider, result?.status, result?.error);
+        const status = !result ? 502 : result.status >= 500 ? 502 : result.status;
+        return res.status(status).json({
+          error: result?.error || "tts-failed",
+          message: result?.error || "Voice provider failed",
+          detail: { message: result?.error, status: result?.status },
+        });
       }
 
       res.setHeader("Content-Type", result.contentType || "audio/mpeg");
@@ -6620,18 +6653,18 @@ export async function registerRoutes(
       let result: { ok: boolean; status: number; contentType: string; body?: ArrayBuffer; error?: string };
 
       if (cfg.provider === "elevenlabs") {
-        const dbKeys = cfg.elevenlabs.apiKeys.trim();
-        if (!dbKeys && !isElevenLabsConfigured()) {
-          return res.status(501).json({ ok: false, error: "No ElevenLabs API keys configured. Add an API key in the ElevenLabs Settings section above." });
+        const keys = sanitizeSecretList(cfg.elevenlabs.apiKeys);
+        const envKeys = sanitizeSecretList(process.env.ELEVENLABS_API_KEYS || process.env.ELEVENLABS_API_KEY || "");
+        const activeKeys = keys.length ? keys : envKeys;
+        if (!activeKeys.length && !isElevenLabsConfigured()) {
+          return res.status(501).json({ ok: false, error: "No ElevenLabs API keys configured. Add an API key above, or switch to OpenAI / Browser (recommended — free keys often expire)." });
         }
         const voiceId = cfg.elevenlabs.voiceId || "XB0fDUnXU5powFXDhCwa";
-        // Guard: voice IDs are never API keys — they look like "XB0fDUnXU5powFXDhCwa"
-        // ElevenLabs keys start with "sk_" and are long. Warn admins if they mixed them up.
         if (/^sk_[A-Za-z0-9]{20,}/.test(voiceId)) {
-          return res.status(400).json({ ok: false, error: "The Voice ID field contains what looks like an API key (starts with sk_). Please enter a voice ID (e.g. XB0fDUnXU5powFXDhCwa) in the Voice ID field and put your API key in the API Keys field." });
+          return res.status(400).json({ ok: false, error: "The Voice ID field contains what looks like an API key (starts with sk_). Put the API key in API Keys and a voice ID here (e.g. XB0fDUnXU5powFXDhCwa)." });
         }
-        if (dbKeys) {
-          const key = dbKeys.split(",")[0].trim();
+        if (activeKeys.length) {
+          const key = activeKeys[0];
           const modelId = cfg.elevenlabs.modelId || "eleven_multilingual_v2";
           const controller = new AbortController();
           const t = setTimeout(() => controller.abort(), 15_000);
@@ -6650,10 +6683,14 @@ export async function registerRoutes(
           result = await elevenLabsSynthesize({ text: testText, voice: "Eva", speed: 1.0, language: "en" });
         }
       } else if (cfg.provider === "openai") {
-        if (!cfg.openai.apiKey) {
-          return res.status(501).json({ ok: false, error: "No OpenAI API key configured. Add your key in the OpenAI TTS Settings section above." });
+        const key =
+          sanitizeSecretList(cfg.openai.apiKey)[0] ||
+          sanitizeSecretList(process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY || "")[0] ||
+          "";
+        if (!key) {
+          return res.status(501).json({ ok: false, error: "No OpenAI API key. Add one above or set OPENAI_API_KEY on Railway (same key as Talking AI)." });
         }
-        result = await openAiSynthesize(testText, cfg.openai.voice, cfg.openai.model, cfg.openai.apiKey);
+        result = await openAiSynthesize(testText, cfg.openai.voice || "nova", cfg.openai.model || "tts-1-hd", key);
       } else if (cfg.provider === "huggingface") {
         if (!cfg.huggingface.apiKey) {
           return res.status(501).json({ ok: false, error: "No Hugging Face API token configured. Add your HF token in the Hugging Face Settings section above." });

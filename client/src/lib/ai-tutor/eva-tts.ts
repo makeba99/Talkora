@@ -35,8 +35,8 @@ export class EvaTtsEngine {
   // unavailable but the conversation keeps flowing through the system voice.
   private fallback: TtsEngine | null = null;
   private fallbackEngaged = false;
-  // Browser fallback is only valid when the admin explicitly selected it.
-  // Never hide an ElevenLabs/OpenAI/Hugging Face failure by changing voices.
+  // Browser fallback is always allowed when a cloud provider fails so the
+  // tutor never goes silent. Free forever; quality depends on the device.
   private allowBrowserFallback = true;
 
   // Web Audio
@@ -51,17 +51,14 @@ export class EvaTtsEngine {
   }
 
   configure(voice: VoicePersona, speed: number, voiceId?: string | null, provider = "unknown") {
-    const wasFallbackAllowed = this.allowBrowserFallback;
     this.voice = voice;
     this.speed = speed;
     this.voiceId = voiceId || null;
-    // The server is authoritative. Before the first config request completes,
-    // fail closed rather than silently changing an admin-selected voice into
-    // a system voice.
-    this.allowBrowserFallback = provider === "browser";
-    if (wasFallbackAllowed && !this.allowBrowserFallback) {
+    // Always keep a free browser fallback available. Cloud providers (ElevenLabs
+    // especially) expire or run out of credits — the conversation must still speak.
+    this.allowBrowserFallback = true;
+    if (provider === "browser") {
       this.fallbackEngaged = false;
-      this.fallback?.cancel();
     }
   }
 
@@ -104,16 +101,13 @@ export class EvaTtsEngine {
     if (!this.fallback) {
       this.fallback = new TtsEngine(this.callbacks);
     }
-    // Use the Female persona on the browser so Afi K still sounds female
-    // when ElevenLabs is unreachable.
-    this.fallback.configure("Female", this.speed, null);
+    // Match gender so Maya stays female and Miles stays male on fallback.
+    this.fallback.configure(this.voice === "Male" ? "Male" : "Female", this.speed, null);
     return this.fallback;
   }
 
   private engageFallback(reason: string, queuedItem?: QueueItem) {
     if (!this.allowBrowserFallback) {
-      // Do not play the wrong system voice when a server-side provider was
-      // selected. Surface the failure and finish cleanly instead.
       this.queue = [];
       this.currentAbort = null;
       this.active = false;
@@ -121,21 +115,23 @@ export class EvaTtsEngine {
       this.callbacks.onEnd();
       if (typeof window !== "undefined" && (window as any).__vextornOnEvaTtsError) {
         (window as any).__vextornOnEvaTtsError(
-          `Configured AI voice unavailable (${reason}). The system voice was not used.`
+          `Configured AI voice unavailable (${reason}).`,
         );
       }
       return;
     }
-    if (this.fallbackEngaged) return;
+    if (this.fallbackEngaged) {
+      if (queuedItem) this.ensureFallback().enqueue(queuedItem.text);
+      return;
+    }
     this.fallbackEngaged = true;
     if (typeof window !== "undefined" && (window as any).__vextornOnEvaTtsError) {
       (window as any).__vextornOnEvaTtsError(
-        `AI voice unavailable (${reason}) — switched to the system voice for this session.`
+        `Cloud voice unavailable (${reason}) — using free on-device voice for this session.`,
       );
     }
     const fb = this.ensureFallback();
     if (queuedItem) fb.enqueue(queuedItem.text);
-    // Drain remaining queue through the fallback so the conversation continues
     while (this.queue.length > 0) {
       const next = this.queue.shift()!;
       fb.enqueue(next.text);

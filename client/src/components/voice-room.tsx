@@ -16808,24 +16808,22 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
                 {/* Persona cards (dark neumorphic) */}
                 <div className="flex flex-col gap-4 w-full">
-                  {/* Afi K — Female, ElevenLabs female voice */}
                   <NeumorphicPersonaCard
                     testId="button-persona-female"
-                    onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Female", "Afi K"); }}
-                    avatar={<NeumorphicAvatarRing glowRgb="255,140,210" intense content={<img loading="lazy" decoding="async" src={femaleTutorUrl} alt="Afi K avatar" className="w-full h-full object-cover rounded-full" data-testid="img-female-avatar" />} />}
-                    name="Afi K"
-                    description="ElevenLabs · Funny · Flirty · Welcomes by name"
+                    onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Female", "Maya"); }}
+                    avatar={<NeumorphicAvatarRing glowRgb="255,140,210" intense content={<img loading="lazy" decoding="async" src={femaleTutorUrl} alt="Maya avatar" className="w-full h-full object-cover rounded-full" data-testid="img-female-avatar" />} />}
+                    name="Maya"
+                    description="Warm · Natural · Human-like female voice"
                     nameColor="rgba(255,180,220,0.95)"
                     accentColor="rgba(255,140,210,0.90)"
                   />
 
-                  {/* Lebroski — Male, ElevenLabs male voice */}
                   <NeumorphicPersonaCard
                     testId="button-persona-male"
-                    onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Male", "Lebroski"); }}
-                    avatar={<NeumorphicAvatarRing glowRgb="120,180,255" intense content={<img loading="lazy" decoding="async" src={maleTutorUrl} alt="Lebroski avatar" className="w-full h-full object-cover rounded-full" data-testid="img-male-avatar" />} />}
-                    name="Lebroski"
-                    description="ElevenLabs · Chill · Direct · Male voice"
+                    onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Male", "Miles"); }}
+                    avatar={<NeumorphicAvatarRing glowRgb="120,180,255" intense content={<img loading="lazy" decoding="async" src={maleTutorUrl} alt="Miles avatar" className="w-full h-full object-cover rounded-full" data-testid="img-male-avatar" />} />}
+                    name="Miles"
+                    description="Calm · Direct · Human-like male voice"
                     nameColor="rgba(160,200,255,0.95)"
                     accentColor="rgba(100,160,255,0.90)"
                   />
@@ -17445,7 +17443,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         : { background: "rgba(0,180,255,0.15)", border: "1px solid rgba(0,225,255,0.35)", color: "rgba(0,225,255,0.90)", cursor: "pointer" }}>
                       {aiTutorActive
                         ? (aiTutorSettings.voice === "Female" ? `♀ ${aiPersonaName}` : aiTutorSettings.voice === "Male" ? `♂ ${aiPersonaName}` : `✨ ${aiPersonaName}`)
-                        : (aiTutorSettings.voice === "Female" ? "♀ Afi K" : aiTutorSettings.voice === "Male" ? "♂ Lebroski" : "✨ Lebroskiu")}
+                        : (aiTutorSettings.voice === "Female" ? "♀ Maya" : aiTutorSettings.voice === "Male" ? "♂ Miles" : "✨ Maya")}
                     </button>
                   </div>
                   <div>

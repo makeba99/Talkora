@@ -47,10 +47,25 @@ export interface AiTutorDeps {
 }
 
 const FEMALE_INTROS = [
-  "Heeey, I'm Afi K — pronounced Afi Key, don't laugh. What do you wanna do, gorgeous?",
-  "Hiii! Afi K here. I welcome you to the room — talk to me, sing to me, anything goes.",
-  "Oh hey, you called? Afi K, at your service. Are you okay? You seem like trouble — I like it.",
-  "Afi K reporting in. What do you mean huh — what are we doing today, hmm?",
+  "Hey, I'm Maya. So glad you're here — what's on your mind?",
+  "Hi there. I'm Maya. Tell me anything — I'm listening.",
+  "Hey you, I'm Maya. Take your time — what do you wanna talk about?",
+  "Mmm hi, I'm Maya. Whenever you're ready, just start talking.",
+];
+
+const MALE_INTROS = [
+  "Hey — I'm Miles. What's up?",
+  "Miles here. Good to meet you — what do you want to practice?",
+  "Yo, I'm Miles. Let's talk — what's on your mind?",
+  "Hey. Miles. Whenever you're ready, just start.",
+];
+
+// Lebroskiu legacy intros kept for Eva persona if still selected elsewhere
+const EVA_INTROS = [
+  "Hey, I'm Lebroskiu. So glad you're here — what's on your mind?",
+  "Hi there. I'm Lebroskiu. Tell me anything — I'm listening.",
+  "Hey you, I'm Lebroskiu. Take your time — what do you wanna talk about?",
+  "Mmm hi, I'm Lebroskiu. Whenever you're ready, just start talking.",
 ];
 
 // Persona-queue item — requests from other room participants
@@ -60,24 +75,8 @@ interface AiQueueItem {
 }
 
 const AFIK_WELCOME_TEMPLATES = [
-  "[SYSTEM: a new user named {name} just joined the room — give them a warm flirty welcome by name in 1-2 sentences and maybe invite them to sing or chat]",
-  "[SYSTEM: {name} just walked into the room — welcome them in your charming Afi K voice in 1-2 sentences]",
-];
-
-const MALE_INTROS = [
-  "Hey man, I'm Lebroski — your tutor. What are we practicing today?",
-  "What's up! Lebroski here. Say something and let's roll.",
-  "Hey! It's Lebroski. Ready when you are — what do you want to work on?",
-];
-
-// Lebroskiu — warm, emotional, natural (Sesame "Maya"-like). Introduces herself
-// as Lebroskiu, never as "Lebroski" or "Afi K". Keep the lines short and personal so
-// the ElevenLabs voice has room to breathe.
-const EVA_INTROS = [
-  "Hey, I'm Lebroskiu. So glad you're here — what's on your mind?",
-  "Hi there. I'm Lebroskiu. Tell me anything — I'm listening.",
-  "Hey you, I'm Lebroskiu. Take your time — what do you wanna talk about?",
-  "Mmm hi, I'm Lebroskiu. Whenever you're ready, just start talking.",
+  "[SYSTEM: a new user named {name} just joined the room — give them a warm welcome by name in 1-2 sentences]",
+  "[SYSTEM: {name} just walked into the room — welcome them warmly in 1-2 sentences]",
 ];
 
 const FALLBACK_RESPONSES = [

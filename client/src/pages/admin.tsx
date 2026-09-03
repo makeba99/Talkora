@@ -38,8 +38,8 @@ type OwnerAnnouncement = Announcement & { viewCount?: number; dismissCount?: num
 type TtsProvider = "elevenlabs" | "openai" | "huggingface" | "browser";
 type AiTutorConfig = {
   provider: TtsProvider;
-  elevenlabs: { apiKeys: string; voiceId: string; modelId: string };
-  openai: { apiKey: string; model: string; voice: string };
+  elevenlabs: { apiKeys: string; voiceId: string; maleVoiceId?: string; modelId: string };
+  openai: { apiKey: string; model: string; voice: string; maleVoice?: string };
   huggingface: { apiKey: string; model: string };
 };
 type AiConfigResponse = {
@@ -57,22 +57,22 @@ const OPENAI_MODELS = [
   { value: "tts-1-hd", label: "tts-1-hd (slower, higher quality)" },
 ];
 const OPENAI_VOICES = [
+  { value: "nova", label: "Nova (Maya — warm female)" },
+  { value: "shimmer", label: "Shimmer (soft female)" },
   { value: "alloy", label: "Alloy (neutral)" },
   { value: "echo", label: "Echo (male)" },
+  { value: "onyx", label: "Onyx (Miles — deep male)" },
   { value: "fable", label: "Fable (British)" },
-  { value: "nova", label: "Nova (female, recommended)" },
-  { value: "onyx", label: "Onyx (deep)" },
-  { value: "shimmer", label: "Shimmer (gentle)" },
 ];
 
 // Popular ElevenLabs voices for quick picking
 const ELEVENLABS_POPULAR_VOICES = [
-  { id: "XB0fDUnXU5powFXDhCwa", name: "Charlotte", desc: "Female, warm (default Eva)" },
+  { id: "XB0fDUnXU5powFXDhCwa", name: "Charlotte", desc: "Female, Maya-like warm" },
   { id: "EXAVITQu4vr4xnSDxMaL", name: "Bella", desc: "Female, soft" },
   { id: "MF3mGyEYCl7XYWbV9V6O", name: "Elli", desc: "Female, young" },
   { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel", desc: "Female, calm" },
   { id: "AZnzlk1XvdvUeBnXmlld", name: "Domi", desc: "Female, strong" },
-  { id: "2EiwWnXFnvU5JabPnv8n", name: "Clyde", desc: "Male, war veteran" },
+  { id: "2EiwWnXFnvU5JabPnv8n", name: "Clyde", desc: "Male, Miles-like" },
   { id: "pNInz6obpgDQGcFmaJgB", name: "Adam", desc: "Male, deep" },
   { id: "onwK4e9ZLuTAKqWW03F9", name: "Daniel", desc: "Male, British" },
 ];
@@ -2212,8 +2212,9 @@ function AiTutorTab() {
   const [elMaleVoiceId, setElMaleVoiceId] = useState("pNInz6obpgDQGcFmaJgB");
   const [elModelId, setElModelId] = useState("eleven_multilingual_v2");
   const [oaiKey, setOaiKey] = useState("");
-  const [oaiModel, setOaiModel] = useState("tts-1");
+  const [oaiModel, setOaiModel] = useState("tts-1-hd");
   const [oaiVoice, setOaiVoice] = useState("nova");
+  const [oaiMaleVoice, setOaiMaleVoice] = useState("onyx");
   const [hfKey, setHfKey] = useState("");
   const [hfModel, setHfModel] = useState("facebook/mms-tts-eng");
 
@@ -2235,6 +2236,7 @@ function AiTutorTab() {
     setOaiKey(c.openai.apiKey);
     setOaiModel(c.openai.model);
     setOaiVoice(c.openai.voice);
+    setOaiMaleVoice((c.openai as any).maleVoice || "onyx");
     setHfKey(c.huggingface.apiKey);
     setHfModel(c.huggingface.model);
   }, [data]);
@@ -2245,7 +2247,7 @@ function AiTutorTab() {
         config: {
           provider,
           elevenlabs: { apiKeys: elKeys, voiceId: elVoiceId, maleVoiceId: elMaleVoiceId, modelId: elModelId },
-          openai: { apiKey: oaiKey, model: oaiModel, voice: oaiVoice },
+          openai: { apiKey: oaiKey, model: oaiModel, voice: oaiVoice, maleVoice: oaiMaleVoice },
           huggingface: { apiKey: hfKey, model: hfModel },
         },
       }),
@@ -2285,7 +2287,7 @@ function AiTutorTab() {
           config: {
             provider,
             elevenlabs: { apiKeys: elKeys, voiceId: elVoiceId, maleVoiceId: elMaleVoiceId, modelId: elModelId },
-            openai: { apiKey: oaiKey, model: oaiModel, voice: oaiVoice },
+            openai: { apiKey: oaiKey, model: oaiModel, voice: oaiVoice, maleVoice: oaiMaleVoice },
             huggingface: { apiKey: hfKey, model: hfModel },
           },
         }),
@@ -2340,8 +2342,9 @@ function AiTutorTab() {
             AI Tutor Voice Configuration
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Choose the TTS provider for Eva (the AI Tutor avatar). Changes take
-            effect within 30 seconds without restarting the server.
+            Two tutors: <strong>Maya</strong> (female) and <strong>Miles</strong> (male).
+            Sesame Maya has no public free API — use OpenAI (same chat key) or free Browser voices.
+            ElevenLabs free keys often expire or run out of credits.
           </p>
         </CardHeader>
         <CardContent>
@@ -2352,22 +2355,31 @@ function AiTutorTab() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <ProviderCard
-                provider="elevenlabs"
+                provider="browser"
                 current={provider}
-                icon={<Zap className="h-5 w-5 text-yellow-400" />}
-                title="ElevenLabs"
-                description="Ultra-realistic AI voices with emotion and multilingual support."
-                badge="Highest quality"
-                onClick={() => setProvider("elevenlabs")}
+                icon={<Globe2 className="h-5 w-5 text-blue-400" />}
+                title="Browser (Free)"
+                description="On-device neural voices. Free forever — never expires. Recommended when keys fail."
+                badge="Never expires"
+                onClick={() => setProvider("browser")}
               />
               <ProviderCard
                 provider="openai"
                 current={provider}
                 icon={<Cpu className="h-5 w-5 text-green-400" />}
                 title="OpenAI TTS"
-                description="GPT-powered voices. Fast and reliable with multiple styles."
-                badge="Best value"
+                description="Maya=nova, Miles=onyx. Uses your existing OPENAI_API_KEY from Railway."
+                badge="Recommended"
                 onClick={() => setProvider("openai")}
+              />
+              <ProviderCard
+                provider="elevenlabs"
+                current={provider}
+                icon={<Zap className="h-5 w-5 text-yellow-400" />}
+                title="ElevenLabs"
+                description="Highest quality, but free keys expire / hit quota. Paid plans needed for reliability."
+                badge="Quota expires"
+                onClick={() => setProvider("elevenlabs")}
               />
               <ProviderCard
                 provider="huggingface"
@@ -2376,15 +2388,6 @@ function AiTutorTab() {
                 title="Hugging Face"
                 description="Open-source TTS models via HF Inference API."
                 onClick={() => setProvider("huggingface")}
-              />
-              <ProviderCard
-                provider="browser"
-                current={provider}
-                icon={<Globe2 className="h-5 w-5 text-blue-400" />}
-                title="Browser (Free)"
-                description="Web Speech API built into the browser. No API key needed."
-                badge="No cost"
-                onClick={() => setProvider("browser")}
               />
             </div>
           )}
@@ -2565,7 +2568,7 @@ function AiTutorTab() {
                     </Select>
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="oai-voice">Voice</Label>
+                    <Label htmlFor="oai-voice">Maya voice (female)</Label>
                     <Select value={oaiVoice} onValueChange={setOaiVoice}>
                       <SelectTrigger id="oai-voice" data-testid="select-openai-voice">
                         <SelectValue />
@@ -2577,7 +2580,23 @@ function AiTutorTab() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="oai-male-voice">Miles voice (male)</Label>
+                    <Select value={oaiMaleVoice} onValueChange={setOaiMaleVoice}>
+                      <SelectTrigger id="oai-male-voice" data-testid="select-openai-male-voice">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {OPENAI_VOICES.map((v) => (
+                          <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Leave the API key blank to use <code className="text-foreground/80">OPENAI_API_KEY</code> from Railway (same key as Talking AI chat).
+                </p>
               </>
             )}
 
@@ -2632,11 +2651,10 @@ function AiTutorTab() {
           <CardContent className="pt-5 pb-4 flex items-start gap-3">
             <Globe2 className="h-5 w-5 text-blue-400 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-medium">Browser Web Speech API selected</p>
+              <p className="text-sm font-medium">Free on-device voices (never expire)</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Eva will speak using the browser's built-in speech synthesis. No server-side
-                API key is required. Voice quality depends on the user's OS and browser. This
-                works on Chrome, Edge, and Safari. Firefox support is limited.
+                Maya and Miles use your browser/OS neural voices (best on Chrome/Edge with Microsoft Online Natural voices).
+                No API key, no quota, no expiry. Cloud providers are optional upgrades.
               </p>
             </div>
           </CardContent>
