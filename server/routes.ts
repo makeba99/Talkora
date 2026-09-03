@@ -25,6 +25,7 @@ import {
   listAiAlerts,
   markAiAlertsRead,
   listUsableProviderKeys,
+  resetHealthForChangedKeys,
 } from "./ai-provider-manager";
 import { openAiTtsHealth } from "./openai-tts";
 import { checkContent, checkFields, getBlockLog, clearBlockLog } from "./content-filter";
@@ -6797,6 +6798,8 @@ export async function registerRoutes(
       const current = await getAiTutorConfig();
       const merged = mergeIncoming(current, incoming);
       await setAiTutorConfig(merged);
+      // Drop stale RATE_LIMITED / INVALID cooldown from the previous key.
+      await resetHealthForChangedKeys(current, merged);
       res.json({ ok: true, config: maskConfig(merged) });
     } catch (err: any) {
       res.status(500).json({ message: err.message });

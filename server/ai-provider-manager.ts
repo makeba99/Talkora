@@ -196,10 +196,14 @@ export function classifyProviderError(status: number, bodyText = ""): Classified
   if (status === 401 || status === 403) {
     return { failover: true, status: "INVALID", message: "invalid or unauthorized API key" };
   }
-  if (status === 429) {
+  // OpenAI often returns HTTP 429 for both true rate limits AND insufficient quota.
+  if (status === 429 || /rate.?limit|too many requests/i.test(lower)) {
+    if (/insufficient_quota|quota|billing|exceeded your current quota|credit/i.test(lower)) {
+      return { failover: true, status: "QUOTA_EXHAUSTED", message: "quota exhausted" };
+    }
     return { failover: true, status: "RATE_LIMITED", message: "rate limited" };
   }
-  if (status === 402 || /quota|billing|insufficient|exceeded|credit/i.test(lower)) {
+  if (status === 402 || /insufficient_quota|quota|billing|exceeded|credit/i.test(lower)) {
     return { failover: true, status: "QUOTA_EXHAUSTED", message: "quota exhausted" };
   }
   if (status === 404 && /model/i.test(lower)) {
@@ -213,6 +217,40 @@ export function classifyProviderError(status: number, bodyText = ""): Classified
     return { failover: false, status: "ERROR", message: "invalid request" };
   }
   return { failover: status >= 500, status: "ERROR", message: `HTTP ${status}` };
+}
+
+/** Clear health/cooldown for a slot (keeps cumulative usage counters). */
+export function resetSlotHealth(kind: ProviderKind, slot: KeySlot): void {
+  const st = stateMap(kind)[slot];
+  st.status = "UNKNOWN";
+  st.cooldownUntil = 0;
+  st.lastError = null;
+  void persistUsage();
+}
+
+/**
+ * When an admin replaces an API key, drop stale RATE_LIMITED / INVALID state
+ * from the previous key so the new key is tried immediately.
+ */
+export async function resetHealthForChangedKeys(
+  before: AiTutorConfig,
+  after: AiTutorConfig,
+): Promise<void> {
+  await ensureUsageLoaded();
+  const pairs: Array<{ kind: ProviderKind; slot: KeySlot; prev: string; next: string }> = [
+    { kind: "brain", slot: "primary", prev: before.brain.primaryKey, next: after.brain.primaryKey },
+    { kind: "brain", slot: "secondary", prev: before.brain.secondaryKey, next: after.brain.secondaryKey },
+    { kind: "voice", slot: "primary", prev: before.voice.primaryKey, next: after.voice.primaryKey },
+    { kind: "voice", slot: "secondary", prev: before.voice.secondaryKey, next: after.voice.secondaryKey },
+  ];
+  for (const p of pairs) {
+    const a = sanitizeKey(p.prev);
+    const b = sanitizeKey(p.next);
+    if (a !== b) {
+      resetSlotHealth(p.kind, p.slot);
+      console.log(`[ai-provider] ${p.kind} ${p.slot} key changed — health reset`);
+    }
+  }
 }
 
 function markFailure(kind: ProviderKind, slot: KeySlot, health: KeyHealth, message: string) {
@@ -545,28 +583,38 @@ export async function testBrainKey(slot: KeySlot, overrideKey?: string): Promise
 }> {
   await ensureUsageLoaded();
   const cfg = await getAiTutorConfig();
-  const key = sanitizeKey(overrideKey) || getKey(cfg, "brain", slot);
+  const stored = getKey(cfg, "brain", slot);
+  const key = sanitizeKey(overrideKey) || stored;
   if (!key) return { ok: false, message: "No API key configured", status: "UNKNOWN" };
+
+  // Probe of an unsaved replacement key must not poison the stored slot's health.
+  const probeOnly = !!sanitizeKey(overrideKey) && sanitizeKey(overrideKey) !== stored;
+  // Admin is explicitly testing — clear stale cooldown from a previous key.
+  if (!probeOnly) {
+    brainState[slot].cooldownUntil = 0;
+  }
 
   try {
     const r = await fetch("https://api.openai.com/v1/models", {
       headers: { Authorization: `Bearer ${key}` },
     });
     if (r.ok) {
-      markSuccess("brain", slot);
-      brainState[slot].status = "HEALTHY";
+      if (!probeOnly) {
+        markSuccess("brain", slot);
+        brainState[slot].status = "HEALTHY";
+      }
       return { ok: true, message: "Connection successful", status: "HEALTHY" };
     }
     const classified = classifyProviderError(r.status, await r.text().catch(() => ""));
-    markFailure("brain", slot, classified.status, classified.message);
+    if (!probeOnly) markFailure("brain", slot, classified.status, classified.message);
     const msg =
       classified.status === "INVALID" ? "Invalid API key" :
-      classified.status === "QUOTA_EXHAUSTED" ? "Quota exceeded" :
-      classified.status === "RATE_LIMITED" ? "Rate limited" :
+      classified.status === "QUOTA_EXHAUSTED" ? "Quota exceeded (OpenAI billing/credits)" :
+      classified.status === "RATE_LIMITED" ? "Rate limited — wait a minute and retry" :
       "Provider unavailable";
     return { ok: false, message: msg, status: classified.status };
   } catch (err: any) {
-    markFailure("brain", slot, "ERROR", err?.message || "network");
+    if (!probeOnly) markFailure("brain", slot, "ERROR", err?.message || "network");
     return { ok: false, message: "Provider unavailable", status: "ERROR" };
   }
 }
@@ -580,8 +628,14 @@ export async function testVoiceKey(slot: KeySlot, overrideKey?: string): Promise
 }> {
   await ensureUsageLoaded();
   const cfg = await getAiTutorConfig();
-  const key = sanitizeKey(overrideKey) || getKey(cfg, "voice", slot);
+  const stored = getKey(cfg, "voice", slot);
+  const key = sanitizeKey(overrideKey) || stored;
   if (!key) return { ok: false, message: "No API key configured", status: "UNKNOWN" };
+
+  const probeOnly = !!sanitizeKey(overrideKey) && sanitizeKey(overrideKey) !== stored;
+  if (!probeOnly) {
+    voiceState[slot].cooldownUntil = 0;
+  }
 
   const result = await openAiSynthesize(
     "Hello. This is a Vextorn voice configuration test.",
@@ -590,15 +644,15 @@ export async function testVoiceKey(slot: KeySlot, overrideKey?: string): Promise
     key,
   );
   if (result.ok && result.body) {
-    markSuccess("voice", slot, { characters: 48 });
+    if (!probeOnly) markSuccess("voice", slot, { characters: 48 });
     return { ok: true, message: "Connection successful", status: "HEALTHY", audio: result.body, contentType: result.contentType };
   }
   const classified = classifyProviderError(result.status, result.error || "");
-  markFailure("voice", slot, classified.status, classified.message);
+  if (!probeOnly) markFailure("voice", slot, classified.status, classified.message);
   const msg =
     classified.status === "INVALID" ? "Invalid API key" :
-    classified.status === "QUOTA_EXHAUSTED" ? "Quota exceeded" :
-    classified.status === "RATE_LIMITED" ? "Rate limited" :
+    classified.status === "QUOTA_EXHAUSTED" ? "Quota exceeded (OpenAI billing/credits)" :
+    classified.status === "RATE_LIMITED" ? "Rate limited — wait a minute and retry" :
     "Provider unavailable";
   return { ok: false, message: msg, status: classified.status };
 }
