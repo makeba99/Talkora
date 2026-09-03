@@ -77,8 +77,27 @@ const CACHE_TTL_MS = 15_000;
 
 export const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 export const OPENAI_BASE_URL = "https://api.openai.com/v1";
-export const DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant";
+export const DEFAULT_GROQ_MODEL = "openai/gpt-oss-20b";
 export const DEFAULT_OPENAI_MODEL = "gpt-4o";
+
+/** Deprecated Groq model IDs → current free-tier replacements (post Aug 2026). */
+const GROQ_MODEL_ALIASES: Record<string, string> = {
+  "llama-3.1-8b-instant": "openai/gpt-oss-20b",
+  "llama-3.3-70b-versatile": "openai/gpt-oss-120b",
+  "llama-3.1-70b-versatile": "openai/gpt-oss-120b",
+  "llama3-8b-8192": "openai/gpt-oss-20b",
+  "llama3-70b-8192": "openai/gpt-oss-120b",
+  "mixtral-8x7b-32768": "openai/gpt-oss-20b",
+  "gemma2-9b-it": "openai/gpt-oss-20b",
+};
+
+export function resolveGroqModel(model: string | null | undefined): string {
+  const m = String(model || "").trim();
+  if (!m || /^gpt-4/i.test(m) || /^gpt-3/i.test(m) || m === "gpt-4o" || m === "gpt-4o-mini") {
+    return DEFAULT_GROQ_MODEL;
+  }
+  return GROQ_MODEL_ALIASES[m] || m;
+}
 
 let cached: AiTutorConfig | null = null;
 let cachedAt = 0;
@@ -117,6 +136,57 @@ export function isGroqKey(key: string): boolean {
   return /^gsk_/i.test(sanitizeKey(key));
 }
 
+/** Keep brain/voice providers consistent with saved keys (gsk_ → Groq, no TTS key → Edge). */
+export function normalizeAiTutorConfig(cfg: AiTutorConfig): AiTutorConfig {
+  const primary = sanitizeKey(cfg.brain.primaryKey);
+  const secondary = sanitizeKey(cfg.brain.secondaryKey);
+  let brainProvider = asBrainProvider(cfg.brain.provider, "openai");
+  let brainModel = cfg.brain.model || DEFAULT_OPENAI_MODEL;
+
+  if (isGroqKey(primary) || isGroqKey(secondary)) {
+    brainProvider = "groq";
+  }
+  if (brainProvider === "groq") {
+    brainModel = resolveGroqModel(brainModel);
+  }
+
+  let voiceProvider = asVoiceProvider(cfg.voice.provider, "edge");
+  const hasVoiceKey =
+    !!sanitizeKey(cfg.voice.primaryKey) || !!sanitizeKey(cfg.voice.secondaryKey);
+  // Paid OpenAI TTS without keys → free Edge neural
+  if (voiceProvider === "openai" && !hasVoiceKey) {
+    voiceProvider = "edge";
+  }
+
+  let femaleVoice = cfg.voice.femaleVoice || DEFAULT_EDGE_FEMALE;
+  let maleVoice = cfg.voice.maleVoice || DEFAULT_EDGE_MALE;
+  if (voiceProvider === "edge") {
+    if (!femaleVoice || /^(nova|shimmer|alloy|onyx|echo|fable|coral|sage|ash)$/i.test(femaleVoice)) {
+      femaleVoice = DEFAULT_EDGE_FEMALE;
+    }
+    if (!maleVoice || /^(nova|shimmer|alloy|onyx|echo|fable|coral|sage|ash)$/i.test(maleVoice)) {
+      maleVoice = DEFAULT_EDGE_MALE;
+    }
+  }
+
+  return {
+    version: 2,
+    brain: {
+      ...cfg.brain,
+      provider: brainProvider,
+      model: brainModel,
+      warnThresholdPct: cfg.brain.warnThresholdPct || 80,
+    },
+    voice: {
+      ...cfg.voice,
+      provider: voiceProvider,
+      femaleVoice,
+      maleVoice,
+      warnThresholdPct: cfg.voice.warnThresholdPct || 80,
+    },
+  };
+}
+
 /** Resolve OpenAI-compatible base URL + model for a specific brain key. */
 export function resolveBrainEndpoint(
   key: string,
@@ -124,11 +194,11 @@ export function resolveBrainEndpoint(
 ): { baseUrl: string; model: string; provider: BrainProvider } {
   const useGroq = cfg.brain.provider === "groq" || isGroqKey(key);
   if (useGroq) {
-    const model =
-      !cfg.brain.model || /^gpt-/i.test(cfg.brain.model)
-        ? DEFAULT_GROQ_MODEL
-        : cfg.brain.model;
-    return { baseUrl: GROQ_BASE_URL, model, provider: "groq" };
+    return {
+      baseUrl: GROQ_BASE_URL,
+      model: resolveGroqModel(cfg.brain.model),
+      provider: "groq",
+    };
   }
   const baseUrl =
     process.env.AI_INTEGRATIONS_OPENAI_BASE_URL?.trim() || OPENAI_BASE_URL;
@@ -269,10 +339,10 @@ function fillEmptyFromEnv(cfg: AiTutorConfig): AiTutorConfig {
   const primaryKey = sanitizeKey(cfg.brain.primaryKey) || d.brain.primaryKey;
   const secondaryKey = sanitizeKey(cfg.brain.secondaryKey) || d.brain.secondaryKey;
   let provider = asBrainProvider(cfg.brain.provider, d.brain.provider);
-  if (isGroqKey(primaryKey) && provider === "openai" && !sanitizeKey(envOpenAiKey())) {
+  if (isGroqKey(primaryKey) || isGroqKey(secondaryKey)) {
     provider = "groq";
   }
-  return {
+  const filled: AiTutorConfig = {
     version: 2,
     brain: {
       ...cfg.brain,
@@ -293,6 +363,7 @@ function fillEmptyFromEnv(cfg: AiTutorConfig): AiTutorConfig {
       warnThresholdPct: cfg.voice.warnThresholdPct || 80,
     },
   };
+  return normalizeAiTutorConfig(filled);
 }
 
 export async function getAiTutorConfig(): Promise<AiTutorConfig> {
@@ -315,41 +386,29 @@ export async function getAiTutorConfig(): Promise<AiTutorConfig> {
 }
 
 export async function setAiTutorConfig(config: AiTutorConfig): Promise<void> {
-  const brainProvider = asBrainProvider(config.brain.provider, "openai");
-  const voiceProvider = asVoiceProvider(config.voice.provider, "edge");
-  const normalized: AiTutorConfig = {
+  const normalized = normalizeAiTutorConfig({
     version: 2,
     brain: {
-      provider: brainProvider,
+      provider: asBrainProvider(config.brain.provider, "openai"),
       primaryKey: config.brain.primaryKey || "",
       secondaryKey: config.brain.secondaryKey || "",
-      model:
-        config.brain.model ||
-        (brainProvider === "groq" ? DEFAULT_GROQ_MODEL : DEFAULT_OPENAI_MODEL),
+      model: config.brain.model || DEFAULT_OPENAI_MODEL,
       warnThresholdPct: [80, 90, 95].includes(config.brain.warnThresholdPct)
         ? config.brain.warnThresholdPct
         : 80,
     },
     voice: {
-      provider: voiceProvider,
+      provider: asVoiceProvider(config.voice.provider, "edge"),
       primaryKey: config.voice.primaryKey || "",
       secondaryKey: config.voice.secondaryKey || "",
-      femaleVoice:
-        config.voice.femaleVoice ||
-        (voiceProvider === "edge" || voiceProvider === "browser"
-          ? DEFAULT_EDGE_FEMALE
-          : "nova"),
-      maleVoice:
-        config.voice.maleVoice ||
-        (voiceProvider === "edge" || voiceProvider === "browser"
-          ? DEFAULT_EDGE_MALE
-          : "onyx"),
+      femaleVoice: config.voice.femaleVoice || DEFAULT_EDGE_FEMALE,
+      maleVoice: config.voice.maleVoice || DEFAULT_EDGE_MALE,
       model: config.voice.model || "tts-1-hd",
       warnThresholdPct: [80, 90, 95].includes(config.voice.warnThresholdPct)
         ? config.voice.warnThresholdPct
         : 80,
     },
-  };
+  });
   await storage.setSetting(SETTINGS_KEY, JSON.stringify(normalized));
   cached = fillEmptyFromEnv(normalized);
   cachedAt = Date.now();
@@ -412,7 +471,7 @@ export function mergeIncoming(
       incoming.voice?.provider,
       current.voice.provider,
     );
-    return {
+    return normalizeAiTutorConfig({
       version: 2,
       brain: {
         provider: brainProvider,
@@ -430,7 +489,7 @@ export function mergeIncoming(
         model: incoming.voice?.model ?? current.voice.model,
         warnThresholdPct: Number(incoming.voice?.warnThresholdPct) || current.voice.warnThresholdPct,
       },
-    };
+    });
   }
 
   const oai = keepOrReplace(current.brain.primaryKey, incoming?.openai?.apiKey);

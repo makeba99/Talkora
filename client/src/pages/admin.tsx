@@ -88,8 +88,8 @@ const BRAIN_MODELS_OPENAI = [
   { value: "gpt-4o-mini", label: "gpt-4o-mini (faster, cheaper)" },
 ];
 const BRAIN_MODELS_GROQ = [
-  { value: "llama-3.1-8b-instant", label: "llama-3.1-8b-instant (free, fast)" },
-  { value: "llama-3.3-70b-versatile", label: "llama-3.3-70b-versatile (free, smarter)" },
+  { value: "openai/gpt-oss-20b", label: "gpt-oss-20b (free, fast — recommended)" },
+  { value: "openai/gpt-oss-120b", label: "gpt-oss-120b (free, smarter)" },
 ];
 const VOICE_MODELS = [
   { value: "tts-1-hd", label: "tts-1-hd (natural, higher quality)" },
@@ -2262,7 +2262,7 @@ function AiTutorTab() {
   const [brainProvider, setBrainProvider] = useState<"openai" | "groq">("groq");
   const [brainPrimaryKey, setBrainPrimaryKey] = useState("");
   const [brainSecondaryKey, setBrainSecondaryKey] = useState("");
-  const [brainModel, setBrainModel] = useState("llama-3.1-8b-instant");
+  const [brainModel, setBrainModel] = useState("openai/gpt-oss-20b");
   const [brainWarn, setBrainWarn] = useState(80);
 
   const [voiceProvider, setVoiceProvider] = useState<"openai" | "edge" | "browser">("edge");
@@ -2283,7 +2283,7 @@ function AiTutorTab() {
     if (!data?.config) return;
     const c = data.config;
     setBrainProvider(c.brain.provider || "groq");
-    setBrainModel(c.brain.model || (c.brain.provider === "groq" ? "llama-3.1-8b-instant" : "gpt-4o"));
+    setBrainModel(c.brain.model || (c.brain.provider === "groq" ? "openai/gpt-oss-20b" : "gpt-4o"));
     setBrainWarn(c.brain.warnThresholdPct || 80);
     setVoiceProvider(c.voice.provider || "edge");
     setVoiceModel(c.voice.model || "tts-1-hd");
@@ -2407,9 +2407,44 @@ function AiTutorTab() {
           </CardTitle>
           <p className="text-sm text-muted-foreground">
             Free path: <strong>Groq</strong> brain + <strong>Edge neural</strong> voice (natural, no API key).
-            Optional OpenAI for higher quality. Primary fails over to Secondary on recoverable errors.
+            Brain answers in text even if voice fails. Keys stay server-side.
           </p>
         </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${data?.hasKeys?.brainPrimary || data?.hasKeys?.brainSecondary ? "border-emerald-500/40 text-emerald-300 bg-emerald-500/10" : "border-red-500/40 text-red-300 bg-red-500/10"}`}>
+              {statusDot(data?.hasKeys?.brainPrimary || data?.hasKeys?.brainSecondary ? "HEALTHY" : "ERROR")}
+              Brain: {data?.hasKeys?.brainPrimary || data?.hasKeys?.brainSecondary ? `${cfg?.brain.provider || "—"} ready` : "key required"}
+            </span>
+            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${cfg?.voice.provider === "edge" || cfg?.voice.provider === "browser" || data?.hasKeys?.voicePrimary ? "border-emerald-500/40 text-emerald-300 bg-emerald-500/10" : "border-amber-500/40 text-amber-300 bg-amber-500/10"}`}>
+              {statusDot(cfg?.voice.provider === "edge" || cfg?.voice.provider === "browser" || data?.hasKeys?.voicePrimary ? "HEALTHY" : "WARNING")}
+              Voice: {cfg?.voice.provider === "edge" ? "Edge neural (free)" : cfg?.voice.provider === "browser" ? "Browser" : data?.hasKeys?.voicePrimary ? "OpenAI ready" : "not configured"}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => {
+                setBrainProvider("groq");
+                setBrainModel("openai/gpt-oss-20b");
+                setVoiceProvider("edge");
+                setFemaleVoice("en-US-AvaNeural");
+                setMaleVoice("en-US-AndrewNeural");
+                toast({
+                  title: "Free stack selected",
+                  description: "Paste your Groq key (gsk_…) below, then Save. Edge voice needs no key.",
+                });
+              }}
+              data-testid="button-apply-free-stack"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Use free stack (Groq + Edge)
+            </Button>
+          </div>
+        </CardContent>
       </Card>
 
       {unread.length > 0 && (
@@ -2468,7 +2503,7 @@ function AiTutorTab() {
                     onValueChange={(v) => {
                       const p = v as "openai" | "groq";
                       setBrainProvider(p);
-                      setBrainModel(p === "groq" ? "llama-3.1-8b-instant" : "gpt-4o");
+                      setBrainModel(p === "groq" ? "openai/gpt-oss-20b" : "gpt-4o");
                     }}
                   >
                     <SelectTrigger data-testid="select-brain-provider">
@@ -2501,7 +2536,15 @@ function AiTutorTab() {
                   <MaskedKeyInput
                     key={`bp-${cfg?.brain.primaryKeyMasked || "none"}`}
                     value={brainPrimaryKey}
-                    onChange={setBrainPrimaryKey}
+                    onChange={(v) => {
+                      setBrainPrimaryKey(v);
+                      if (/^gsk_/i.test(v.trim())) {
+                        setBrainProvider("groq");
+                        if (/^gpt-4|^llama/i.test(brainModel) || !brainModel) {
+                          setBrainModel("openai/gpt-oss-20b");
+                        }
+                      }
+                    }}
                     hasStored={!!cfg?.brain.hasPrimary}
                     testId="input-brain-primary"
                     placeholder={brainProvider === "groq" ? "gsk_..." : "sk-..."}

@@ -49,7 +49,7 @@ export async function streamTokens(
       firstByteController.abort();
       callbacks.onError("first-byte timeout");
     }
-  }, 6000);
+  }, 10000);
 
   // Merge caller's abort signal with our first-byte timeout signal
   const combinedSignal = AbortSignal.any

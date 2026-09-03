@@ -54,10 +54,11 @@ export class EvaTtsEngine {
     this.voice = voice;
     this.speed = speed;
     this.voiceId = voiceId || null;
-    // Always keep a free browser fallback available. Cloud providers (ElevenLabs
-    // especially) expire or run out of credits — the conversation must still speak.
+    // Always keep a free browser fallback available for one-off failures.
     this.allowBrowserFallback = true;
-    if (provider === "browser") {
+    // Re-enable cloud TTS whenever admin/provider config refreshes — do NOT
+    // leave the session stuck on robotic browser voice after a single glitch.
+    if (provider === "browser" || provider === "edge" || provider === "openai" || provider === "elevenlabs") {
       this.fallbackEngaged = false;
     }
   }
@@ -120,24 +121,23 @@ export class EvaTtsEngine {
       }
       return;
     }
-    if (this.fallbackEngaged) {
-      if (queuedItem) this.ensureFallback().enqueue(queuedItem.text);
-      return;
-    }
-    this.fallbackEngaged = true;
-    if (typeof window !== "undefined" && (window as any).__vextornOnEvaTtsError) {
+    // Per-utterance browser fallback only — next sentences retry cloud TTS
+    // so a single Edge/OpenAI blip does not lock Maya into a robotic male voice.
+    if (typeof window !== "undefined" && (window as any).__vextornOnEvaTtsError && !this.fallbackEngaged) {
       (window as any).__vextornOnEvaTtsError(
-        `Cloud voice unavailable (${reason}) — using free on-device voice for this session.`,
+        `Cloud voice blip (${reason}) — using on-device voice for this line.`,
       );
     }
     const fb = this.ensureFallback();
     if (queuedItem) fb.enqueue(queuedItem.text);
+    // Drain only currently queued items through browser once, then resume cloud.
     while (this.queue.length > 0) {
       const next = this.queue.shift()!;
       fb.enqueue(next.text);
     }
     this.active = false;
     this.callbacks.onViseme?.("rest");
+    // Do NOT set fallbackEngaged sticky — cloud path stays preferred.
   }
 
   get isActive() { return this.active; }

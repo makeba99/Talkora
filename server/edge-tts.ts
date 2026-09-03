@@ -33,11 +33,26 @@ export interface EdgeTtsResult {
 /** Map OpenAI-style short names (or empty) onto Edge neural voices. */
 export function resolveEdgeVoiceId(voice: string | null | undefined, gender: "female" | "male"): string {
   const v = String(voice || "").trim();
-  if (/Neural$/i.test(v)) return v;
+  if (/Neural$/i.test(v)) {
+    // If an explicit Neural id was saved for the other gender, still honor the
+    // requested gender when the id clearly mismatches (e.g. Andrew for female).
+    const lower = v.toLowerCase();
+    const looksMale = /andrew|brian|guy|ryan|davis|christopher|eric|guyneural|tonyneural/.test(lower);
+    const looksFemale = /ava|emma|jenny|sonia|aria|sara|michelle|jane|libby/.test(lower);
+    if (gender === "female" && looksMale && !looksFemale) return EDGE_FEMALE_DEFAULT;
+    if (gender === "male" && looksFemale && !looksMale) return EDGE_MALE_DEFAULT;
+    return v;
+  }
   // Legacy OpenAI names → Edge equivalents
   if (/^(nova|shimmer|alloy|fable|coral|sage)$/i.test(v)) return EDGE_FEMALE_DEFAULT;
   if (/^(onyx|echo|ash)$/i.test(v)) return EDGE_MALE_DEFAULT;
   return gender === "male" ? EDGE_MALE_DEFAULT : EDGE_FEMALE_DEFAULT;
+}
+
+/** Persona → gender. Must NOT match "male" inside "Female". */
+export function isMalePersona(persona?: string | null): boolean {
+  const p = String(persona || "").trim().toLowerCase();
+  return p === "male" || p === "dude" || p === "miles" || p === "guy" || p === "lebroski";
 }
 
 export async function edgeSynthesize(

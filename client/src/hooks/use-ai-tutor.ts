@@ -215,15 +215,22 @@ export function useAiTutor(deps: AiTutorDeps) {
         const cloud = cfg.provider === "openai" || cfg.provider === "elevenlabs" || cfg.provider === "edge";
         if (cloud && cfg.voiceId) {
           serverVoiceIdRef.current = cfg.voiceId;
-          setAiSettings(s => ({ ...s, voiceId: cfg.voiceId }));
         }
         if (cloud && cfg.maleVoiceId) {
           serverMaleVoiceIdRef.current = cfg.maleVoiceId;
         }
+        // Keep settings.voiceId aligned with the active persona gender.
+        const genderedId =
+          aiSettings.voice === "Male"
+            ? (serverMaleVoiceIdRef.current || cfg.maleVoiceId || null)
+            : (serverVoiceIdRef.current || cfg.voiceId || null);
+        if (genderedId) {
+          setAiSettings(s => ({ ...s, voiceId: genderedId }));
+        }
         ttsRef.current?.configure(
           aiSettings.voice,
           aiSettings.speed,
-          aiSettings.voiceId,
+          genderedId || aiSettings.voiceId,
           serverTtsProviderRef.current,
         );
       })
@@ -371,14 +378,19 @@ export function useAiTutor(deps: AiTutorDeps) {
           addDebug("error", `STT: ${msg}`);
           setMicError(msg);
           if (!activeRef.current) return;
+          // Mic closed / blocked → open text chat so the user can still talk to the AI.
+          if (/denied|audio-capture|not-allowed|service-not-allowed|permission/i.test(msg)) {
+            setAiChatPanelOpen(true);
+            addDebug("info", "Mic unavailable — opened AI Tutor text chat.");
+          }
           // Speak a concise, actionable recovery prompt — short so it doesn't
           // talk over the user trying to fix the issue.
           if (/denied/i.test(msg)) {
-            ttsRef.current?.enqueue("I can't hear you. Please allow microphone access in your browser, then try again.");
+            ttsRef.current?.enqueue("I can't hear you. You can type in the chat instead.");
           } else if (msg === "network") {
             ttsRef.current?.enqueue("Connection issue — check your network and try again.");
           } else if (msg === "audio-capture") {
-            ttsRef.current?.enqueue("Can't access the mic. Close any other app using it, then speak again.");
+            ttsRef.current?.enqueue("Can't access the mic. Type in the chat, or close other apps using the mic.");
           } else if (/recognition-error:/i.test(msg)) {
             const REPEAT_PROMPTS = [
               "Didn't catch that — try again?",
@@ -613,15 +625,24 @@ export function useAiTutor(deps: AiTutorDeps) {
         ttsRef.current?.enqueue(fallback.reply);
       } else {
         const errDetail = (fallback as any)?.error || err?.message || "";
-        const needsKey = /not configured|missing_api|OPENAI|no_openai|503/i.test(String(errDetail));
+        const needsKey = /not configured|missing_api|OPENAI|GROQ|no_openai|503|brain/i.test(String(errDetail));
         const errText = needsKey
-          ? "My brain is offline — an admin needs to set an OpenAI API key in Admin → AI Tutor (or OPENAI_API_KEY on the server)."
+          ? "My brain is offline — an admin needs to set a Groq or OpenAI API key in Admin → AI Tutor."
           : "Talking AI is unavailable right now. Please try again in a moment.";
         const fbMsg: ConversationEntry = { id: `a-${Date.now()}`, role: "ai", text: errText };
         setAiConversation(prev => [...prev, fbMsg]);
-        // Always speak the error so the tutor never goes silent (browser TTS fallback).
+        // Speak error with the configured provider (Edge/OpenAI), not sticky browser.
         try {
-          ttsRef.current?.configure(aiSettings.voice, aiSettings.speed, null, "browser");
+          const errVoiceId =
+            aiSettings.voice === "Male"
+              ? (serverMaleVoiceIdRef.current || aiSettings.voiceId)
+              : (serverVoiceIdRef.current || aiSettings.voiceId);
+          ttsRef.current?.configure(
+            aiSettings.voice,
+            aiSettings.speed,
+            errVoiceId,
+            serverTtsProviderRef.current || "edge",
+          );
           ttsRef.current?.enqueue(errText);
         } catch { /* ignore */ }
         addDebug("error", `All AI calls failed: ${errDetail || "unknown"}`);
@@ -706,8 +727,9 @@ export function useAiTutor(deps: AiTutorDeps) {
 
     socket?.emit("room:ai-tutor-start", { roomId, userId, username, avatarId, voice, voiceId });
     setAiActive(true);
-    setAiChatPanelOpen(false);
-    chatPanelOpenRef.current = false;
+    // Keep text chat open so the user can type if the mic is closed / denied.
+    setAiChatPanelOpen(true);
+    chatPanelOpenRef.current = true;
     setAiConversation([]);
     setAiDebugLog([]);
     setAiLastBroadcast(null);
@@ -736,8 +758,8 @@ export function useAiTutor(deps: AiTutorDeps) {
       // Default start (no persona selection — use current settings)
       socket?.emit("room:ai-tutor-start", { roomId, userId, username, avatarId: aiSettings.avatarId, voice: aiSettings.voice, voiceId: aiSettings.voiceId });
       setAiActive(true);
-      setAiChatPanelOpen(false);
-      chatPanelOpenRef.current = false;
+      setAiChatPanelOpen(true);
+      chatPanelOpenRef.current = true;
       setAiConversation([]);
       setAiDebugLog([]);
       setAiLastBroadcast(null);

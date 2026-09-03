@@ -11,11 +11,13 @@ import {
   getAiTutorConfig,
   sanitizeKey,
   resolveBrainEndpoint,
+  resolveGroqModel,
+  DEFAULT_GROQ_MODEL,
   type AiTutorConfig,
   type KeyHealth,
 } from "./ai-config";
 import { openAiSynthesize } from "./openai-tts";
-import { edgeSynthesize, resolveEdgeVoiceId } from "./edge-tts";
+import { edgeSynthesize, resolveEdgeVoiceId, isMalePersona } from "./edge-tts";
 
 export type KeySlot = "primary" | "secondary";
 export type ProviderKind = "brain" | "voice";
@@ -208,8 +210,8 @@ export function classifyProviderError(status: number, bodyText = ""): Classified
   if (status === 402 || /insufficient_quota|quota|billing|exceeded|credit/i.test(lower)) {
     return { failover: true, status: "QUOTA_EXHAUSTED", message: "quota exhausted" };
   }
-  if (status === 404 && /model/i.test(lower)) {
-    return { failover: false, status: "ERROR", message: "model not found" };
+  if ((status === 404 || status === 400) && /model.?not.?found|does not exist|invalid model/i.test(lower)) {
+    return { failover: true, status: "ERROR", message: "model not found" };
   }
   if (status >= 500) {
     return { failover: true, status: "ERROR", message: `provider unavailable (${status})` };
@@ -373,51 +375,134 @@ export async function generateAIResponse(opts: {
     lastModel = endpoint.model;
 
     try {
-      const r = await fetch(`${endpoint.baseUrl}/chat/completions`, {
+      const buildBody = (withJson: boolean) =>
+        JSON.stringify({
+          model: endpoint.model,
+          messages: opts.messages,
+          max_tokens: opts.maxTokens ?? 160,
+          temperature: opts.temperature ?? 0.62,
+          ...(withJson && opts.responseFormat
+            ? { response_format: opts.responseFormat }
+            : {}),
+        });
+
+      let r = await fetch(`${endpoint.baseUrl}/chat/completions`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${key}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          model: endpoint.model,
-          messages: opts.messages,
-          max_tokens: opts.maxTokens ?? 160,
-          temperature: opts.temperature ?? 0.62,
-          ...(opts.responseFormat ? { response_format: opts.responseFormat } : {}),
-        }),
+        body: buildBody(true),
       });
-      const raw = await r.text();
+      let raw = await r.text();
+
+      // Groq / some models reject JSON mode — retry once as plain text.
+      if (
+        !r.ok &&
+        r.status === 400 &&
+        opts.responseFormat &&
+        endpoint.provider === "groq"
+      ) {
+        console.warn(`[ai-provider] Brain ${slot} JSON mode rejected — retrying plain text`);
+        r = await fetch(`${endpoint.baseUrl}/chat/completions`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${key}`,
+            "Content-Type": "application/json",
+          },
+          body: buildBody(false),
+        });
+        raw = await r.text();
+      }
+
       if (!r.ok) {
         const classified = classifyProviderError(r.status, raw);
-        markFailure("brain", slot, classified.status, classified.message);
-        lastError = classified.message;
-        console.warn(`[ai-provider] Brain ${slot} (${endpoint.provider}) failed: ${classified.message}`);
-        if (classified.failover && slot === "primary" && attempts.includes("secondary")) {
-          failover = true;
-          await pushAiAlert({
-            kind: "brain",
-            severity: "failover",
-            title: "Brain failover activated",
-            message: `Primary Brain key failed (${classified.message}). Trying Secondary Key.`,
+        // Model-not-found on Groq with a wrong/deprecated model → try current default once
+        if (
+          endpoint.provider === "groq" &&
+          (r.status === 400 || r.status === 404) &&
+          endpoint.model !== DEFAULT_GROQ_MODEL &&
+          /model/i.test(raw)
+        ) {
+          console.warn(`[ai-provider] Brain ${slot} bad model ${endpoint.model} — retrying ${DEFAULT_GROQ_MODEL}`);
+          const retry = await fetch(`${endpoint.baseUrl}/chat/completions`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${key}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: resolveGroqModel(DEFAULT_GROQ_MODEL),
+              messages: opts.messages,
+              max_tokens: opts.maxTokens ?? 160,
+              temperature: opts.temperature ?? 0.62,
+            }),
           });
+          const retryRaw = await retry.text();
+          if (retry.ok) {
+            r = retry;
+            raw = retryRaw;
+            lastModel = DEFAULT_GROQ_MODEL;
+          } else {
+            markFailure("brain", slot, classified.status, classified.message);
+            lastError = classified.message;
+            console.warn(`[ai-provider] Brain ${slot} (${endpoint.provider}) failed: ${classified.message}`);
+            if (classified.failover && slot === "primary" && attempts.includes("secondary")) {
+              failover = true;
+              await pushAiAlert({
+                kind: "brain",
+                severity: "failover",
+                title: "Brain failover activated",
+                message: `Primary Brain key failed (${classified.message}). Trying Secondary Key.`,
+              });
+              continue;
+            }
+            if (!classified.failover) {
+              return {
+                ok: false,
+                status: r.status,
+                content: "",
+                model: endpoint.model,
+                inputTokens: 0,
+                outputTokens: 0,
+                usedSlot: slot,
+                failover,
+                error: classified.message,
+                raw,
+              };
+            }
+            continue;
+          }
+        } else if (!r.ok) {
+          markFailure("brain", slot, classified.status, classified.message);
+          lastError = classified.message;
+          console.warn(`[ai-provider] Brain ${slot} (${endpoint.provider}) failed: ${classified.message}`);
+          if (classified.failover && slot === "primary" && attempts.includes("secondary")) {
+            failover = true;
+            await pushAiAlert({
+              kind: "brain",
+              severity: "failover",
+              title: "Brain failover activated",
+              message: `Primary Brain key failed (${classified.message}). Trying Secondary Key.`,
+            });
+            continue;
+          }
+          if (!classified.failover) {
+            return {
+              ok: false,
+              status: r.status,
+              content: "",
+              model: endpoint.model,
+              inputTokens: 0,
+              outputTokens: 0,
+              usedSlot: slot,
+              failover,
+              error: classified.message,
+              raw,
+            };
+          }
           continue;
         }
-        if (!classified.failover) {
-          return {
-            ok: false,
-            status: r.status,
-            content: "",
-            model: endpoint.model,
-            inputTokens: 0,
-            outputTokens: 0,
-            usedSlot: slot,
-            failover,
-            error: classified.message,
-            raw,
-          };
-        }
-        continue;
       }
 
       let content = "";
@@ -504,12 +589,14 @@ export async function generateSpeech(opts: {
 }> {
   await ensureUsageLoaded();
   const cfg = await getAiTutorConfig();
-  const isMale = /male|dude|miles/i.test(String(opts.personaVoice || ""));
+  // CRITICAL: do not use /male/i — it matches inside "Female".
+  const isMale = isMalePersona(opts.personaVoice);
+  // Server admin config is authoritative for gender → voice mapping.
   const configured = isMale ? cfg.voice.maleVoice : cfg.voice.femaleVoice;
   const clientVid = typeof opts.voiceId === "string" ? opts.voiceId.trim() : "";
+  // Only accept client voiceId when it matches the persona's configured gender voice.
   let voiceName =
-    clientVid &&
-    (clientVid === cfg.voice.femaleVoice || clientVid === cfg.voice.maleVoice)
+    clientVid && clientVid === configured
       ? clientVid
       : configured;
   const model = cfg.voice.model || "tts-1-hd";
@@ -532,7 +619,7 @@ export async function generateSpeech(opts: {
 
   // ── Free Microsoft Edge neural voices (no API key) ─────────────────────
   if (cfg.voice.provider === "edge") {
-    voiceName = resolveEdgeVoiceId(voiceName, isMale ? "male" : "female");
+    voiceName = resolveEdgeVoiceId(configured, isMale ? "male" : "female");
     const result = await edgeSynthesize(text, voiceName);
     if (result.ok && result.body) {
       markSuccess("voice", "primary", { characters: text.length });
@@ -548,7 +635,6 @@ export async function generateSpeech(opts: {
       };
     }
     markFailure("voice", "primary", "ERROR", result.error || "edge-tts-failed");
-    // Soft-fallback: tell client to use browser rather than hard-fail the tutor
     return {
       ok: false,
       status: 502,
@@ -564,7 +650,7 @@ export async function generateSpeech(opts: {
   const configuredSlots = order.filter((slot) => !!getKey(cfg, "voice", slot));
   if (!configuredSlots.length) {
     // No OpenAI keys — fall through to Edge free path automatically
-    voiceName = resolveEdgeVoiceId(voiceName, isMale ? "male" : "female");
+    voiceName = resolveEdgeVoiceId(configured, isMale ? "male" : "female");
     const edge = await edgeSynthesize(text, voiceName);
     if (edge.ok && edge.body) {
       return {
