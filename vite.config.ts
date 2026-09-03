@@ -1,26 +1,44 @@
-import { defineConfig } from "vite";
+import { defineConfig, type PluginOption } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
-import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+
+async function loadReplitDevPlugins(): Promise<PluginOption[]> {
+  // These packages are Replit-only (devDependencies). Vite bundles this
+  // config at startup, so a static import — or even import("literal") —
+  // fails the Railway build when the package is not in node_modules.
+  if (process.env.NODE_ENV === "production") return [];
+
+  const plugins: PluginOption[] = [];
+  const replit = (name: string) => import(["@replit", name].join("/"));
+
+  try {
+    const { default: runtimeErrorOverlay } = await replit(
+      "vite-plugin-runtime-error-modal",
+    );
+    plugins.push(runtimeErrorOverlay());
+  } catch {
+    // Optional: local/Railway installs without the Replit overlay.
+  }
+
+  if (process.env.REPL_ID !== undefined) {
+    try {
+      const [{ cartographer }, { devBanner }] = await Promise.all([
+        replit("vite-plugin-cartographer"),
+        replit("vite-plugin-dev-banner"),
+      ]);
+      plugins.push(cartographer(), devBanner());
+    } catch {
+      // Optional: not running on Replit.
+    }
+  }
+
+  return plugins;
+}
 
 export default defineConfig({
   plugins: [
     react(),
-    // Runtime error overlay is a dev-only debugging aid (full-screen modal on
-    // unhandled errors). Including it in production ships ~3 KB of overlay
-    // JS that runs on every page load. Dev-only keeps the prod bundle clean.
-    ...(process.env.NODE_ENV !== "production" ? [runtimeErrorOverlay()] : []),
-    ...(process.env.NODE_ENV !== "production" &&
-    process.env.REPL_ID !== undefined
-      ? [
-          await import("@replit/vite-plugin-cartographer").then((m) =>
-            m.cartographer(),
-          ),
-          await import("@replit/vite-plugin-dev-banner").then((m) =>
-            m.devBanner(),
-          ),
-        ]
-      : []),
+    ...(await loadReplitDevPlugins()),
   ],
   resolve: {
     alias: {
