@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { X, Volume2, VolumeX } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { proxyMediaUrl } from "@/lib/media-proxy";
+import { BADGE_CELEBRATION_GIF } from "@shared/constants";
 
 interface BadgeDef {
   id: string;
@@ -19,6 +21,7 @@ interface BadgeAwardedEvent {
   userAvatar?: string | null;
   userId: string;
   quote: string;
+  badgeGifUrl?: string | null;
 }
 
 interface BadgeAnnouncementProps {
@@ -288,6 +291,7 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
     : "U";
 
   const color = safeEvent?.badgeDef.color ?? "#8B5CF6";
+  const celebrationGif = proxyMediaUrl(safeEvent?.badgeGifUrl || BADGE_CELEBRATION_GIF);
 
   return (
     <AnimatePresence>
@@ -369,6 +373,21 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
                   </button>
                 </div>
               </div>
+
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.12 }}
+                className="mb-4 rounded-xl overflow-hidden border"
+                style={{ borderColor: `${color}35` }}
+              >
+                <img
+                  src={celebrationGif}
+                  alt="Celebration"
+                  className="w-full h-36 object-cover"
+                  data-testid="badge-celebration-gif"
+                />
+              </motion.div>
 
               <div className="flex items-center gap-5">
                 <motion.div

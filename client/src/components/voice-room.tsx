@@ -242,7 +242,7 @@ interface ChatMessage {
   text: string;
   createdAt: string;
   user?: User;
-  type?: "message" | "system" | "announcement" | "welcome" | "badge";
+  type?: "message" | "system" | "announcement" | "welcome" | "badge" | "vip_shoutout" | "deleted";
   reactions?: Record<string, string[]>;
   replyTo?: { id: string; userId: string; userName: string; text: string } | null;
   messageColor?: string;
@@ -269,6 +269,14 @@ interface ChatMessage {
   badgeLabel?: string;
   badgeColor?: string;
   badgeQuote?: string;
+  badgeGifUrl?: string | null;
+  shoutFromUserId?: string;
+  shoutFromUserName?: string;
+  shoutFromUserAvatar?: string | null;
+  shoutMentionUserId?: string;
+  shoutMentionUserName?: string;
+  shoutMessage?: string;
+  shoutGifUrl?: string | null;
 }
 
 const BAR_COUNT = 20;
@@ -2393,6 +2401,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [localVideoStreamObj, setLocalVideoStreamObj] = useState<MediaStream | null>(null);
   const localVideoStreamRef = useRef<MediaStream | null>(null);
   const [miniCameraMode, setMiniCameraMode] = useState(false);
+  /** User dismissed the floating self-view; reset when camera turns on again. */
+  const [hideLocalCameraPreview, setHideLocalCameraPreview] = useState(false);
   const [youtubeSearch, setYoutubeSearch] = useState("");
   const [youtubeResults, setYoutubeResults] = useState<any[]>([]);
   const [youtubeSearching, setYoutubeSearching] = useState(false);
@@ -7859,6 +7869,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       setIsVideoOn(false);
       setLocalVideoStreamObj(null);
       setMiniCameraMode(false);
+      setHideLocalCameraPreview(false);
       setCameraFacing("user");
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = null;
@@ -7930,6 +7941,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       }
       setIsVideoOn(true);
       setLocalVideoStreamObj(stream);
+      setHideLocalCameraPreview(false);
       requestAnimationFrame(() => {
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
@@ -10107,6 +10119,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 if (msg.type === "badge" && !showMentionsOnly) {
                   const bColor = msg.badgeColor || "#8B5CF6";
                   const bInitials = (msg.badgeUserName || "U").split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
+                  const badgeGif = msg.badgeGifUrl ? proxyMediaUrl(msg.badgeGifUrl) : null;
                   return (
                     <div
                       key={msg.id}
@@ -10118,6 +10131,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         <span className="text-sm">{msg.badgeEmoji}</span>
                         <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: bColor }}>Achievement Unlocked</span>
                       </div>
+                      {badgeGif && (
+                        <img
+                          src={badgeGif}
+                          alt="Celebration"
+                          loading="lazy"
+                          decoding="async"
+                          className="w-full h-28 object-cover"
+                          data-testid={`img-badge-gif-${msg.id}`}
+                        />
+                      )}
                       <div className="flex items-center gap-3 px-3 py-2.5">
                         <div className="relative flex-shrink-0">
                           <Avatar className="w-10 h-10 ring-2" style={{ "--ring-color": bColor } as any}>
@@ -10137,6 +10160,40 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       {msg.badgeQuote && (
                         <p className="px-3 pb-2.5 text-[11px] text-white/40 italic leading-relaxed">"{msg.badgeQuote}"</p>
                       )}
+                    </div>
+                  );
+                }
+
+                if (msg.type === "vip_shoutout" && !showMentionsOnly) {
+                  const shoutGif = msg.shoutGifUrl ? proxyMediaUrl(msg.shoutGifUrl) : null;
+                  return (
+                    <div
+                      key={msg.id}
+                      className="rounded-xl border my-1.5 overflow-hidden border-amber-500/40 bg-amber-950/30"
+                      data-testid={`room-chat-shoutout-${msg.id}`}
+                    >
+                      <div className="px-3 py-1.5 flex items-center gap-1.5 border-b border-amber-500/25 bg-amber-500/15">
+                        <span className="text-sm">☕</span>
+                        <span className="text-[10px] font-bold tracking-widest uppercase text-amber-200">VIP Coffee Shoutout</span>
+                      </div>
+                      {shoutGif && (
+                        <img
+                          src={shoutGif}
+                          alt="Coffee shoutout"
+                          loading="lazy"
+                          decoding="async"
+                          className="w-full h-24 object-cover"
+                          data-testid={`img-shoutout-gif-${msg.id}`}
+                        />
+                      )}
+                      <div className="px-3 py-2.5 space-y-1.5">
+                        <p className="text-[12px] text-white/90">
+                          <span className="font-bold text-amber-200">{msg.shoutFromUserName}</span>
+                          {" → "}
+                          <span className="font-semibold text-sky-300">@{msg.shoutMentionUserName}</span>
+                        </p>
+                        <p className="text-[12px] text-white/75 leading-relaxed whitespace-pre-wrap">{msg.shoutMessage}</p>
+                      </div>
                     </div>
                   );
                 }
@@ -16468,7 +16525,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       volume={participantVolumes[p.id] ?? 1}
                       onVolumeChange={handleVolumeChange}
                       youtubeVideoId={youtubeHosts.get(p.id) || null}
-                      remoteVideoStream={isMe && isVideoOn && (!isInOverlayMode || miniCameraMode) ? localVideoStreamObj : (!isMe && availableVideoUsers.has(p.id) ? remoteVideoStreams.current.get(p.id) : undefined)}
+                      remoteVideoStream={isMe && isVideoOn ? localVideoStreamObj : (!isMe && availableVideoUsers.has(p.id) ? remoteVideoStreams.current.get(p.id) : undefined)}
                       localVideoFlipped={isMe ? cameraFacing === "user" : false}
                       isBlocked={isBlockedUser}
                       onUnblock={handleUnblock}
@@ -17994,7 +18051,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         );
       })()}
 
-      {miniCameraMode && isVideoOn && localVideoStreamObj && (
+      {isVideoOn && localVideoStreamObj && !hideLocalCameraPreview && (
         <div
           className="fixed z-50 select-none"
           style={{ left: 12, top: 70, width: 200, height: 130 }}
@@ -18020,9 +18077,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </button>
             <button
               className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center shadow-lg transition-colors z-10"
-              onClick={(e) => { e.stopPropagation(); setMiniCameraMode(false); setFocusedUserId(null); }}
+              onClick={(e) => { e.stopPropagation(); setHideLocalCameraPreview(true); setMiniCameraMode(false); setFocusedUserId(null); }}
               data-testid="button-mini-camera-close"
-              aria-label="Close mini camera"
+              aria-label="Hide your camera preview"
+              title="Hide preview (camera stays on)"
             >
               <X className="w-3 h-3 text-white" />
             </button>

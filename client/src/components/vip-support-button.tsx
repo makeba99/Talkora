@@ -1,12 +1,14 @@
-import { useEffect, useRef, useState } from "react";
-import { Coffee, Crown, Loader2, Lock, ExternalLink } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Coffee, Crown, Loader2, Lock, Send } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { VIP_PLANS, vipRank } from "@shared/constants";
 import { useQuery } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { isAdminUser, isVipUser } from "@/lib/vip";
+import { canUseFeature } from "@shared/entitlements";
+import type { Follow, User } from "@shared/schema";
 
 type VipConfig = {
   configured: boolean;
@@ -30,12 +32,19 @@ function openPaypalPopup(): Window | null {
   );
 }
 
+function displayNameOf(u: User): string {
+  return u.displayName || [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email || "User";
+}
+
 export function VipSupportButton({ guest = false }: { guest?: boolean }) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [paying, setPaying] = useState<number | null>(null);
   const [awaitingPaypal, setAwaitingPaypal] = useState(false);
+  const [shoutMessage, setShoutMessage] = useState("");
+  const [mentionUserId, setMentionUserId] = useState("");
+  const [sendingShout, setSendingShout] = useState(false);
   const popupRef = useRef<Window | null>(null);
   const { data: config } = useQuery<VipConfig>({
     queryKey: ["/api/vip/config"],
@@ -46,6 +55,29 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
     staleTime: 60_000,
   });
 
+  const { data: following = [] } = useQuery<Follow[]>({
+    queryKey: ["/api/follows/following", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const res = await apiRequest("GET", `/api/follows/following/${user.id}`);
+      return res.json();
+    },
+    enabled: !!user?.id && open,
+  });
+
+  const { data: allUsers = [] } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    enabled: !!user?.id && open && isVipUser(user),
+    staleTime: 60_000,
+  });
+
+  const followingPeople = useMemo(() => {
+    const ids = new Set(following.map((f) => f.followingId));
+    return allUsers
+      .filter((u) => ids.has(u.id) && u.id !== user?.id)
+      .sort((a, b) => displayNameOf(a).localeCompare(displayNameOf(b)));
+  }, [allUsers, following, user?.id]);
+
   const finishPaypalFlow = (status: "thanks" | "cancel" | "closed") => {
     try { popupRef.current?.close(); } catch { /* ignore */ }
     popupRef.current = null;
@@ -55,9 +87,9 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
     if (status === "thanks") {
       toast({
         title: "Payment submitted",
-        description: "VIP unlocks after PayPal confirms (usually within a minute). Refresh if it doesn’t appear yet.",
+        description: "VIP unlocks after PayPal confirms (usually within a minute). Then you can shout out someone you follow to every live room.",
       });
-      setOpen(false);
+      setOpen(true);
     } else if (status === "cancel") {
       toast({ title: "Payment canceled", description: "No charge was made. You can try again anytime." });
     }
@@ -95,6 +127,7 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
 
   const currentRank = vipRank(user?.vipTier);
   const isVip = isVipUser(user);
+  const canShout = canUseFeature(user, "vip_shoutout");
   const navLabel = config?.navLabel || "Buy Me a Coffee";
   const triggerClass = guest
     ? "neu-btn inline-flex items-center h-8 px-3 rounded-full text-xs font-semibold"
@@ -151,6 +184,40 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
     }
   };
 
+  const sendShoutout = async () => {
+    if (!canShout) {
+      toast({ title: "VIP only", description: "Buy Me a Coffee to shout out people you follow across all live rooms." });
+      return;
+    }
+    if (!mentionUserId) {
+      toast({ title: "Pick someone", description: "Choose a person you follow to mention.", variant: "destructive" });
+      return;
+    }
+    if (shoutMessage.trim().length < 2) {
+      toast({ title: "Write a message", description: "Say something nice (at least 2 characters).", variant: "destructive" });
+      return;
+    }
+    setSendingShout(true);
+    try {
+      const res = await apiRequest("POST", "/api/vip/shoutout", {
+        mentionUserId,
+        message: shoutMessage.trim(),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "Shoutout failed");
+      toast({
+        title: "Shoutout sent!",
+        description: `Your message is now in every live room.${typeof data.remainingToday === "number" ? ` ${data.remainingToday} left today.` : ""}`,
+      });
+      setShoutMessage("");
+      setMentionUserId("");
+    } catch (err: any) {
+      toast({ title: "Could not send shoutout", description: err?.message, variant: "destructive" });
+    } finally {
+      setSendingShout(false);
+    }
+  };
+
   return (
     <>
       <button
@@ -176,7 +243,7 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
         }
         setOpen(next);
       }}>
-        <DialogContent className="max-w-[420px] border-amber-500/20 bg-[#14101f]">
+        <DialogContent className="max-w-[420px] border-amber-500/20 bg-[#14101f] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
               <Crown className="w-5 h-5 text-amber-400" />
@@ -197,26 +264,26 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
           {awaitingPaypal && (
             <p
               className="text-xs text-sky-200/90 rounded-md border border-sky-500/30 bg-sky-500/10 px-3 py-2 flex items-start gap-2"
-              data-testid="text-paypal-popup-waiting"
+              data-testid="text-paypal-waiting"
             >
-              <ExternalLink className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-              <span>Complete payment in the PayPal window (login / one-time code). This tab will stay on Vextorn.</span>
+              <Loader2 className="w-3.5 h-3.5 animate-spin mt-0.5 flex-shrink-0" />
+              Waiting for PayPal… Finish in the popup, then VIP unlocks when payment confirms.
             </p>
           )}
 
-          <div className="grid gap-2">
-            {(config?.plans?.length ? config.plans : VIP_PLANS).map((plan) => (
+          <div className="space-y-2">
+            {VIP_PLANS.map((plan) => (
               <button
                 key={plan.id}
                 type="button"
                 disabled={paying !== null}
                 onClick={() => startCheckout(plan.amount)}
-                className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left hover:border-amber-400/50 hover:bg-amber-500/10 transition-colors disabled:opacity-60"
+                className="w-full flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 px-3.5 py-3 text-left transition-colors disabled:opacity-60"
                 data-testid={`button-vip-plan-${plan.id}`}
               >
                 <div>
-                  <p className="text-sm font-bold text-white">${plan.amount} · {plan.label}</p>
-                  <p className="text-[11px] text-white/55 mt-0.5">{plan.tagline}</p>
+                  <div className="text-sm font-semibold text-white">{plan.label}</div>
+                  <div className="text-[11px] text-white/55">{plan.tagline}</div>
                 </div>
                 {paying === plan.amount ? (
                   <Loader2 className="w-4 h-4 animate-spin text-amber-300" />
@@ -226,6 +293,59 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
               </button>
             ))}
           </div>
+
+          {canShout && (
+            <div className="mt-2 rounded-xl border border-amber-500/25 bg-amber-500/5 p-3 space-y-2.5" data-testid="vip-shoutout-panel">
+              <div>
+                <p className="text-sm font-semibold text-amber-100 flex items-center gap-1.5">
+                  <Coffee className="w-3.5 h-3.5" />
+                  Coffee shoutout
+                </p>
+                <p className="text-[11px] text-white/50 mt-0.5">
+                  Mention someone you follow — your message appears in every live room (up to 3/day).
+                </p>
+              </div>
+              <label className="block space-y-1">
+                <span className="text-[10px] uppercase tracking-wide text-white/45 font-semibold">Mention</span>
+                <select
+                  value={mentionUserId}
+                  onChange={(e) => setMentionUserId(e.target.value)}
+                  className="w-full h-9 rounded-md border border-white/10 bg-[#0f0b18] px-2 text-sm text-white"
+                  data-testid="select-shoutout-mention"
+                >
+                  <option value="">
+                    {followingPeople.length === 0 ? "Follow someone first…" : "Choose who to shout out…"}
+                  </option>
+                  {followingPeople.map((p) => (
+                    <option key={p.id} value={p.id}>{displayNameOf(p)}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block space-y-1">
+                <span className="text-[10px] uppercase tracking-wide text-white/45 font-semibold">Message</span>
+                <textarea
+                  value={shoutMessage}
+                  onChange={(e) => setShoutMessage(e.target.value.slice(0, 160))}
+                  rows={3}
+                  maxLength={160}
+                  placeholder="Thanks for the great conversations…"
+                  className="w-full rounded-md border border-white/10 bg-[#0f0b18] px-2.5 py-2 text-sm text-white placeholder:text-white/30 resize-none"
+                  data-testid="input-shoutout-message"
+                />
+                <span className="text-[10px] text-white/35">{shoutMessage.length}/160</span>
+              </label>
+              <button
+                type="button"
+                disabled={sendingShout || !mentionUserId || shoutMessage.trim().length < 2}
+                onClick={sendShoutout}
+                className="w-full h-9 rounded-lg bg-amber-500/90 hover:bg-amber-400 text-[#1a1208] text-sm font-semibold inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
+                data-testid="button-send-shoutout"
+              >
+                {sendingShout ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                Send to all live rooms
+              </button>
+            </div>
+          )}
 
           {!user && (
             <p className="text-[11px] text-white/50 flex items-center gap-1.5">

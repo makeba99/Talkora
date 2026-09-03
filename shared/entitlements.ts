@@ -10,7 +10,8 @@ export type AppFeature =
   | "ai_voice"
   | "title_color"
   | "vip_rings"
-  | "profile_premium";
+  | "profile_premium"
+  | "vip_shoutout";
 
 export type EntitlementUser = {
   id?: string;
@@ -48,6 +49,7 @@ export function canUseFeature(
     case "title_color":
     case "vip_rings":
     case "profile_premium":
+    case "vip_shoutout":
       return isVipEntitled(user);
     default:
       return false;

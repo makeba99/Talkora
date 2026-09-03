@@ -225,3 +225,14 @@ export const SPECIALIZATIONS = [
   "Children",
   "Slang & Casual",
 ] as const;
+
+/** Celebration GIF shown platform-wide when a badge is awarded (Tenor, proxy-friendly). */
+export const BADGE_CELEBRATION_GIF =
+  "https://media.tenor.com/YGF4qF2FeX8AAAAC/congratulations-congrats.gif";
+
+/** Coffee / VIP shoutout flair GIF shown in every live room chat. */
+export const VIP_SHOUTOUT_GIF =
+  "https://media.tenor.com/6kRT-b0nXwYAAAAC/coffee-love.gif";
+
+/** Max VIP coffee shoutouts per user per rolling 24h. */
+export const VIP_SHOUTOUT_DAILY_LIMIT = 3;

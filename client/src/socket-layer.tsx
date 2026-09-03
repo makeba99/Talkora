@@ -161,6 +161,15 @@ function GlobalSocketEvents() {
     socket.on("admin:restriction-lifted", handleRestrictionLifted);
     socket.on("security:admin_alert", handleSecurityAdminAlert);
     socket.on("room:knock-denied", handleKnockDenied);
+    const handleVipShoutout = (event: any) => {
+      if (!event?.fromUserName || !event?.mentionUserName) return;
+      toast({
+        title: `☕ ${event.fromUserName} → @${event.mentionUserName}`,
+        description: String(event.message || "").slice(0, 140),
+        duration: 8000,
+      });
+    };
+    socket.on("vip:shoutout", handleVipShoutout);
     return () => {
       socket.off("badge:awarded", handleBadgeAwarded);
       socket.off("admin:announcement", handleAnnouncement);
@@ -168,6 +177,7 @@ function GlobalSocketEvents() {
       socket.off("admin:restriction-lifted", handleRestrictionLifted);
       socket.off("security:admin_alert", handleSecurityAdminAlert);
       socket.off("room:knock-denied", handleKnockDenied);
+      socket.off("vip:shoutout", handleVipShoutout);
     };
   }, [socket, toast, isAdmin]);
 

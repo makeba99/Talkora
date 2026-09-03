@@ -7,7 +7,7 @@ export * from "./models/auth";
 // Re-export pure data constants from the zero-dependency constants module.
 // This lets server code import them from @shared/schema as before, while
 // client code can import from @shared/constants to avoid bundling drizzle/zod.
-export { TALK_PERMISSIONS, FEATURE_PERMISSIONS, BADGE_TYPES, BADGE_TYPES as BADGE_TYPE_MAP, LANGUAGES, LEVELS, SPECIALIZATIONS, VIP_PLANS, vipPlanFromAmount, vipRank } from "./constants";
+export { TALK_PERMISSIONS, FEATURE_PERMISSIONS, BADGE_TYPES, BADGE_TYPES as BADGE_TYPE_MAP, LANGUAGES, LEVELS, SPECIALIZATIONS, VIP_PLANS, vipPlanFromAmount, vipRank, BADGE_CELEBRATION_GIF, VIP_SHOUTOUT_GIF, VIP_SHOUTOUT_DAILY_LIMIT } from "./constants";
 export type { TalkPermission, FeaturePermission, BadgeType, VipPlanId } from "./constants";
 
 export const rooms = pgTable("rooms", {

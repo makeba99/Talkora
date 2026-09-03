@@ -3,7 +3,7 @@ import { type Server } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { storage } from "./storage";
 import { isAuthenticated } from "./replit_integrations/auth";
-import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema, insertUserCommentSchema, insertBadgeApplicationSchema, insertAnnouncementSchema, BADGE_TYPES, VIP_PLANS, vipPlanFromAmount, vipRank } from "@shared/schema";
+import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema, insertUserCommentSchema, insertBadgeApplicationSchema, insertAnnouncementSchema, BADGE_TYPES, VIP_PLANS, vipPlanFromAmount, vipRank, BADGE_CELEBRATION_GIF, VIP_SHOUTOUT_GIF, VIP_SHOUTOUT_DAILY_LIMIT } from "@shared/schema";
 import type { User } from "@shared/schema";
 import { z } from "zod";
 import multer, { type StorageEngine } from "multer";
@@ -711,6 +711,123 @@ export async function registerRoutes(
   app.use("/api/auth", authRateLimiter);
   app.use("/api", threatDetectionMiddleware);
   app.use("/api", privilegeCheckMiddleware);
+
+  const vipShoutoutTimestamps = new Map<string, number[]>();
+
+  const emitBadgeChatToAllActiveRooms = (payload: {
+    badgeUserId: string;
+    badgeUserName: string;
+    badgeUserAvatar?: string | null;
+    badgeEmoji: string;
+    badgeLabel: string;
+    badgeColor: string;
+    badgeQuote: string;
+    badgeGifUrl?: string | null;
+  }) => {
+    const gifUrl = payload.badgeGifUrl || BADGE_CELEBRATION_GIF;
+    const stamp = Date.now();
+    for (const [roomId, participants] of roomParticipants.entries()) {
+      if (participants.size === 0) continue;
+      const msg = {
+        id: `badge-${stamp}-${Math.random().toString(36).slice(2, 8)}`,
+        roomId,
+        userId: "system",
+        text: `${payload.badgeEmoji} ${payload.badgeUserName} was awarded ${payload.badgeLabel}`,
+        type: "badge" as const,
+        createdAt: new Date().toISOString(),
+        reactions: {},
+        replyTo: null,
+        badgeUserId: payload.badgeUserId,
+        badgeUserName: payload.badgeUserName,
+        badgeUserAvatar: payload.badgeUserAvatar || null,
+        badgeEmoji: payload.badgeEmoji,
+        badgeLabel: payload.badgeLabel,
+        badgeColor: payload.badgeColor,
+        badgeQuote: payload.badgeQuote,
+        badgeGifUrl: gifUrl,
+      };
+      io.to(roomId).emit("room:chat-message", msg);
+    }
+  };
+
+  const announceBadgeAward = (opts: {
+    badge: any;
+    badgeDef: { id: string; label: string; emoji?: string; color?: string; quote?: string };
+    target: User;
+  }) => {
+    const badgeDef = {
+      id: opts.badgeDef.id,
+      label: opts.badgeDef.label,
+      emoji: opts.badgeDef.emoji || "🏅",
+      color: opts.badgeDef.color || "#8B5CF6",
+      quote: opts.badgeDef.quote || "",
+    };
+    const targetName =
+      opts.target.displayName ||
+      [opts.target.firstName, opts.target.lastName].filter(Boolean).join(" ") ||
+      opts.target.email ||
+      "A user";
+    const badgeAwardPayload = {
+      badge: opts.badge,
+      badgeDef,
+      userName: targetName,
+      userAvatar: opts.target.profileImageUrl,
+      userId: opts.target.id,
+      quote: badgeDef.quote,
+      badgeGifUrl: BADGE_CELEBRATION_GIF,
+    };
+    try {
+      io.emit("badge:awarded", badgeAwardPayload);
+      // Slight delay so the overlay can pop first, then rooms get the chat+GIF card.
+      setTimeout(() => {
+        emitBadgeChatToAllActiveRooms({
+          badgeUserId: opts.target.id,
+          badgeUserName: targetName,
+          badgeUserAvatar: opts.target.profileImageUrl,
+          badgeEmoji: badgeDef.emoji,
+          badgeLabel: badgeDef.label,
+          badgeColor: badgeDef.color,
+          badgeQuote: badgeDef.quote,
+          badgeGifUrl: BADGE_CELEBRATION_GIF,
+        });
+      }, 400);
+    } catch (emitErr: any) {
+      console.error("[badges] announce failed (badge still saved):", emitErr?.message || emitErr);
+    }
+    return badgeAwardPayload;
+  };
+
+  const emitVipShoutoutToAllActiveRooms = (payload: {
+    fromUserId: string;
+    fromUserName: string;
+    fromUserAvatar?: string | null;
+    mentionUserId: string;
+    mentionUserName: string;
+    message: string;
+  }) => {
+    const stamp = Date.now();
+    for (const [roomId, participants] of roomParticipants.entries()) {
+      if (participants.size === 0) continue;
+      const msg = {
+        id: `shout-${stamp}-${Math.random().toString(36).slice(2, 8)}`,
+        roomId,
+        userId: "system",
+        text: `☕ ${payload.fromUserName} → @${payload.mentionUserName}: ${payload.message}`,
+        type: "vip_shoutout" as const,
+        createdAt: new Date().toISOString(),
+        reactions: {},
+        replyTo: null,
+        shoutFromUserId: payload.fromUserId,
+        shoutFromUserName: payload.fromUserName,
+        shoutFromUserAvatar: payload.fromUserAvatar || null,
+        shoutMentionUserId: payload.mentionUserId,
+        shoutMentionUserName: payload.mentionUserName,
+        shoutMessage: payload.message,
+        shoutGifUrl: VIP_SHOUTOUT_GIF,
+      };
+      io.to(roomId).emit("room:chat-message", msg);
+    }
+  };
 
   securityBus.on("security:event", async (event) => {
     try {
@@ -2648,7 +2765,11 @@ export async function registerRoutes(
     const badgeType = plan.badgeType;
     const already = await storage.hasUserBadge(userId, badgeType);
     if (!already) {
-      await storage.awardBadge({ userId, badgeType, awardedById: "system" });
+      const badge = await storage.awardBadge({ userId, badgeType, awardedById: "system" });
+      const badgeDef = BADGE_TYPES[badgeType as keyof typeof BADGE_TYPES];
+      if (badgeDef) {
+        announceBadgeAward({ badge, badgeDef, target: user });
+      }
     }
     for (const parts of roomParticipants.values()) {
       const live = parts.get(userId);
@@ -2724,6 +2845,96 @@ export async function registerRoutes(
     }
   });
 
+  /** VIP coffee shoutout — message + @mention of someone you follow, shown in every live room. */
+  app.post("/api/vip/shoutout", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = String((req.user as any).id);
+      const caller = await storage.getUser(userId);
+      if (!caller) return res.status(401).json({ message: "User not found" });
+      if (!canUseFeature(caller, "vip_shoutout")) {
+        return res.status(403).json({
+          error: "vip_required",
+          message: "Buy Me a Coffee to unlock platform shoutouts.",
+        });
+      }
+
+      const mentionUserId = String(req.body?.mentionUserId || "").trim();
+      const message = String(req.body?.message || "").trim().slice(0, 160);
+      if (!mentionUserId) return res.status(400).json({ message: "Pick someone you follow to mention." });
+      if (!message || message.length < 2) return res.status(400).json({ message: "Write a short message (at least 2 characters)." });
+      if (mentionUserId === userId) return res.status(400).json({ message: "Mention someone else you follow — not yourself." });
+
+      const followsThem = await storage.isFollowing(userId, mentionUserId);
+      if (!followsThem) {
+        return res.status(400).json({ message: "You can only shout out people you follow." });
+      }
+
+      const mentioned = await storage.getUser(mentionUserId);
+      if (!mentioned) return res.status(404).json({ message: "Mentioned user not found." });
+
+      const filter = checkContent(message, "vip_shoutout", {
+        userId,
+        displayName: caller.displayName ?? undefined,
+        avatarUrl: caller.profileImageUrl ?? undefined,
+      });
+      if (filter.flagged) {
+        return res.status(400).json({ message: filter.message || "Message blocked by content filter." });
+      }
+
+      const now = Date.now();
+      const dayAgo = now - 24 * 60 * 60 * 1000;
+      const recent = (vipShoutoutTimestamps.get(userId) || []).filter((t) => t > dayAgo);
+      if (recent.length >= VIP_SHOUTOUT_DAILY_LIMIT) {
+        return res.status(429).json({
+          message: `You can send ${VIP_SHOUTOUT_DAILY_LIMIT} shoutouts per day. Try again later.`,
+        });
+      }
+      recent.push(now);
+      vipShoutoutTimestamps.set(userId, recent);
+
+      const fromName =
+        caller.displayName ||
+        [caller.firstName, caller.lastName].filter(Boolean).join(" ") ||
+        caller.email ||
+        "A supporter";
+      const mentionName =
+        mentioned.displayName ||
+        [mentioned.firstName, mentioned.lastName].filter(Boolean).join(" ") ||
+        mentioned.email ||
+        "friend";
+
+      const event = {
+        fromUserId: userId,
+        fromUserName: fromName,
+        fromUserAvatar: caller.profileImageUrl || null,
+        mentionUserId,
+        mentionUserName: mentionName,
+        message,
+        gifUrl: VIP_SHOUTOUT_GIF,
+      };
+
+      emitVipShoutoutToAllActiveRooms(event);
+      io.emit("vip:shoutout", event);
+
+      try {
+        await storage.createNotification({
+          userId: mentionUserId,
+          fromUserId: userId,
+          type: `vip_shoutout:${message.slice(0, 80)}`,
+        });
+        const mentionSocket = userSockets.get(mentionUserId);
+        if (mentionSocket) {
+          io.to(mentionSocket).emit("notification:new", { type: "vip_shoutout" });
+        }
+      } catch { /* non-fatal */ }
+
+      res.json({ ok: true, remainingToday: Math.max(0, VIP_SHOUTOUT_DAILY_LIMIT - recent.length) });
+    } catch (err: any) {
+      console.error("[vip] shoutout failed:", err?.message || err);
+      res.status(500).json({ message: err?.message || "Failed to send shoutout" });
+    }
+  });
+
   // Lightweight popup return page — posts status to opener and closes itself
   // so the main Vextorn tab never navigates away during PayPal checkout.
   app.get("/vip/paypal-return", (_req, res) => {
@@ -2790,7 +3001,13 @@ export async function registerRoutes(
       const amount = parseFloat(String(body.mc_gross || "0"));
       if (!userId || !txnId) return;
       const plan = await grantVipFromPayment(userId, amount, txnId);
-      if (plan) console.log(`[paypal] granted ${plan.id} VIP to ${userId} (${txnId})`);
+      if (plan) {
+        console.log(`[paypal] granted ${plan.id} VIP to ${userId} (${txnId})`);
+        const socketId = userSockets.get(userId);
+        if (socketId) {
+          io.to(socketId).emit("vip:granted", { tier: plan.id, amount });
+        }
+      }
     } catch (err) {
       console.error("PayPal IPN error:", err);
     }
@@ -6182,36 +6399,11 @@ export async function registerRoutes(
         awardedById: (req.user as any).id,
       });
 
-      const targetName = target.displayName || [target.firstName, target.lastName].filter(Boolean).join(" ") || target.email || "A user";
-
-      const badgeAwardPayload = {
+      const badgeAwardPayload = announceBadgeAward({
         badge,
-        badgeDef: {
-          id: badgeDef.id,
-          label: badgeDef.label,
-          emoji: badgeDef.emoji || "🏅",
-          color: badgeDef.color || "#8B5CF6",
-          quote: badgeDef.quote || "",
-        },
-        userName: targetName,
-        userAvatar: target.profileImageUrl,
-        userId: target.id,
-        quote: badgeDef.quote || "",
-      };
-      try {
-        io.emit("badge:awarded", badgeAwardPayload);
-        emitBadgeChatToAllActiveRooms({
-          badgeUserId: target.id,
-          badgeUserName: targetName,
-          badgeUserAvatar: target.profileImageUrl,
-          badgeEmoji: badgeAwardPayload.badgeDef.emoji,
-          badgeLabel: badgeAwardPayload.badgeDef.label,
-          badgeColor: badgeAwardPayload.badgeDef.color,
-          badgeQuote: badgeAwardPayload.badgeDef.quote,
-        });
-      } catch (emitErr: any) {
-        console.error("[badges] announce failed (badge still saved):", emitErr?.message || emitErr);
-      }
+        badgeDef,
+        target,
+      });
 
       try {
         await storage.createNotification({ userId, fromUserId: (req.user as any).id, type: `badge_awarded:${badgeType}` });
@@ -6354,24 +6546,13 @@ export async function registerRoutes(
             return res.json(application);
           }
           const badgeDef = BADGE_TYPES[application.badgeType as keyof typeof BADGE_TYPES];
-          const targetName = getDisplayName(target);
-          const appBadgePayload = {
+          if (!badgeDef) {
+            return res.json(application);
+          }
+          const appBadgePayload = announceBadgeAward({
             badge,
             badgeDef,
-            userName: targetName,
-            userAvatar: target.profileImageUrl,
-            userId: target.id,
-            quote: badgeDef.quote,
-          };
-          io.emit("badge:awarded", appBadgePayload);
-          emitBadgeChatToAllActiveRooms({
-            badgeUserId: target.id,
-            badgeUserName: targetName,
-            badgeUserAvatar: target.profileImageUrl,
-            badgeEmoji: badgeDef.emoji,
-            badgeLabel: badgeDef.label,
-            badgeColor: badgeDef.color,
-            badgeQuote: badgeDef.quote,
+            target,
           });
           try {
             await storage.createNotification({ userId: application.userId, fromUserId: (req.user as any).id, type: `badge_awarded:${application.badgeType}` });
@@ -6929,26 +7110,9 @@ export async function registerRoutes(
 
         const badge = await storage.awardBadge({ userId, badgeType, awardedById: "system" });
         const badgeDef = BADGE_TYPES[badgeType as keyof typeof BADGE_TYPES];
-        const userName = user.displayName || [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "A user";
+        if (!badgeDef) continue;
 
-        const badgeAwardPayload = {
-          badge,
-          badgeDef,
-          userName,
-          userAvatar: user.profileImageUrl,
-          userId: user.id,
-          quote: badgeDef.quote,
-        };
-        io.emit("badge:awarded", badgeAwardPayload);
-        emitBadgeChatToAllActiveRooms({
-          badgeUserId: user.id,
-          badgeUserName: userName,
-          badgeUserAvatar: user.profileImageUrl,
-          badgeEmoji: badgeDef.emoji,
-          badgeLabel: badgeDef.label,
-          badgeColor: badgeDef.color,
-          badgeQuote: badgeDef.quote,
-        });
+        const badgeAwardPayload = announceBadgeAward({ badge, badgeDef, target: user });
 
         try {
           await storage.createNotification({ userId, fromUserId: "system", type: `badge_awarded:${badgeType}` });
@@ -6964,41 +7128,6 @@ export async function registerRoutes(
       console.error("[streak] checkAndAwardStreakBadge failed:", err?.message || err);
     }
   }
-
-  const emitBadgeChatToAllActiveRooms = (payload: {
-    badgeUserId: string;
-    badgeUserName: string;
-    badgeUserAvatar?: string | null;
-    badgeEmoji: string;
-    badgeLabel: string;
-    badgeColor: string;
-    badgeQuote: string;
-  }) => {
-    setTimeout(() => {
-      for (const [roomId, participants] of roomParticipants.entries()) {
-        if (participants.size > 0) {
-          const msg = {
-            id: `badge-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            roomId,
-            userId: "system",
-            text: `${payload.badgeEmoji} ${payload.badgeUserName} was awarded ${payload.badgeLabel}`,
-            type: "badge" as const,
-            createdAt: new Date().toISOString(),
-            reactions: {},
-            replyTo: null,
-            badgeUserId: payload.badgeUserId,
-            badgeUserName: payload.badgeUserName,
-            badgeUserAvatar: payload.badgeUserAvatar || null,
-            badgeEmoji: payload.badgeEmoji,
-            badgeLabel: payload.badgeLabel,
-            badgeColor: payload.badgeColor,
-            badgeQuote: payload.badgeQuote,
-          };
-          io.to(roomId).emit("room:chat-message", msg);
-        }
-      }
-    }, 2500);
-  };
 
   function cancelRoomDeleteTimer(roomId: string) {
     const timer = roomDeleteTimers.get(roomId);
