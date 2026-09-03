@@ -31,6 +31,7 @@ export const users = pgTable("users", {
   role: varchar("role", { length: 20 }).notNull().default("user"),
   vipTier: varchar("vip_tier", { length: 20 }),
   vipSince: timestamp("vip_since"),
+  titleColor: varchar("title_color", { length: 20 }),
   warningCount: integer("warning_count").notNull().default(0),
   restrictedUntil: timestamp("restricted_until"),
   restrictedReason: text("restricted_reason"),

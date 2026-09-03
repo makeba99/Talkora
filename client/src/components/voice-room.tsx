@@ -13229,15 +13229,21 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               const friendSet = new Set([...following.map((f) => f.followingId)].filter((id) => followerSet.has(id)));
 
               const connectedSet = new Set([...Array.from(followingSet), ...Array.from(followerSet)]);
-              let filtered = allUsers.filter((u) => u.id !== user?.id && connectedSet.has(u.id));
-              if (peopleFilter === "following") filtered = filtered.filter((u) => followingSet.has(u.id));
-              else if (peopleFilter === "followers") filtered = filtered.filter((u) => followerSet.has(u.id));
-              else if (peopleFilter === "friends") filtered = filtered.filter((u) => friendSet.has(u.id));
+              let filtered = allUsers.filter((u) => connectedSet.has(u.id) || u.id === user?.id);
+              if (peopleFilter === "following") filtered = filtered.filter((u) => followingSet.has(u.id) || u.id === user?.id);
+              else if (peopleFilter === "followers") filtered = filtered.filter((u) => followerSet.has(u.id) || u.id === user?.id);
+              else if (peopleFilter === "friends") filtered = filtered.filter((u) => friendSet.has(u.id) || u.id === user?.id);
+
+              // Pin the current user first so they can always see themselves.
+              filtered = [
+                ...filtered.filter((u) => u.id === user?.id),
+                ...filtered.filter((u) => u.id !== user?.id),
+              ];
 
               if (peopleSearch.trim()) {
                 const q = peopleSearch.toLowerCase();
                 filtered = filtered.filter((u) =>
-                  getUserDisplayName(u).toLowerCase().includes(q)
+                  getUserDisplayName(u).toLowerCase().includes(q) || (u.id === user?.id && "you".includes(q))
                 );
               }
 
@@ -13283,10 +13289,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold truncate leading-tight">{getUserDisplayName(u)}</p>
+                      <p className="text-xs font-semibold truncate leading-tight">{u.id === user?.id ? "You" : getUserDisplayName(u)}</p>
                       <p className="text-[10px] text-muted-foreground/60 truncate leading-tight">{u.bio || (u.status === "online" ? "Online" : "Offline")}</p>
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
+                      {u.id !== user?.id && (
                       <button
                         data-testid={`button-dm-${u.id}`}
                         onClick={() => {
@@ -13299,7 +13306,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       >
                         <MessageSquare className="w-3 h-3" />
                       </button>
-                      <UserNotePopover userId={u.id} />
+                      )}
+                      {u.id !== user?.id && <UserNotePopover userId={u.id} />}
+                      {u.id !== user?.id && (
                       <button
                         data-testid={`button-follow-${u.id}`}
                         onClick={() => isFollowingUser ? unfollowMutation.mutate(u.id) : followMutation.mutate(u.id)}
@@ -13312,6 +13321,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       >
                         {isFollowingUser ? <UserCheck className="w-3 h-3" /> : <UserPlus className="w-3 h-3" />}
                       </button>
+                      )}
                     </div>
                   </div>
                 );

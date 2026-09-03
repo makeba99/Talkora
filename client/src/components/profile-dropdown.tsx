@@ -35,7 +35,8 @@ import { useToast } from "@/hooks/use-toast";
 import { PROFILE_DECORATIONS, ProfileDecoration } from "@/components/profile-decorations";
 import { PROFILE_ANIMATIONS, ProfileAnimationOverlay } from "@/lib/profile-animations";
 import { BADGE_TYPES } from "@shared/constants";
-import { isVipUser, vipNameClass } from "@/lib/vip";
+import { isVipUser, vipNameClass, titleColorStyle } from "@/lib/vip";
+import { TITLE_COLOR_PALETTE, canUseFeature } from "@shared/entitlements";
 
 // AVATAR_RINGS / FLAIR_BADGES / getAvatarRingClass / getFlairIcon now live
 // in @/lib/avatar-ring so the lobby's room cards can import the small lookup
@@ -274,6 +275,7 @@ export function ProfileDropdown({
   const [selectedFlair, setSelectedFlair] = useState<string>("none");
   const [selectedDecoration, setSelectedDecoration] = useState<string>("none");
   const [selectedAnimation, setSelectedAnimation] = useState<string>("none");
+  const [selectedTitleColor, setSelectedTitleColor] = useState<string>("");
   const [requestedBadge, setRequestedBadge] = useState("");
   const [badgeReason, setBadgeReason] = useState("");
   const [roomJoinNotifyPref, setRoomJoinNotifyPref] = useState<"everyone" | "mutual" | "none">("everyone");
@@ -325,7 +327,7 @@ export function ProfileDropdown({
   });
 
   const saveDecorationsMutation = useMutation({
-    mutationFn: async (data: { avatarRing?: string; flairBadge?: string; profileDecoration?: string; profileAnimation?: string }) => {
+    mutationFn: async (data: { avatarRing?: string; flairBadge?: string; profileDecoration?: string; profileAnimation?: string; titleColor?: string | null }) => {
       const res = await apiRequest("PATCH", `/api/users/${user?.id}`, data);
       return res.json();
     },
@@ -335,7 +337,8 @@ export function ProfileDropdown({
       toast({ title: "Settings saved" });
       import("@/lib/sound-fx").then((s) => s.sfxSuccess()).catch(() => {});
     },
-    onError: () => {
+    onError: (err: any) => {
+      toast({ title: "Could not save settings", description: err?.message, variant: "destructive" });
       import("@/lib/sound-fx").then((s) => s.sfxError()).catch(() => {});
     },
   });
@@ -435,6 +438,7 @@ export function ProfileDropdown({
     setSelectedFlair(user?.flairBadge || "none");
     setSelectedDecoration((user as any)?.profileDecoration || "none");
     setSelectedAnimation((user as any)?.profileAnimation || "none");
+    setSelectedTitleColor((user as any)?.titleColor || "");
     setSettingsOpen(true);
   };
 
@@ -444,6 +448,7 @@ export function ProfileDropdown({
       flairBadge: "none",
       profileDecoration: selectedDecoration,
       profileAnimation: selectedAnimation,
+      titleColor: selectedTitleColor || null,
     });
   };
 
@@ -737,7 +742,11 @@ export function ProfileDropdown({
               </Avatar>
             </div>
             <div className="min-w-0 flex-1">
-              <p className={`text-[13px] font-semibold truncate ${vipNameClass(user)}`} data-testid="text-dropdown-user-name">
+              <p
+                className={`text-[13px] font-semibold truncate ${vipNameClass(user)}`}
+                style={titleColorStyle(user)}
+                data-testid="text-dropdown-user-name"
+              >
                 {isVipUser(user) ? "👑 " : ""}{getUserDisplayName(user)}
               </p>
               <p
@@ -1053,6 +1062,52 @@ export function ProfileDropdown({
           </DialogHeader>
           <ScrollArea className="max-h-[65vh]">
             <div className="space-y-6 pr-4">
+              <div className="space-y-3">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  Title color
+                  {!canUseFeature(user, "title_color") && (
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-400/90">VIP</span>
+                  )}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Choose a display-name color. Saved to your profile.
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {TITLE_COLOR_PALETTE.map((swatch) => {
+                    const locked = !canUseFeature(user, "title_color") && !!swatch.value;
+                    const active = (selectedTitleColor || "") === (swatch.value || "");
+                    return (
+                      <button
+                        key={swatch.id}
+                        type="button"
+                        disabled={locked}
+                        onClick={() => {
+                          if (locked) {
+                            toast({ title: "VIP only", description: "Buy Me a Coffee to unlock title colors." });
+                            return;
+                          }
+                          setSelectedTitleColor(swatch.value);
+                        }}
+                        className={`neu-deco-tile ${active ? "is-active" : ""} ${locked ? "opacity-50" : ""}`}
+                        data-testid={`title-color-${swatch.id}`}
+                        title={locked ? `${swatch.label} (VIP)` : swatch.label}
+                      >
+                        <span
+                          className="neu-deco-tile-preview"
+                          style={{
+                            background: swatch.value || "linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05))",
+                          }}
+                        />
+                        <span className="neu-deco-tile-label">{swatch.label}</span>
+                        {active && (
+                          <span className="neu-deco-tile-check"><Check /></span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Avatar Ring</Label>
                 <div className="flex justify-center mb-3">

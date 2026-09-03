@@ -382,6 +382,8 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
   const followingIds = new Set(following.map((f) => f.followingId));
   const followerIds = new Set(followers.map((f) => f.followerId));
 
+  const meUser = user ? allUsers.find((u) => u.id === user.id) || (user as User) : null;
+
   const friends = allUsers.filter(
     (u) => u.id !== user?.id && followingIds.has(u.id) && followerIds.has(u.id)
   );
@@ -486,7 +488,7 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
         >
           <div className="flex items-center gap-1.5 min-w-0">
             <p className="text-sm font-medium truncate hover:text-primary transition-colors min-w-0">
-              {getUserDisplayName(u)}
+              {u.id === user?.id ? "You" : getUserDisplayName(u)}
             </p>
             {isFollowing && (
               <span className="text-[9px] leading-none px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-semibold uppercase tracking-wide flex-shrink-0">
@@ -819,7 +821,10 @@ export function SocialPanel({ onOpenDm, onlineUsers, open: controlledOpen, onOpe
             <ScrollArea className="flex-1 mt-2">
               <div className="px-3 pb-4">
                 <TabsContent value="all" className="mt-0 space-y-0.5">
-                  {applyFilters(connectedUsers).length === 0 ? (
+                  {meUser && (!search || "you".includes(search.toLowerCase()) || getUserDisplayName(meUser).toLowerCase().includes(search.toLowerCase())) && (
+                    renderUser(meUser)
+                  )}
+                  {applyFilters(connectedUsers).length === 0 && !meUser ? (
                     renderEmpty(
                       <Users className="w-6 h-6" />,
                       search || onlyOnline ? "No matches" : "No connections yet",

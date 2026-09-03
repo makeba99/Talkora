@@ -1,16 +1,7 @@
 /**
- * Central support / VIP feature flags.
- *
- * BuyMeACoffee.com is unavailable in some markets (notably Armenia).
- * Those markets use in-app PayPal VIP instead of an external BMC link.
- * Keep all country/language gating here — do not scatter hard-coded checks.
+ * Central support / VIP CTA flags.
+ * Buy Me a Coffee UI opens in-app PayPal VIP checkout (BMC.com is unavailable in Armenia).
  */
-
-/** ISO country codes where BuyMeACoffee.com is not a viable checkout path. */
-export const BMC_UNSUPPORTED_COUNTRIES = new Set(["AM"]);
-
-/** Room / UI language labels where the old BMC CTA is not appropriate. */
-export const BMC_UNSUPPORTED_LANGUAGES = new Set(["Armenian"]);
 
 export type SupportVariant = "paypal-vip" | "hidden";
 
@@ -18,28 +9,19 @@ export function resolveSupportVariant(opts: {
   countryCode?: string | null;
   preferredLanguage?: string | null;
   paypalConfigured: boolean;
+  isAdmin?: boolean;
 }): SupportVariant {
-  const country = (opts.countryCode || "").toUpperCase();
-  const language = opts.preferredLanguage || "";
-
-  // PayPal VIP replaces Buy Me a Coffee everywhere it is configured.
-  // Markets where BMC.com does not work still see PayPal VIP (not a dead link).
-  if (opts.paypalConfigured) return "paypal-vip";
-
-  // Without PayPal configured, never show a broken BMC CTA in unsupported markets.
-  if (BMC_UNSUPPORTED_COUNTRIES.has(country) || BMC_UNSUPPORTED_LANGUAGES.has(language)) {
-    return "hidden";
-  }
-
-  // Prefer hiding rather than linking to buymeacoffee.com (removed from the product).
-  return "hidden";
+  // Admins always see the CTA so they can test checkout / messaging.
+  if (opts.isAdmin) return "paypal-vip";
+  // Product surface: always show Buy Me a Coffee → PayPal VIP dialog.
+  // Checkout returns a clear error if merchant ID is not configured yet.
+  return "paypal-vip";
 }
 
-export function supportNavLabel(variant: SupportVariant, countryCode?: string | null): string {
-  if (variant !== "paypal-vip") return "";
-  const country = (countryCode || "").toUpperCase();
-  // Armenia (and other BMC-blocked markets): avoid the misleading BMC brand name.
-  if (BMC_UNSUPPORTED_COUNTRIES.has(country)) return "Become VIP";
+export function supportNavLabel(
+  _variant: SupportVariant,
+  _countryCode?: string | null,
+): string {
   return "Buy Me a Coffee";
 }
 

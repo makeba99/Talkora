@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { VIP_PLANS, vipRank } from "@shared/constants";
 import { useQuery } from "@tanstack/react-query";
+import { isAdminUser, isVipUser } from "@/lib/vip";
 
 type VipConfig = {
   configured: boolean;
@@ -29,11 +30,13 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
     staleTime: 60_000,
   });
 
-  // Conditional render — no empty spacer when support is not offered for this market.
-  if (config && !config.showSupport) return null;
+  const admin = isAdminUser(user);
+  const show = config?.showSupport !== false || admin;
+  if (config && !show) return null;
 
   const currentRank = vipRank(user?.vipTier);
-  const navLabel = config?.navLabel || "Become VIP";
+  const isVip = isVipUser(user);
+  const navLabel = config?.navLabel || "Buy Me a Coffee";
   const triggerClass = guest
     ? "neu-btn inline-flex items-center h-8 px-3 rounded-full text-xs font-semibold"
     : "header-pro-btn inline-flex items-center h-9 px-3.5 rounded-full text-[12px] font-semibold";
@@ -51,7 +54,7 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || "PayPal checkout failed");
       window.location.href = data.url;
     } catch (err: any) {
@@ -66,12 +69,15 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
         type="button"
         className={triggerClass}
         data-testid={guest ? "button-buy-me-coffee-nav-guest" : "button-buy-me-coffee-nav"}
-        title="Support Vextorn — become VIP"
+        title="Buy Me a Coffee — become VIP"
         aria-label={navLabel}
         onClick={() => setOpen(true)}
       >
         <Coffee className={`${guest ? "w-3.5 h-3.5 mr-1.5" : "w-4 h-4 sm:mr-1.5"} text-neu-orange`} />
         <span className="hidden sm:inline">{navLabel}</span>
+        {isVip && (
+          <Crown className="w-3.5 h-3.5 ml-1 text-amber-300 hidden sm:inline" aria-label="VIP active" />
+        )}
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -79,16 +85,17 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
               <Crown className="w-5 h-5 text-amber-400" />
-              Support Vextorn
+              Buy Me a Coffee
             </DialogTitle>
             <DialogDescription>
-              Choose a VIP tier. Payment goes to PayPal and unlocks exclusive platform features.
+              Support Vextorn and unlock VIP. Payment is via PayPal (Buy Me a Coffee is unavailable in some regions).
             </DialogDescription>
           </DialogHeader>
 
-          {currentRank > 0 && (
-            <p className="text-xs text-amber-300/90 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2">
-              You are already {user?.vipTier === "elite" ? "VIP Elite" : user?.vipTier === "plus" ? "VIP Plus" : "VIP"}. A higher tier upgrades you.
+          {isVip && (
+            <p className="text-xs text-amber-300/90 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2" data-testid="text-vip-status">
+              VIP status: {user?.vipTier === "elite" ? "VIP Elite" : user?.vipTier === "plus" ? "VIP Plus" : user?.vipTier === "coffee" ? "VIP Coffee" : "Active"}
+              {currentRank > 0 ? " — pick a higher tier to upgrade." : ""}
             </p>
           )}
 
@@ -122,7 +129,9 @@ export function VipSupportButton({ guest = false }: { guest?: boolean }) {
             </p>
           )}
           {config && !config.configured && (
-            <p className="text-[11px] text-red-300/90">PayPal is not configured on the server yet.</p>
+            <p className="text-[11px] text-amber-200/90">
+              PayPal Merchant ID is not set yet. Admins: set PAYPAL_MERCHANT_ID on Railway or save it under Admin → Payments.
+            </p>
           )}
         </DialogContent>
       </Dialog>

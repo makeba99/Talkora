@@ -92,6 +92,13 @@
       "when": 1779220000000,
       "tag": "0014_vip_paypal",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1779230000000,
+      "tag": "0015_title_color",
+      "breakpoints": true
     }
   ]
 }

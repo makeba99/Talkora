@@ -32,6 +32,17 @@ import sharp from "sharp";
 import { getPrecomputedHtml } from "./static";
 import { registerImageProxy } from "./image-proxy";
 import { detectCountry } from "./geo";
+import {
+  canUseFeature,
+  isPlatformAdmin,
+  isVipEntitled,
+  normalizeTitleColor,
+} from "@shared/entitlements";
+import {
+  checkTalkingAiQuota,
+  incrementTalkingAiUsage,
+  normalizeAiHistory,
+} from "./entitlements-runtime";
 
 const onlineUsers = new Set<string>();
 const roomParticipants = new Map<string, Map<string, User>>();
@@ -1795,16 +1806,26 @@ export async function registerRoutes(
     try {
       const { message, history = [], settings = {}, language = "English", youtubeActive = false, roomId } = req.body;
       if (!message || typeof message !== "string") {
-        return res.status(400).json({ error: "message required" });
+        return res.status(400).json({ error: "invalid_request", message: "message required" });
+      }
+
+      const callerId = String((req.user as any).id);
+      const callerUser = await storage.getUser(callerId);
+      if (!callerUser) {
+        return res.status(401).json({ error: "unauthorized", message: "User not found" });
+      }
+
+      const quota = await checkTalkingAiQuota({ ...callerUser, id: callerId });
+      if (quota) {
+        return res.status(429).json(quota);
       }
 
       // Only block if ANOTHER user owns an active AI session in this room.
       // Allow if no session is registered (e.g. after server restart, socket re-connect pending).
       if (roomId) {
         const session = roomAiTutorState.get(roomId);
-        const callerId = String((req.user as any).id);
         if (session && String(session.userId) !== callerId) {
-          return res.status(403).json({ error: "not-active-session" });
+          return res.status(403).json({ error: "forbidden", message: "not-active-session" });
         }
       }
 
@@ -1815,12 +1836,13 @@ export async function registerRoutes(
       const isAfiK = /afi\s*k|afik/i.test(personaName);
       const isEva = /^(eva|lebroskiu)$/i.test(personaName.trim());
       const isLebroski = /^lebroski$/i.test(personaName.trim());
+      const normalizedHistory = normalizeAiHistory(history, 12);
 
       // Anti-repetition: detect same or very similar AI replies in last 4 turns
-       const recentAiReplies = (history as any[])
-        .filter((m: any) => m.role === 'ai')
+       const recentAiReplies = normalizedHistory
+        .filter((m) => m.role === 'assistant')
         .slice(-4)
-        .map((m: any) => (m.text || '').toLowerCase().trim());
+        .map((m) => (m.content || '').toLowerCase().trim());
        const normalizeReply = (value: string) =>
          value.toLowerCase().replace(/[^a-z0-9\s]/gi, '').replace(/\s+/g, ' ').trim();
        const replySimilarity = (a: string, b: string) => {
@@ -1931,7 +1953,7 @@ export async function registerRoutes(
         jsonInstruction,
       ].filter(Boolean).join(' ');
 
-      // Try OpenAI — prefer env var key, fall back to DB-configured OpenAI key
+      // Prefer env OpenAI key; allow admin-panel DB OpenAI key as secondary configured source.
       let activeOpenAiKey = OPENAI_API_KEY;
       if (!activeOpenAiKey) {
         try {
@@ -1940,74 +1962,66 @@ export async function registerRoutes(
         } catch {}
       }
 
-      if (activeOpenAiKey) {
-        try {
-          const openaiBaseUrl = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || 'https://api.openai.com/v1';
-          const body = { model: 'gpt-4o', messages: [
-            { role: 'system', content: systemPrompt },
-            ...(history as any[]).slice(-10).map((m: any) => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text })),
-            { role: 'user', content: message },
-          ], max_tokens: 160, temperature, response_format: { type: 'json_object' } };
-          const r = await fetch(`${openaiBaseUrl}/chat/completions`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${activeOpenAiKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-          });
-          const raw = await r.text();
-          if (r.ok) {
-            const parsed = parseAiResponse(raw);
-            const latencyMs = Date.now() - startTime;
-            if (parsed.reply) {
-              console.log(`[AI Tutor] openai/gpt-4o → ${latencyMs}ms`);
-              return res.json({
-                reply: parsed.reply,
-                correction: parsed.correction,
-                correctionFixed: parsed.correctionFixed,
-                debug: { source: 'openai', model: 'gpt-4o', latencyMs, warnings, temperature, historyUsed: Math.min(history.length, 10) },
-              });
-            }
-          } else {
-            console.error(`[AI Tutor] openai error ${r.status}: ${raw.slice(0, 200)}`);
-            warnings.push(`openai_error_${r.status}`);
-          }
-        } catch (err) {
-          console.error('[AI Tutor] Model call failed:', err);
-          warnings.push('model_call_exception');
-        }
-      } else {
-        warnings.push('no_openai_key');
+      if (!activeOpenAiKey) {
+        return res.status(503).json({
+          error: "missing_api_configuration",
+          message: "AI is not configured. Set OPENAI_API_KEY (or AI_INTEGRATIONS_OPENAI_API_KEY) on Railway, or save an OpenAI key in Admin → AI Tutor.",
+          debug: { source: "none", warnings: ["no_openai_key"] },
+        });
       }
 
-      // Context-aware fallback — echoes back the user's words so it never feels generic
-      const userWords = message.trim().split(/\s+/).slice(0, 4).join(' ');
-       const fallbacks = [
-        `You said "${userWords}" — tell me more about that.`,
-        `Interesting — what do you mean by that exactly?`,
-        `I'd love to hear more. What happened next?`,
-        `That's worth exploring. How did that make you feel?`,
-        `Say more — I'm following along.`,
-      ];
-       const recentFallbacks = new Set(
-         (history as any[]).filter((m: any) => m.role === 'ai').slice(-6)
-           .map((m: any) => normalizeReply(m.text || ''))
-       );
-       const availableFallbacks = fallbacks.filter(reply => !recentFallbacks.has(normalizeReply(reply)));
-      const latencyMs = Date.now() - startTime;
-      return res.json({
-         reply: (availableFallbacks.length ? availableFallbacks : fallbacks)[
-           Math.floor(Math.random() * (availableFallbacks.length ? availableFallbacks : fallbacks).length)
-         ],
-        correction: null,
-        correctionFixed: null,
-        debug: { source: 'fallback', latencyMs, warnings },
-      });
+      try {
+        const openaiBaseUrl = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || 'https://api.openai.com/v1';
+        const body = { model: 'gpt-4o', messages: [
+          { role: 'system', content: systemPrompt },
+          ...normalizedHistory,
+          { role: 'user', content: message },
+        ], max_tokens: 160, temperature, response_format: { type: 'json_object' } };
+        const r = await fetch(`${openaiBaseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${activeOpenAiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const raw = await r.text();
+        if (r.ok) {
+          const parsed = parseAiResponse(raw);
+          const latencyMs = Date.now() - startTime;
+          if (parsed.reply) {
+            await incrementTalkingAiUsage(callerId);
+            console.log(`[AI Tutor] openai/gpt-4o → ${latencyMs}ms`);
+            return res.json({
+              reply: parsed.reply,
+              correction: parsed.correction,
+              correctionFixed: parsed.correctionFixed,
+              debug: { source: 'openai', model: 'gpt-4o', latencyMs, warnings, temperature, historyUsed: normalizedHistory.length },
+            });
+          }
+          return res.status(502).json({
+            error: "ai_provider_error",
+            message: "AI returned an empty reply. Please try again.",
+            debug: { source: 'openai', warnings: [...warnings, 'empty_reply'] },
+          });
+        }
+        console.error(`[AI Tutor] openai error ${r.status}: ${raw.slice(0, 200)}`);
+        return res.status(502).json({
+          error: "ai_provider_error",
+          message: `AI provider error (${r.status}). Check the OpenAI key and model access.`,
+          debug: { source: 'openai', warnings: [...warnings, `openai_error_${r.status}`] },
+        });
+      } catch (err: any) {
+        console.error('[AI Tutor] Model call failed:', err);
+        return res.status(502).json({
+          error: "ai_provider_error",
+          message: err?.message || "AI provider request failed",
+          debug: { source: 'openai', warnings: [...warnings, 'model_call_exception'] },
+        });
+      }
 
     } catch (err) {
       console.error('[AI Tutor] Unexpected error:', err);
       return res.status(500).json({
-        reply: "Let's keep going — what were you saying?",
-        correction: null,
-        correctionFixed: null,
+        error: "database_error",
+        message: "Talking AI failed unexpectedly. Please try again.",
         debug: { source: 'error', warnings: ['server_error'] },
       });
     }
@@ -2090,10 +2104,19 @@ export async function registerRoutes(
         if (dbKeys) {
           // Call ElevenLabs directly with DB-configured keys/voice/model
           const keys = dbKeys.split(",").map((k) => k.trim()).filter(Boolean);
-          // Respect Male/Female voice selection
-          const voiceId = (voice === "Male"
-            ? (cfg.elevenlabs.maleVoiceId || "pNInz6obpgDQGcFmaJgB")
-            : (cfg.elevenlabs.voiceId || "XB0fDUnXU5powFXDhCwa"));
+          // Respect Male/Female voice selection — never silently swap to a random hardcoded voice.
+          const configuredVoiceId = voice === "Male"
+            ? (cfg.elevenlabs.maleVoiceId || "").trim()
+            : (cfg.elevenlabs.voiceId || "").trim();
+          if (!configuredVoiceId) {
+            return res.status(501).json({
+              error: "voice_not_configured",
+              message: voice === "Male"
+                ? "Male ElevenLabs voice ID is not configured. Set it in Admin → AI Tutor."
+                : "ElevenLabs voice ID is not configured. Set it in Admin → AI Tutor.",
+            });
+          }
+          const voiceId = configuredVoiceId;
           const modelId = cfg.elevenlabs.modelId || "eleven_multilingual_v2";
           let lastErr: typeof result | null = null;
           const tried = new Set<string>();
@@ -2123,7 +2146,7 @@ export async function registerRoutes(
           result = result! ?? lastErr ?? { ok: false, status: 501, contentType: "", error: "elevenlabs-not-configured" };
         } else {
           if (!isElevenLabsConfigured()) {
-            return res.status(501).json({ error: "elevenlabs-not-configured" });
+            return res.status(501).json({ error: "elevenlabs-not-configured", message: "ElevenLabs API keys are not configured." });
           }
           result = await elevenLabsSynthesize({ text: text.trim(), voice, speed: typeof speed === "number" ? speed : 1.0, language: typeof language === "string" ? language : "en" });
         }
@@ -2171,7 +2194,20 @@ export async function registerRoutes(
     try {
       const { message, history = [], settings = {}, language = "English", youtubeActive = false, roomId } = req.body;
       if (!message || typeof message !== 'string') {
-        sendEvent({ error: 'message required' });
+        sendEvent({ error: 'message required', code: 'invalid_request' });
+        return res.end();
+      }
+
+      const callerId = String((req.user as any).id);
+      const callerUser = await storage.getUser(callerId);
+      if (!callerUser) {
+        sendEvent({ error: 'User not found', code: 'unauthorized' });
+        return res.end();
+      }
+
+      const quota = await checkTalkingAiQuota({ ...callerUser, id: callerId });
+      if (quota) {
+        sendEvent({ error: quota.message, code: quota.error, used: quota.used, limit: quota.limit });
         return res.end();
       }
 
@@ -2179,9 +2215,8 @@ export async function registerRoutes(
       // Allow if no session is registered (e.g. after server restart, socket re-connect pending).
       if (roomId) {
         const session = roomAiTutorState.get(roomId);
-        const callerId = String((req.user as any).id);
         if (session && String(session.userId) !== callerId) {
-          sendEvent({ error: 'not-active-session' });
+          sendEvent({ error: 'not-active-session', code: 'forbidden' });
           return res.end();
         }
       }
@@ -2193,10 +2228,11 @@ export async function registerRoutes(
       const isAfiK = /afi\s*k|afik/i.test(personaName);
       const isEva = /^(eva|lebroskiu)$/i.test(personaName.trim());
       const isLebroski = /^lebroski$/i.test(personaName.trim());
+      const normalizedHistory = normalizeAiHistory(history, 12);
 
-       const recentAiReplies = (history as any[])
-        .filter((m: any) => m.role === 'ai').slice(-4)
-        .map((m: any) => (m.text || '').toLowerCase().trim());
+       const recentAiReplies = normalizedHistory
+        .filter((m) => m.role === 'assistant').slice(-4)
+        .map((m) => (m.content || '').toLowerCase().trim());
        const normalizeReply = (value: string) =>
          value.toLowerCase().replace(/[^a-z0-9\s]/gi, '').replace(/\s+/g, ' ').trim();
        const replySimilarity = (a: string, b: string) => {
@@ -2300,10 +2336,7 @@ export async function registerRoutes(
 
       const messages = [
         { role: 'system', content: systemPrompt },
-        ...(history as any[]).slice(-10).map((m: any) => ({
-          role: m.role === 'ai' ? 'assistant' : 'user',
-          content: m.text,
-        })),
+        ...normalizedHistory,
         { role: 'user', content: message },
       ];
 
@@ -2314,12 +2347,17 @@ export async function registerRoutes(
             headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ model, messages, max_tokens: 160, temperature, stream: true }),
           });
-          if (!apiRes.ok || !apiRes.body) return false;
+          if (!apiRes.ok || !apiRes.body) {
+            const errBody = await apiRes.text().catch(() => '');
+            console.error(`[AI Stream] ${provider} HTTP ${apiRes.status}: ${errBody.slice(0, 200)}`);
+            return false;
+          }
 
           const reader = apiRes.body.getReader();
           const decoder = new TextDecoder();
           let sseBuffer = '';
           let firstToken = true;
+          let gotAny = false;
 
           while (true) {
             const { done, value } = await reader.read();
@@ -2335,6 +2373,7 @@ export async function registerRoutes(
                 const parsed = JSON.parse(raw);
                 const token: string = parsed.choices?.[0]?.delta?.content || '';
                 if (token) {
+                  gotAny = true;
                   if (firstToken) {
                     console.log(`[AI Stream] First token from ${provider}/${model} in ${Date.now() - startTime}ms`);
                     firstToken = false;
@@ -2344,7 +2383,7 @@ export async function registerRoutes(
               } catch {}
             }
           }
-          return true;
+          return gotAny;
         } catch (err) {
           console.error(`[AI Stream] ${provider} stream error:`, err);
           return false;
@@ -2363,36 +2402,30 @@ export async function registerRoutes(
         } catch {}
       }
 
-      if (streamKey) {
-        const openaiBaseUrl = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || 'https://api.openai.com/v1';
-        streamed = await streamTokens('openai', 'gpt-4o', openaiBaseUrl, streamKey);
+      if (!streamKey) {
+        sendEvent({
+          error: 'AI is not configured. Set OPENAI_API_KEY on Railway or save an OpenAI key in Admin → AI Tutor.',
+          code: 'missing_api_configuration',
+        });
+        return res.end();
       }
+
+      const openaiBaseUrl = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || 'https://api.openai.com/v1';
+      streamed = await streamTokens('openai', 'gpt-4o', openaiBaseUrl, streamKey);
 
       const model = 'gpt-4o';
       if (streamed) {
+        await incrementTalkingAiUsage(callerId);
         sendEvent({ done: true, model, latencyMs: Date.now() - startTime });
       } else {
-        // Ultimate fallback: return a context-aware canned reply
-        const userWords = message.trim().split(/\s+/).slice(0, 4).join(' ');
-         const fallbacks = [
-          `You said "${userWords}" — tell me more about that.`,
-          `That's interesting — what do you mean exactly?`,
-          `I'd love to hear more. What happened next?`,
-          `Say more — I'm following along.`,
-        ];
-         const recentFallbacks = new Set(
-           (history as any[]).filter((m: any) => m.role === 'ai').slice(-6)
-             .map((m: any) => normalizeReply(m.text || ''))
-         );
-         const availableFallbacks = fallbacks.filter(reply => !recentFallbacks.has(normalizeReply(reply)));
-         const choices = availableFallbacks.length ? availableFallbacks : fallbacks;
-         const fallback = choices[Math.floor(Math.random() * choices.length)];
-        sendEvent({ token: fallback });
-        sendEvent({ done: true, model: 'fallback', latencyMs: Date.now() - startTime });
+        sendEvent({
+          error: 'AI provider failed to stream a response. Check the configured OpenAI API key.',
+          code: 'ai_provider_error',
+        });
       }
     } catch (err) {
       console.error('[AI Stream] Unexpected error:', err);
-      sendEvent({ error: 'Server error — please try again.' });
+      sendEvent({ error: 'Server error — please try again.', code: 'server_error' });
     }
     res.end();
   });
@@ -2599,9 +2632,18 @@ export async function registerRoutes(
       ]);
       const merchant = await paypalMerchantId();
       const configured = !!merchant;
+      let isAdmin = false;
+      try {
+        if (req.isAuthenticated?.() && req.user?.id) {
+          const u = await storage.getUser(String(req.user.id));
+          const { isPlatformAdmin } = await import("@shared/entitlements");
+          isAdmin = isPlatformAdmin(u);
+        }
+      } catch { /* guest */ }
       const variant = resolveSupportVariant({
         countryCode: country,
         paypalConfigured: configured,
+        isAdmin,
       });
       res.json({
         configured,
@@ -4043,7 +4085,7 @@ export async function registerRoutes(
       if (userId !== req.params.id) {
         return res.status(403).json({ message: "Cannot update other users" });
       }
-      const { displayName, profileImageUrl, avatarRing, flairBadge, bio, profileDecoration, profileAnimation, instagramUrl, linkedinUrl, facebookUrl, socialsPinned, status } = req.body;
+      const { displayName, profileImageUrl, avatarRing, flairBadge, bio, profileDecoration, profileAnimation, instagramUrl, linkedinUrl, facebookUrl, socialsPinned, status, titleColor } = req.body;
 
       // ── Content moderation ─────────────────────────────────────────────────
       const _profileUser = await storage.getUser(userId);
@@ -4062,8 +4104,8 @@ export async function registerRoutes(
       if (displayName !== undefined) updateData.displayName = displayName;
       if (profileImageUrl !== undefined) updateData.profileImageUrl = normalizeProfileImageUrl(profileImageUrl);
       if (avatarRing !== undefined) {
-        if (String(avatarRing).startsWith("vip-") && !vipRank(_profileUser?.vipTier)) {
-          return res.status(403).json({ message: "VIP rings are for supporters. Buy a coffee to unlock them." });
+        if (String(avatarRing).startsWith("vip-") && !isVipEntitled(_profileUser)) {
+          return res.status(403).json({ error: "forbidden", message: "VIP rings are for supporters. Buy a coffee to unlock them." });
         }
         updateData.avatarRing = avatarRing;
       }
@@ -4076,7 +4118,17 @@ export async function registerRoutes(
       if (facebookUrl !== undefined) updateData.facebookUrl = facebookUrl;
       if (socialsPinned !== undefined) updateData.socialsPinned = !!socialsPinned;
       if (status !== undefined) updateData.status = status;
+      if (titleColor !== undefined) {
+        if (!canUseFeature(_profileUser, "title_color")) {
+          return res.status(403).json({ error: "forbidden", message: "Title colors are a VIP feature. Buy Me a Coffee to unlock them." });
+        }
+        const normalized = normalizeTitleColor(titleColor);
+        updateData.titleColor = normalized;
+      }
       const updated = await storage.updateUser(userId, updateData);
+      if (!updated) {
+        return res.status(404).json({ error: "user_not_found", message: "User not found" });
+      }
       // Broadcast profile changes to all connected clients so avatars, rings,
       // and decorations refresh in real-time without a page reload.
       io.emit("user:profile-updated", {
@@ -4087,6 +4139,7 @@ export async function registerRoutes(
         flairBadge: updated.flairBadge,
         profileDecoration: updated.profileDecoration,
         profileAnimation: updated.profileAnimation,
+        titleColor: (updated as any).titleColor ?? null,
         status: updated.status,
       });
       res.json(updated);
@@ -5225,27 +5278,27 @@ export async function registerRoutes(
   const SUPER_ADMIN_EMAIL = "dj55jggg@gmail.com";
 
   const isAdmin = async (req: any, res: any, next: any) => {
-    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+    if (!req.user) return res.status(401).json({ error: "unauthorized", message: "Unauthorized" });
     const user = await storage.getUser((req.user as any).id);
     if (user?.email === SUPER_ADMIN_EMAIL && user.role !== "superadmin") {
       await storage.setUserRole(user.id, "superadmin");
       return next();
     }
-    if (!user || (user.role !== "admin" && user.role !== "superadmin")) {
-      return res.status(403).json({ message: "Admin access required" });
+    if (!isPlatformAdmin(user)) {
+      return res.status(403).json({ error: "forbidden", message: "Admin access required" });
     }
     next();
   };
 
   const isSuperAdmin = async (req: any, res: any, next: any) => {
-    if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+    if (!req.user) return res.status(401).json({ error: "unauthorized", message: "Unauthorized" });
     const user = await storage.getUser((req.user as any).id);
     if (user?.email === SUPER_ADMIN_EMAIL && user.role !== "superadmin") {
       await storage.setUserRole(user.id, "superadmin");
       return next();
     }
-    if (!user || user.role !== "superadmin") {
-      return res.status(403).json({ message: "Super admin access required" });
+    if (!user || (user.role !== "superadmin" && user.email !== SUPER_ADMIN_EMAIL)) {
+      return res.status(403).json({ error: "forbidden", message: "Super admin access required" });
     }
     next();
   };
@@ -6036,16 +6089,25 @@ export async function registerRoutes(
     try {
       const { userId, badgeType } = req.body;
       if (!userId || !badgeType) return res.status(400).json({ message: "userId and badgeType required" });
-      if (!(badgeType in BADGE_TYPES)) return res.status(400).json({ message: "Invalid badge type" });
+      if (!(badgeType in BADGE_TYPES)) {
+        return res.status(400).json({ message: `Invalid badge type: ${badgeType}` });
+      }
 
       const target = await storage.getUser(userId);
       if (!target) return res.status(404).json({ message: "User not found" });
+
+      const badgeDef = BADGE_TYPES[badgeType as keyof typeof BADGE_TYPES];
+      if (!badgeDef?.id || !badgeDef?.label) {
+        return res.status(400).json({ message: "Badge definition is incomplete" });
+      }
 
       // Awarding is idempotent: double-clicks, retries, and admin refreshes
       // must not create duplicate rewards or duplicate announcements.
       const existingBadge = await storage.getUserBadges(userId);
       const alreadyAwarded = existingBadge.find((item) => item.badgeType === badgeType);
-      if (alreadyAwarded) return res.json(alreadyAwarded);
+      if (alreadyAwarded) {
+        return res.json({ ...alreadyAwarded, alreadyHad: true });
+      }
 
       const badge = await storage.awardBadge({
         userId,
@@ -6053,27 +6115,36 @@ export async function registerRoutes(
         awardedById: (req.user as any).id,
       });
 
-      const badgeDef = BADGE_TYPES[badgeType as keyof typeof BADGE_TYPES];
       const targetName = target.displayName || [target.firstName, target.lastName].filter(Boolean).join(" ") || target.email || "A user";
 
       const badgeAwardPayload = {
         badge,
-        badgeDef,
+        badgeDef: {
+          id: badgeDef.id,
+          label: badgeDef.label,
+          emoji: badgeDef.emoji || "🏅",
+          color: badgeDef.color || "#8B5CF6",
+          quote: badgeDef.quote || "",
+        },
         userName: targetName,
         userAvatar: target.profileImageUrl,
         userId: target.id,
-        quote: badgeDef.quote,
+        quote: badgeDef.quote || "",
       };
-      io.emit("badge:awarded", badgeAwardPayload);
-      emitBadgeChatToAllActiveRooms({
-        badgeUserId: target.id,
-        badgeUserName: targetName,
-        badgeUserAvatar: target.profileImageUrl,
-        badgeEmoji: badgeDef.emoji,
-        badgeLabel: badgeDef.label,
-        badgeColor: badgeDef.color,
-        badgeQuote: badgeDef.quote,
-      });
+      try {
+        io.emit("badge:awarded", badgeAwardPayload);
+        emitBadgeChatToAllActiveRooms({
+          badgeUserId: target.id,
+          badgeUserName: targetName,
+          badgeUserAvatar: target.profileImageUrl,
+          badgeEmoji: badgeAwardPayload.badgeDef.emoji,
+          badgeLabel: badgeAwardPayload.badgeDef.label,
+          badgeColor: badgeAwardPayload.badgeDef.color,
+          badgeQuote: badgeAwardPayload.badgeDef.quote,
+        });
+      } catch (emitErr: any) {
+        console.error("[badges] announce failed (badge still saved):", emitErr?.message || emitErr);
+      }
 
       try {
         await storage.createNotification({ userId, fromUserId: (req.user as any).id, type: `badge_awarded:${badgeType}` });
@@ -6085,7 +6156,8 @@ export async function registerRoutes(
 
       res.json(badge);
     } catch (err: any) {
-      res.status(500).json({ message: err.message });
+      console.error("[badges] award failed:", err?.message || err);
+      res.status(500).json({ message: err?.message || "Failed to award badge" });
     }
   });
 

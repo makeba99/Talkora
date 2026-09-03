@@ -466,6 +466,11 @@ export function useAiTutor(deps: AiTutorDeps) {
     setVoiceInterimText(null);
 
     const userMsg: ConversationEntry = { id: `u-${Date.now()}`, role: "user", text: text.trim() };
+    // Prior turns only (current message is sent separately). Filter empty
+    // streaming bubbles so the model never sees blank assistant rows.
+    const historyForApi = aiConversation
+      .filter((m) => typeof m.text === "string" && m.text.trim().length > 0)
+      .slice(-12);
     setAiConversation(prev => [...prev, userMsg]);
     setAiLoading(true);
     setAiAcknowledging(true);
@@ -527,7 +532,7 @@ export function useAiTutor(deps: AiTutorDeps) {
         {
           roomId,
           message: text.trim(),
-          history: aiConversation.slice(-8),
+          history: historyForApi,
           settings: aiSettings,
           language: roomLanguage,
           youtubeActive: ytActive,
@@ -591,7 +596,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       const fallback = await fetchBufferedReply({
         roomId,
         message: text.trim(),
-        history: aiConversation.slice(-8),
+        history: historyForApi,
         settings: aiSettings,
         language: roomLanguage,
         youtubeActive: ytActive,
@@ -609,12 +614,10 @@ export function useAiTutor(deps: AiTutorDeps) {
         socket?.emit("room:ai-tutor-message", { roomId, userId, text: fallback.reply, voice: aiSettings.voice, voiceId: aiSettings.voiceId, speed: aiSettings.speed, avatarId: aiSettings.avatarId });
         ttsRef.current?.enqueue(fallback.reply);
       } else {
-        // Last resort: natural varied fallback
-        const pick = FALLBACK_RESPONSES[Math.floor(Math.random() * FALLBACK_RESPONSES.length)];
-        const fbMsg: ConversationEntry = { id: `a-${Date.now()}`, role: "ai", text: pick };
+        const errText = "Talking AI is unavailable right now. Please try again in a moment.";
+        const fbMsg: ConversationEntry = { id: `a-${Date.now()}`, role: "ai", text: errText };
         setAiConversation(prev => [...prev, fbMsg]);
-        ttsRef.current?.enqueue(pick);
-        addDebug("error", "All AI calls failed — using hardcoded fallback.");
+        addDebug("error", "All AI calls failed — no fake fallback reply.");
       }
     } finally {
       clearTimeout(thinkingTimer);

@@ -240,7 +240,24 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
   const hasPlayedRef = useRef<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const isForCurrentUser = user && event && user.id === event.userId;
+  // Guard incomplete payloads — a missing badgeDef previously crashed the
+  // error boundary with "Something went wrong" right after a successful award.
+  const safeEvent = event && event.badge?.id && event.badgeDef?.label
+    ? {
+        ...event,
+        badgeDef: {
+          id: event.badgeDef.id || event.badge.badgeType || "badge",
+          label: event.badgeDef.label,
+          emoji: event.badgeDef.emoji || "🏅",
+          color: event.badgeDef.color || "#8B5CF6",
+          quote: event.badgeDef.quote || event.quote || "",
+        },
+        userName: event.userName || "A user",
+        quote: event.quote || event.badgeDef.quote || "",
+      }
+    : null;
+
+  const isForCurrentUser = user && safeEvent && user.id === safeEvent.userId;
 
   const handleDismiss = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -249,13 +266,13 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
   }, [onDismiss]);
 
   useEffect(() => {
-    if (!event) {
+    if (!safeEvent) {
       setConfettiActive(false);
       hasPlayedRef.current = null;
       return;
     }
 
-    const eventKey = event.badge.id;
+    const eventKey = safeEvent.badge.id;
     if (hasPlayedRef.current !== eventKey) {
       hasPlayedRef.current = eventKey;
       setConfettiActive(true);
@@ -264,19 +281,19 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
 
     timerRef.current = setTimeout(handleDismiss, AUTO_DISMISS_MS);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [event, handleDismiss]);
+  }, [safeEvent, handleDismiss, muted]);
 
-  const initials = event?.userName
-    ? event.userName.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)
+  const initials = safeEvent?.userName
+    ? safeEvent.userName.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)
     : "U";
 
-  const color = event?.badgeDef.color ?? "#8B5CF6";
+  const color = safeEvent?.badgeDef.color ?? "#8B5CF6";
 
   return (
     <AnimatePresence>
-      {event && (
+      {safeEvent && (
         <motion.div
-          key={event.badge.id}
+          key={safeEvent.badge.id}
           initial={{ opacity: 0, y: -100, scale: 0.85 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -80, scale: 0.9 }}
@@ -375,7 +392,7 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
                       style={{ ringColor: color } as any}
                       data-testid="badge-user-avatar"
                     >
-                      <AvatarImage src={event.userAvatar ?? undefined} alt="" />
+                      <AvatarImage src={safeEvent.userAvatar ?? undefined} alt="" />
                       <AvatarFallback
                         className="text-xl font-bold"
                         style={{ background: `${color}25`, color: color }}
@@ -394,7 +411,7 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
                         backdropFilter: "blur(4px)",
                       }}
                     >
-                      {event.badgeDef.emoji}
+                      {safeEvent.badgeDef.emoji}
                     </motion.div>
                   </div>
                 </motion.div>
@@ -406,7 +423,7 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
                   transition={{ delay: 0.25, duration: 0.4 }}
                 >
                   <p className="text-white font-bold text-lg leading-tight break-words" data-testid="badge-user-name">
-                    {event.userName}
+                    {safeEvent.userName}
                   </p>
                   <p className="text-white/55 text-sm mt-0.5">has been awarded</p>
 
@@ -423,8 +440,8 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
                     }}
                     data-testid="badge-label"
                   >
-                    <span className="text-base">{event.badgeDef.emoji}</span>
-                    <span>{event.badgeDef.label}</span>
+                    <span className="text-base">{safeEvent.badgeDef.emoji}</span>
+                    <span>{safeEvent.badgeDef.label}</span>
                   </motion.div>
 
                   <motion.p
@@ -434,7 +451,7 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
                     className="text-white/45 text-xs leading-relaxed italic mt-2"
                     data-testid="badge-quote"
                   >
-                    "{event.quote}"
+                    "{safeEvent.quote}"
                   </motion.p>
                 </motion.div>
               </div>

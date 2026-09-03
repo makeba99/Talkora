@@ -25,6 +25,7 @@ const RoomEditDialog = lazy(() =>
   import("@/components/room-edit-dialog").then((m) => ({ default: m.RoomEditDialog }))
 );
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
+import { titleColorStyle, vipNameClass } from "@/lib/vip";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/lib/theme";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -293,7 +294,13 @@ function ParticipantPopover({ participant, currentUserId, onOpenDm, badges = [] 
         </AvatarFallback>
       </Avatar>
       <div className="text-center">
-        <p className="font-bold text-sm" data-testid={`text-card-profile-name-${participant.id}`}>{getUserDisplayName(participant)}</p>
+        <p
+          className={`font-bold text-sm ${vipNameClass(participant)}`}
+          style={titleColorStyle(participant)}
+          data-testid={`text-card-profile-name-${participant.id}`}
+        >
+          {getUserDisplayName(participant)}
+        </p>
         <UserBadgePips badges={badges} userId={participant.id} />
         {participant.bio && (
           <p className="text-xs text-muted-foreground mt-1 italic max-w-[160px]" data-testid={`text-card-profile-bio-${participant.id}`}>{participant.bio}</p>

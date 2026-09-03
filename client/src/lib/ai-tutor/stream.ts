@@ -81,11 +81,16 @@ export async function streamTokens(
   clearTimeout(firstByteTimer);
 
   if (!res.ok || !res.body) {
-    const statusMsg =
-      res.status === 429 ? "rate limited — try again in a moment"
-      : res.status === 503 ? "AI service temporarily unavailable"
+    let statusMsg =
+      res.status === 429 ? "usage limit reached — upgrade to VIP for unlimited Talking AI"
+      : res.status === 503 ? "AI service not configured"
       : res.status >= 500 ? `server error (${res.status})`
       : `HTTP ${res.status}`;
+    try {
+      const errBody = await res.json();
+      if (errBody?.message) statusMsg = String(errBody.message);
+      else if (errBody?.error) statusMsg = String(errBody.error);
+    } catch { /* keep statusMsg */ }
     callbacks.onError(statusMsg);
     return false;
   }
@@ -172,7 +177,14 @@ export async function fetchBufferedReply(
         youtubeActive: options.youtubeActive,
       }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      let message = `HTTP ${res.status}`;
+      try {
+        const err = await res.json();
+        message = err?.message || err?.error || message;
+      } catch { /* ignore */ }
+      return { reply: "", model: "error", correction: null, correctionFixed: null, error: message } as any;
+    }
     const data = await res.json();
     return {
       reply: data.reply || "",

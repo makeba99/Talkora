@@ -11,6 +11,7 @@ import { RoomCard } from "@/components/room-card";
 import { VipSupportButton } from "@/components/vip-support-button";
 import { VextornMark } from "@/components/vextorn-logo";
 import { showHintOnce } from "@/lib/hints";
+import { titleColorStyle, vipNameClass } from "@/lib/vip";
 
 /* SiteFooter (~425 lines) sits below the fold and is never the LCP.
  * ScrollJumpButton only renders after the user has scrolled. Both are
@@ -270,10 +271,11 @@ function PeopleDiscoveryCard({
           </div>
           <div className="min-w-0 flex-1">
             <h3
-              className="truncate text-[14px] font-extrabold text-white leading-tight tracking-tight"
+              className={`truncate text-[14px] font-extrabold text-white leading-tight tracking-tight ${vipNameClass(person)}`}
+              style={titleColorStyle(person)}
               data-testid={`text-discovery-name-${person.id}`}
             >
-              {name}
+              {isCurrentUser ? "You" : name}
             </h3>
             <p className={`flex items-center gap-1.5 text-[10.5px] font-semibold mt-1 ${getPresenceClass(person.status)}`}>
               <span
@@ -1512,7 +1514,7 @@ export default function Lobby() {
   const filteredPeople = useMemo(() => {
     if (activeDiscovery === "rooms") return [];
     const lsq = searchQuery.toLowerCase();
-    return mergedPeople
+    const ranked = mergedPeople
       .filter((person) => {
         const meta = SAMPLE_SPEAKER_META[person.id];
         const searchable = `${getUserName(person)} ${person.email || ""} ${(person as any).bio || ""} ${meta?.bio || ""} ${(meta?.languages || []).join(" ")}`.toLowerCase();
@@ -1531,9 +1533,14 @@ export default function Lobby() {
         }
 
         return bFollowers - aFollowers || Number(bOnline) - Number(aOnline) || getUserName(a).localeCompare(getUserName(b));
-      })
-      .slice(0, 10);
-  }, [mergedPeople, searchQuery, activeDiscovery, followerCounts, onlineUsers, usersCurrentRooms]);
+      });
+
+    // Always include the authenticated user in people discovery so they can
+    // see themselves even when they fall outside the top-10 slice.
+    const me = user ? ranked.find((p) => p.id === user.id) || mergedPeople.find((p) => p.id === user.id) : undefined;
+    const others = ranked.filter((p) => p.id !== user?.id).slice(0, me ? 9 : 10);
+    return me ? [me, ...others] : others;
+  }, [mergedPeople, searchQuery, activeDiscovery, followerCounts, onlineUsers, usersCurrentRooms, user]);
 
   // PERF: memoize language counts and tag list — these only change when the
   // rooms list itself changes, not on every participant/presence update.

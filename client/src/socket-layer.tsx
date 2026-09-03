@@ -94,7 +94,18 @@ function GlobalSocketEvents() {
 
   useEffect(() => {
     if (!socket) return;
-    const handleBadgeAwarded = (event: any) => setBadgeEvent(event);
+    const handleBadgeAwarded = (event: any) => {
+      if (!event?.badge?.id || !event?.badgeDef) {
+        console.warn("[badge] Ignoring incomplete badge:awarded payload", event);
+        return;
+      }
+      setBadgeEvent(event);
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      if (event.userId) {
+        queryClient.invalidateQueries({ queryKey: ["/api/users", event.userId] });
+        queryClient.invalidateQueries({ queryKey: ["/api/users/badges"] });
+      }
+    };
     const handleAnnouncement = (_event: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
     };
