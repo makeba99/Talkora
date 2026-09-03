@@ -56,6 +56,7 @@
     "date-fns": "^3.6.0",
     "drizzle-orm": "^0.39.3",
     "drizzle-zod": "^0.7.1",
+    "edge-tts-universal": "^1.4.0",
     "embla-carousel-react": "^8.6.0",
     "emoji-picker-react": "^4.18.0",
     "esbuild": "^0.25.0",

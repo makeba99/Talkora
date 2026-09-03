@@ -2146,16 +2146,26 @@ export async function registerRoutes(
   app.get("/api/ai-tutor/voice-config", isAuthenticated, async (_req, res) => {
     try {
       const cfg = await getAiTutorConfig();
-      const hasVoice = !!(sanitizeKey(cfg.voice.primaryKey) || sanitizeKey(cfg.voice.secondaryKey));
+      const hasOpenAiVoice = !!(sanitizeKey(cfg.voice.primaryKey) || sanitizeKey(cfg.voice.secondaryKey));
       const publicCfg = voiceConfigPublic(cfg);
-      const useBrowser = cfg.voice.provider === "browser" || !hasVoice;
+      let provider: string = cfg.voice.provider;
+      if (provider === "openai" && !hasOpenAiVoice) provider = "edge";
+      if (provider === "browser") {
+        res.json({
+          provider: "browser",
+          voiceId: publicCfg.voiceId || null,
+          maleVoiceId: publicCfg.maleVoiceId || null,
+        });
+        return;
+      }
+      // "edge" and "openai" both go through /api/ai-tutor/tts (server audio)
       res.json({
-        provider: useBrowser ? "browser" : "openai",
+        provider: provider === "edge" ? "edge" : "openai",
         voiceId: publicCfg.voiceId || null,
         maleVoiceId: publicCfg.maleVoiceId || null,
       });
     } catch {
-      res.json({ provider: "browser", voiceId: null, maleVoiceId: null });
+      res.json({ provider: "edge", voiceId: "en-US-AvaNeural", maleVoiceId: "en-US-AndrewNeural" });
     }
   });
 
@@ -2199,7 +2209,7 @@ export async function registerRoutes(
         personaVoice: voice,
         // Only accept known OpenAI voice names from the client — never treat
         // secrets as voice IDs. Admin-configured voices remain the fallback.
-        voiceId: typeof voiceId === "string" && /^[a-z0-9_-]{2,32}$/i.test(voiceId) ? voiceId : null,
+        voiceId: typeof voiceId === "string" && /^[a-z0-9_-]{2,64}$/i.test(voiceId) ? voiceId : null,
       });
       if (!result.ok || !result.body) {
         if (result.error === "browser-tts" || result.status === 501) {

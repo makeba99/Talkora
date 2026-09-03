@@ -47,7 +47,7 @@ type AiTutorConfigPublic = {
     warnThresholdPct: number;
   };
   voice: {
-    provider: "openai" | "browser";
+    provider: "openai" | "edge" | "browser";
     primaryKeyMasked: string;
     secondaryKeyMasked: string;
     hasPrimary: boolean;
@@ -102,6 +102,18 @@ const OPENAI_VOICES = [
   { value: "echo", label: "Echo (male)" },
   { value: "onyx", label: "Onyx (deep male — recommended)" },
   { value: "fable", label: "Fable (British)" },
+];
+const EDGE_VOICES_FEMALE = [
+  { value: "en-US-AvaNeural", label: "Ava (US — recommended)" },
+  { value: "en-US-EmmaMultilingualNeural", label: "Emma Multilingual (US)" },
+  { value: "en-US-JennyNeural", label: "Jenny (US)" },
+  { value: "en-GB-SoniaNeural", label: "Sonia (UK)" },
+];
+const EDGE_VOICES_MALE = [
+  { value: "en-US-AndrewNeural", label: "Andrew (US — recommended)" },
+  { value: "en-US-BrianMultilingualNeural", label: "Brian Multilingual (US)" },
+  { value: "en-US-GuyNeural", label: "Guy (US)" },
+  { value: "en-GB-RyanNeural", label: "Ryan (UK)" },
 ];
 const WARN_THRESHOLDS = [80, 90, 95];
 
@@ -2253,12 +2265,12 @@ function AiTutorTab() {
   const [brainModel, setBrainModel] = useState("llama-3.1-8b-instant");
   const [brainWarn, setBrainWarn] = useState(80);
 
-  const [voiceProvider, setVoiceProvider] = useState<"openai" | "browser">("browser");
+  const [voiceProvider, setVoiceProvider] = useState<"openai" | "edge" | "browser">("edge");
   const [voicePrimaryKey, setVoicePrimaryKey] = useState("");
   const [voiceSecondaryKey, setVoiceSecondaryKey] = useState("");
   const [voiceModel, setVoiceModel] = useState("tts-1-hd");
-  const [femaleVoice, setFemaleVoice] = useState("nova");
-  const [maleVoice, setMaleVoice] = useState("onyx");
+  const [femaleVoice, setFemaleVoice] = useState("en-US-AvaNeural");
+  const [maleVoice, setMaleVoice] = useState("en-US-AndrewNeural");
   const [voiceWarn, setVoiceWarn] = useState(80);
 
   const [testing, setTesting] = useState<string | null>(null);
@@ -2273,10 +2285,10 @@ function AiTutorTab() {
     setBrainProvider(c.brain.provider || "groq");
     setBrainModel(c.brain.model || (c.brain.provider === "groq" ? "llama-3.1-8b-instant" : "gpt-4o"));
     setBrainWarn(c.brain.warnThresholdPct || 80);
-    setVoiceProvider(c.voice.provider || "browser");
+    setVoiceProvider(c.voice.provider || "edge");
     setVoiceModel(c.voice.model || "tts-1-hd");
-    setFemaleVoice(c.voice.femaleVoice || "nova");
-    setMaleVoice(c.voice.maleVoice || "onyx");
+    setFemaleVoice(c.voice.femaleVoice || (c.voice.provider === "openai" ? "nova" : "en-US-AvaNeural"));
+    setMaleVoice(c.voice.maleVoice || (c.voice.provider === "openai" ? "onyx" : "en-US-AndrewNeural"));
     setVoiceWarn(c.voice.warnThresholdPct || 80);
     // Never hydrate full secrets into inputs — only Replace flow sets new values.
     setBrainPrimaryKey("");
@@ -2394,9 +2406,8 @@ function AiTutorTab() {
             AI Tutor Configuration
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Free path: <strong>Groq</strong> brain (no credit card) + <strong>Browser</strong> voice.
-            Optional OpenAI keys for higher quality. Primary fails over to Secondary on recoverable errors.
-            Keys stay server-side and are never returned in full.
+            Free path: <strong>Groq</strong> brain + <strong>Edge neural</strong> voice (natural, no API key).
+            Optional OpenAI for higher quality. Primary fails over to Secondary on recoverable errors.
           </p>
         </CardHeader>
       </Card>
@@ -2577,18 +2588,32 @@ function AiTutorTab() {
                 Voice
               </CardTitle>
               <p className="text-xs text-muted-foreground">
-                Free: <strong>Browser</strong> uses on-device voices (never expires). Optional OpenAI TTS for cloud quality.
+                Recommended free: <strong>Edge neural</strong> — Microsoft natural voices, no API key, served from our server (not robotic browser voices).
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5 max-w-sm">
                 <Label>Provider</Label>
-                <Select value={voiceProvider} onValueChange={(v) => setVoiceProvider(v as "openai" | "browser")}>
+                <Select
+                  value={voiceProvider}
+                  onValueChange={(v) => {
+                    const p = v as "openai" | "edge" | "browser";
+                    setVoiceProvider(p);
+                    if (p === "edge") {
+                      setFemaleVoice("en-US-AvaNeural");
+                      setMaleVoice("en-US-AndrewNeural");
+                    } else if (p === "openai") {
+                      setFemaleVoice("nova");
+                      setMaleVoice("onyx");
+                    }
+                  }}
+                >
                   <SelectTrigger data-testid="select-voice-provider">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="browser">Browser (free forever)</SelectItem>
+                    <SelectItem value="edge">Edge neural (free, natural)</SelectItem>
+                    <SelectItem value="browser">Browser (free, device voices)</SelectItem>
                     <SelectItem value="openai">OpenAI TTS (paid)</SelectItem>
                   </SelectContent>
                 </Select>
@@ -2596,9 +2621,54 @@ function AiTutorTab() {
 
               {voiceProvider === "browser" ? (
                 <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3 text-xs text-muted-foreground">
-                  Maya / Miles speak with the device&apos;s built-in neural voices. No API key or quota.
-                  Cloud TTS keys below are ignored while Browser is selected.
+                  Uses the device&apos;s built-in voices. Quality varies by OS/browser.
+                  Prefer Edge neural for consistent natural speech.
                 </div>
+              ) : voiceProvider === "edge" ? (
+                <>
+                  <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs text-muted-foreground">
+                    Free Microsoft neural voices (same quality as Edge Read Aloud). No API key or billing.
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label>Voice 1 (female)</Label>
+                      <Select value={femaleVoice} onValueChange={setFemaleVoice}>
+                        <SelectTrigger data-testid="select-voice-female">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {EDGE_VOICES_FEMALE.map((v) => (
+                            <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Voice 2 (male)</Label>
+                      <Select value={maleVoice} onValueChange={setMaleVoice}>
+                        <SelectTrigger data-testid="select-voice-male">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {EDGE_VOICES_MALE.map((v) => (
+                            <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={testing === "voice-primary"}
+                    onClick={() => runKeyTest("voice", "primary")}
+                    data-testid="button-test-voice-edge"
+                  >
+                    {testing === "voice-primary" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Play className="h-3.5 w-3.5 mr-1" />}
+                    Test Edge Voice
+                  </Button>
+                </>
               ) : (
                 <>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -2754,7 +2824,7 @@ function AiTutorTab() {
               <RefreshCw className="h-4 w-4" />
             </Button>
             <p className="text-xs text-muted-foreground">
-              Free setup: Groq brain key + Browser voice. Env: GROQ_API_KEY, OPENAI_API_KEY, AI_BRAIN_KEY_2.
+              Free setup: Groq brain + Edge neural voice. Env: GROQ_API_KEY, AI_VOICE_PROVIDER=edge.
             </p>
           </div>
         </>

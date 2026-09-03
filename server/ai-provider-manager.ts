@@ -15,6 +15,7 @@ import {
   type KeyHealth,
 } from "./ai-config";
 import { openAiSynthesize } from "./openai-tts";
+import { edgeSynthesize, resolveEdgeVoiceId } from "./edge-tts";
 
 export type KeySlot = "primary" | "secondary";
 export type ProviderKind = "brain" | "voice";
@@ -484,8 +485,7 @@ export async function generateAIResponse(opts: {
 }
 
 /**
- * Generate speech with primary→secondary voice key failover (OpenAI TTS).
- * When voice.provider is "browser", cloud TTS is skipped (client uses free SpeechSynthesis).
+ * Generate speech — Edge (free neural), OpenAI TTS (paid), or browser (client).
  */
 export async function generateSpeech(opts: {
   text: string;
@@ -507,7 +507,7 @@ export async function generateSpeech(opts: {
   const isMale = /male|dude|miles/i.test(String(opts.personaVoice || ""));
   const configured = isMale ? cfg.voice.maleVoice : cfg.voice.femaleVoice;
   const clientVid = typeof opts.voiceId === "string" ? opts.voiceId.trim() : "";
-  const voiceName =
+  let voiceName =
     clientVid &&
     (clientVid === cfg.voice.femaleVoice || clientVid === cfg.voice.maleVoice)
       ? clientVid
@@ -530,9 +530,53 @@ export async function generateSpeech(opts: {
     };
   }
 
+  // ── Free Microsoft Edge neural voices (no API key) ─────────────────────
+  if (cfg.voice.provider === "edge") {
+    voiceName = resolveEdgeVoiceId(voiceName, isMale ? "male" : "female");
+    const result = await edgeSynthesize(text, voiceName);
+    if (result.ok && result.body) {
+      markSuccess("voice", "primary", { characters: text.length });
+      await maybeWarnThreshold("voice", cfg);
+      return {
+        ok: true,
+        status: 200,
+        contentType: result.contentType || "audio/mpeg",
+        body: result.body,
+        usedSlot: "primary",
+        failover: false,
+        voiceUsed: voiceName,
+      };
+    }
+    markFailure("voice", "primary", "ERROR", result.error || "edge-tts-failed");
+    // Soft-fallback: tell client to use browser rather than hard-fail the tutor
+    return {
+      ok: false,
+      status: 502,
+      contentType: "",
+      error: result.error || "edge-tts-failed",
+      usedSlot: "primary",
+      failover: false,
+      voiceUsed: voiceName,
+    };
+  }
+
   const order: KeySlot[] = ["primary", "secondary"];
   const configuredSlots = order.filter((slot) => !!getKey(cfg, "voice", slot));
   if (!configuredSlots.length) {
+    // No OpenAI keys — fall through to Edge free path automatically
+    voiceName = resolveEdgeVoiceId(voiceName, isMale ? "male" : "female");
+    const edge = await edgeSynthesize(text, voiceName);
+    if (edge.ok && edge.body) {
+      return {
+        ok: true,
+        status: 200,
+        contentType: edge.contentType || "audio/mpeg",
+        body: edge.body,
+        usedSlot: null,
+        failover: true,
+        voiceUsed: voiceName,
+      };
+    }
     return {
       ok: false,
       status: 501,
@@ -601,6 +645,28 @@ export async function generateSpeech(opts: {
       body: result.body,
       usedSlot: slot,
       failover,
+      voiceUsed: voiceName,
+    };
+  }
+
+  // Last resort: free Edge neural TTS when OpenAI keys are exhausted
+  voiceName = resolveEdgeVoiceId(configured, isMale ? "male" : "female");
+  const edgeFallback = await edgeSynthesize(text, voiceName);
+  if (edgeFallback.ok && edgeFallback.body) {
+    console.warn("[ai-provider] OpenAI voice failed — using free Edge neural TTS");
+    await pushAiAlert({
+      kind: "voice",
+      severity: "failover",
+      title: "Voice Edge fallback activated",
+      message: "OpenAI voice keys failed. Using free Microsoft Edge neural TTS.",
+    });
+    return {
+      ok: true,
+      status: 200,
+      contentType: edgeFallback.contentType || "audio/mpeg",
+      body: edgeFallback.body,
+      usedSlot: null,
+      failover: true,
       voiceUsed: voiceName,
     };
   }
@@ -677,6 +743,31 @@ export async function testVoiceKey(slot: KeySlot, overrideKey?: string): Promise
 }> {
   await ensureUsageLoaded();
   const cfg = await getAiTutorConfig();
+
+  // Free Edge neural TTS — no API key required
+  if (cfg.voice.provider === "edge" || (!sanitizeKey(overrideKey) && !getKey(cfg, "voice", slot) && cfg.voice.provider !== "openai")) {
+    const voice = resolveEdgeVoiceId(cfg.voice.femaleVoice, "female");
+    const result = await edgeSynthesize(
+      "Hello. This is a Vextorn free neural voice test.",
+      voice,
+    );
+    if (result.ok && result.body) {
+      markSuccess("voice", slot, { characters: 48 });
+      return {
+        ok: true,
+        message: "Connection successful (Edge neural — free)",
+        status: "HEALTHY",
+        audio: result.body,
+        contentType: result.contentType,
+      };
+    }
+    return { ok: false, message: result.error || "Edge TTS unavailable", status: "ERROR" };
+  }
+
+  if (cfg.voice.provider === "browser") {
+    return { ok: true, message: "Browser voice (no cloud test needed)", status: "HEALTHY" };
+  }
+
   const stored = getKey(cfg, "voice", slot);
   const key = sanitizeKey(overrideKey) || stored;
   if (!key) return { ok: false, message: "No API key configured", status: "UNKNOWN" };

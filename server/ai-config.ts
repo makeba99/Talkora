@@ -22,7 +22,10 @@ export type KeyHealth =
   | "UNKNOWN";
 
 export type BrainProvider = "openai" | "groq";
-export type VoiceProvider = "openai" | "browser";
+export type VoiceProvider = "openai" | "edge" | "browser";
+
+export const DEFAULT_EDGE_FEMALE = "en-US-AvaNeural";
+export const DEFAULT_EDGE_MALE = "en-US-AndrewNeural";
 
 export type AiTutorConfig = {
   version: 2;
@@ -170,12 +173,13 @@ function envDefaults(): AiTutorConfig {
 
   const voice1 = sanitizeKey(process.env.AI_VOICE_KEY_1 || "");
   const voice2 = sanitizeKey(process.env.AI_VOICE_KEY_2 || "");
-  // Free by default: browser TTS unless an explicit voice key (or shared OpenAI) is set
-  const hasPaidVoice = !!(voice1 || (openAi && process.env.AI_VOICE_USE_OPENAI === "1"));
+  // Free by default: Edge neural TTS (no key). OpenAI only when explicitly configured.
+  const hasPaidVoice = !!(voice1 || process.env.AI_VOICE_USE_OPENAI === "1");
   const voiceProvider: VoiceProvider =
     (process.env.AI_VOICE_PROVIDER as VoiceProvider) ||
-    (hasPaidVoice || voice1 ? "openai" : "browser");
+    (hasPaidVoice ? "openai" : "edge");
 
+  const edgeDefaults = voiceProvider === "edge" || voiceProvider === "browser";
   return {
     version: 2,
     brain: {
@@ -189,8 +193,12 @@ function envDefaults(): AiTutorConfig {
       provider: voiceProvider,
       primaryKey: voice1 || (voiceProvider === "openai" ? openAi : ""),
       secondaryKey: voice2 || (voiceProvider === "openai" ? brain2 : ""),
-      femaleVoice: process.env.AI_VOICE_FEMALE || "nova",
-      maleVoice: process.env.AI_VOICE_MALE || "onyx",
+      femaleVoice:
+        process.env.AI_VOICE_FEMALE ||
+        (edgeDefaults ? DEFAULT_EDGE_FEMALE : "nova"),
+      maleVoice:
+        process.env.AI_VOICE_MALE ||
+        (edgeDefaults ? DEFAULT_EDGE_MALE : "onyx"),
       model: process.env.AI_VOICE_MODEL || "tts-1-hd",
       warnThresholdPct: 80,
     },
@@ -202,7 +210,7 @@ function asBrainProvider(v: any, fallback: BrainProvider): BrainProvider {
 }
 
 function asVoiceProvider(v: any, fallback: VoiceProvider): VoiceProvider {
-  return v === "browser" || v === "openai" ? v : fallback;
+  return v === "browser" || v === "openai" || v === "edge" ? v : fallback;
 }
 
 /** Migrate legacy v1 admin config into v2 Brain/Voice shape. */
@@ -308,7 +316,7 @@ export async function getAiTutorConfig(): Promise<AiTutorConfig> {
 
 export async function setAiTutorConfig(config: AiTutorConfig): Promise<void> {
   const brainProvider = asBrainProvider(config.brain.provider, "openai");
-  const voiceProvider = asVoiceProvider(config.voice.provider, "browser");
+  const voiceProvider = asVoiceProvider(config.voice.provider, "edge");
   const normalized: AiTutorConfig = {
     version: 2,
     brain: {
@@ -326,8 +334,16 @@ export async function setAiTutorConfig(config: AiTutorConfig): Promise<void> {
       provider: voiceProvider,
       primaryKey: config.voice.primaryKey || "",
       secondaryKey: config.voice.secondaryKey || "",
-      femaleVoice: config.voice.femaleVoice || "nova",
-      maleVoice: config.voice.maleVoice || "onyx",
+      femaleVoice:
+        config.voice.femaleVoice ||
+        (voiceProvider === "edge" || voiceProvider === "browser"
+          ? DEFAULT_EDGE_FEMALE
+          : "nova"),
+      maleVoice:
+        config.voice.maleVoice ||
+        (voiceProvider === "edge" || voiceProvider === "browser"
+          ? DEFAULT_EDGE_MALE
+          : "onyx"),
       model: config.voice.model || "tts-1-hd",
       warnThresholdPct: [80, 90, 95].includes(config.voice.warnThresholdPct)
         ? config.voice.warnThresholdPct
