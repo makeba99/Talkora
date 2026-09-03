@@ -114,8 +114,8 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
         signal: controller.signal,
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Failed to search GIFs");
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || `Failed to search GIFs (${res.status})`);
       }
       const data = await res.json();
       if (requestId !== searchRequestIdRef.current) return;
@@ -138,8 +138,8 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
     try {
       const res = await fetch("/api/gifs/trending");
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Failed to load trending GIFs");
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || `Failed to load trending GIFs (${res.status})`);
       }
       const data = await res.json();
       setGifs(data.results || []);

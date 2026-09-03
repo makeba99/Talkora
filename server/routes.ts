@@ -2397,11 +2397,23 @@ export async function registerRoutes(
     res.end();
   });
 
-  // GIPHY is the source of truth for chat GIFs. A project-specific key can
-  // still be supplied through Replit Secrets, but the public demo key keeps
-  // the picker functional without requiring setup.
-  const GIPHY_API_KEY = process.env.GIPHY_API_KEY?.trim() || "dc6zaTOxFJmzC";
+  // GIPHY is the source of truth for chat GIFs. The key must live in
+  // GIPHY_API_KEY (Railway / local .env) and is never sent to the browser.
+  // The old public beta key (dc6zaTOxFJmzC) is retired and returns 401.
+  const RETIRED_GIPHY_PUBLIC_BETA_KEY = "dc6zaTOxFJmzC";
   const GIPHY_PAGE_SIZE = 24;
+
+  function getGiphyApiKey(): string | null {
+    const key = process.env.GIPHY_API_KEY?.trim() || "";
+    if (!key || key === RETIRED_GIPHY_PUBLIC_BETA_KEY || key === "your-giphy-key") {
+      return null;
+    }
+    return key;
+  }
+
+  if (!getGiphyApiKey()) {
+    console.warn("[gifs] GIPHY_API_KEY is missing or is the retired public beta key. GIF search will stay unavailable until a valid key is set on Railway.");
+  }
 
   function mapGiphyResults(items: any[]): any[] {
     return items
@@ -2423,18 +2435,42 @@ export async function registerRoutes(
   }
 
   async function fetchGiphy(path: string, params: Record<string, string>): Promise<{ results: any[]; next: string }> {
-    if (!GIPHY_API_KEY) {
-      throw Object.assign(new Error("GIF search is not configured. Add GIPHY_API_KEY to Replit Secrets."), { status: 503 });
+    const apiKey = getGiphyApiKey();
+    if (!apiKey) {
+      throw Object.assign(
+        new Error("GIF search is not configured. Add a Giphy API key as GIPHY_API_KEY in Railway (and local .env)."),
+        { status: 503 },
+      );
     }
     const searchParams = new URLSearchParams({
-      api_key: GIPHY_API_KEY,
+      api_key: apiKey,
       limit: String(GIPHY_PAGE_SIZE),
       rating: "pg-13",
       lang: "en",
       ...params,
     });
-    const response = await fetch(`https://api.giphy.com/v1/gifs/${path}?${searchParams}`);
-    if (!response.ok) throw new Error(`GIPHY API error: ${response.status}`);
+    const response = await fetch(`https://api.giphy.com/v1/gifs/${path}?${searchParams.toString()}`);
+    if (!response.ok) {
+      let giphyMsg = "";
+      try {
+        const errBody = await response.json();
+        giphyMsg = String(errBody?.meta?.msg || "").trim();
+      } catch {
+        // ignore non-JSON error bodies
+      }
+      if (response.status === 401 || response.status === 403) {
+        throw Object.assign(
+          new Error(
+            "Giphy rejected the API key (unauthorized). Create a new key at https://developers.giphy.com/dashboard and set GIPHY_API_KEY on Railway, then redeploy.",
+          ),
+          { status: 502 },
+        );
+      }
+      throw Object.assign(
+        new Error(giphyMsg ? `Giphy error ${response.status}: ${giphyMsg}` : `Giphy is unavailable (${response.status}). Try again shortly.`),
+        { status: 502 },
+      );
+    }
     const data = await response.json();
     const results = mapGiphyResults(data.data || []);
     const offset = Number(params.offset || "0");
