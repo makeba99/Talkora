@@ -2403,6 +2403,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [miniCameraMode, setMiniCameraMode] = useState(false);
   /** User dismissed the floating self-view; reset when camera turns on again. */
   const [hideLocalCameraPreview, setHideLocalCameraPreview] = useState(false);
+  /** Expanded large floating self-camera (click mini to enlarge). */
+  const [localCameraExpanded, setLocalCameraExpanded] = useState(false);
   const [youtubeSearch, setYoutubeSearch] = useState("");
   const [youtubeResults, setYoutubeResults] = useState<any[]>([]);
   const [youtubeSearching, setYoutubeSearching] = useState(false);
@@ -7873,6 +7875,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       setLocalVideoStreamObj(null);
       setMiniCameraMode(false);
       setHideLocalCameraPreview(false);
+      setLocalCameraExpanded(false);
       setCameraFacing("user");
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = null;
@@ -7945,6 +7948,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       setIsVideoOn(true);
       setLocalVideoStreamObj(stream);
       setHideLocalCameraPreview(false);
+      setLocalCameraExpanded(false);
       requestAnimationFrame(() => {
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
@@ -18077,35 +18081,74 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       {isVideoOn && localVideoStreamObj && !hideLocalCameraPreview && (
         <div
           className="fixed z-50 select-none"
-          style={{ left: 12, top: 70, width: 200, height: 130 }}
-          data-testid="mini-camera-player"
+          style={localCameraExpanded
+            ? {
+                left: "50%",
+                top: "50%",
+                transform: "translate(-50%, -50%)",
+                width: "min(72vw, 720px)",
+                height: "min(56vh, 460px)",
+              }
+            : { left: 12, top: 70, width: 200, height: 130 }}
+          data-testid={localCameraExpanded ? "expanded-camera-player" : "mini-camera-player"}
         >
-          <div className="relative w-full h-full rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-black">
-            <div className={`w-full h-full ${cameraFacing === "user" ? "scale-x-[-1]" : ""}`}>
+          <div
+            className="relative w-full h-full rounded-xl overflow-hidden shadow-2xl border border-white/20 bg-black cursor-pointer"
+            onClick={() => setLocalCameraExpanded((v) => !v)}
+            title={localCameraExpanded ? "Click to shrink" : "Click to enlarge"}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setLocalCameraExpanded((v) => !v);
+              }
+            }}
+          >
+            <div className={`w-full h-full pointer-events-none ${cameraFacing === "user" ? "scale-x-[-1]" : ""}`}>
               <RemoteVideoPreview stream={localVideoStreamObj} />
             </div>
             <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 text-[10px] text-white/70 bg-black/40 px-2 py-0.5 rounded-full pointer-events-none">
-              You
+              You {localCameraExpanded ? "· Click to shrink" : "· Click to enlarge"}
             </div>
-            {/* Flip camera — in mini mode, shown top-left opposite the close button */}
+            {/* Flip camera — top-left */}
             <button
-              className="absolute top-1.5 left-1.5 w-6 h-6 bg-black/60 hover:bg-black/85 rounded-full flex items-center justify-center shadow-lg transition-colors z-10 disabled:opacity-40"
+              className={`${localCameraExpanded ? "w-8 h-8 top-2 left-2" : "w-6 h-6 top-1.5 left-1.5"} absolute bg-black/60 hover:bg-black/85 rounded-full flex items-center justify-center shadow-lg transition-colors z-10 disabled:opacity-40`}
               onClick={(e) => { e.stopPropagation(); handleFlipCamera(); }}
               disabled={isFlippingCamera}
               data-testid="button-flip-camera-mini"
               aria-label="Flip camera"
               title={cameraFacing === "user" ? "Switch to back camera" : "Switch to front camera"}
             >
-              <RotateCcw className={`w-3 h-3 text-white ${isFlippingCamera ? "animate-spin" : ""}`} />
+              <RotateCcw className={`${localCameraExpanded ? "w-4 h-4" : "w-3 h-3"} text-white ${isFlippingCamera ? "animate-spin" : ""}`} />
             </button>
+            {/* Expand / shrink */}
             <button
-              className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center shadow-lg transition-colors z-10"
-              onClick={(e) => { e.stopPropagation(); setHideLocalCameraPreview(true); setMiniCameraMode(false); setFocusedUserId(null); }}
+              className={`${localCameraExpanded ? "w-8 h-8 top-2 right-12" : "w-6 h-6 top-1.5 right-8"} absolute bg-black/60 hover:bg-black/85 rounded-full flex items-center justify-center shadow-lg transition-colors z-10`}
+              onClick={(e) => { e.stopPropagation(); setLocalCameraExpanded((v) => !v); }}
+              data-testid="button-mini-camera-expand"
+              aria-label={localCameraExpanded ? "Shrink camera preview" : "Enlarge camera preview"}
+              title={localCameraExpanded ? "Shrink" : "Enlarge"}
+            >
+              {localCameraExpanded
+                ? <Minimize2 className="w-4 h-4 text-white" />
+                : <Maximize2 className="w-3 h-3 text-white" />}
+            </button>
+            {/* Close / hide */}
+            <button
+              className={`${localCameraExpanded ? "w-8 h-8 top-2 right-2" : "w-6 h-6 top-1.5 right-1.5"} absolute bg-red-600 hover:bg-red-500 rounded-full flex items-center justify-center shadow-lg transition-colors z-10`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setHideLocalCameraPreview(true);
+                setLocalCameraExpanded(false);
+                setMiniCameraMode(false);
+                setFocusedUserId(null);
+              }}
               data-testid="button-mini-camera-close"
               aria-label="Hide your camera preview"
               title="Hide preview (camera stays on)"
             >
-              <X className="w-3 h-3 text-white" />
+              <X className={`${localCameraExpanded ? "w-4 h-4" : "w-3 h-3"} text-white`} />
             </button>
           </div>
         </div>
