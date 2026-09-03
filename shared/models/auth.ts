@@ -37,6 +37,10 @@ export const users = pgTable("users", {
   restrictedReason: text("restricted_reason"),
   restrictedById: varchar("restricted_by_id"),
   roomJoinNotifyFrom: varchar("room_join_notify_from", { length: 20 }).notNull().default("mutual"),
+  showBadge: boolean("show_badge").default(true),
+  showStatusBio: boolean("show_status_bio").default(true),
+  showVipLabel: boolean("show_vip_label").default(true),
+  followVisibility: varchar("follow_visibility", { length: 20 }).notNull().default("everyone"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

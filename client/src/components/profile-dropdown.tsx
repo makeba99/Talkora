@@ -276,6 +276,10 @@ export function ProfileDropdown({
   const [selectedDecoration, setSelectedDecoration] = useState<string>("none");
   const [selectedAnimation, setSelectedAnimation] = useState<string>("none");
   const [selectedTitleColor, setSelectedTitleColor] = useState<string>("");
+  const [showBadge, setShowBadge] = useState(true);
+  const [showStatusBio, setShowStatusBio] = useState(true);
+  const [showVipLabel, setShowVipLabel] = useState(true);
+  const [followVisibility, setFollowVisibility] = useState<string>("everyone");
   const [requestedBadge, setRequestedBadge] = useState("");
   const [badgeReason, setBadgeReason] = useState("");
   const [roomJoinNotifyPref, setRoomJoinNotifyPref] = useState<"everyone" | "mutual" | "none">("everyone");
@@ -327,7 +331,7 @@ export function ProfileDropdown({
   });
 
   const saveDecorationsMutation = useMutation({
-    mutationFn: async (data: { avatarRing?: string; flairBadge?: string; profileDecoration?: string; profileAnimation?: string; titleColor?: string | null }) => {
+    mutationFn: async (data: { avatarRing?: string; flairBadge?: string; profileDecoration?: string; profileAnimation?: string; titleColor?: string | null; showBadge?: boolean; showStatusBio?: boolean; showVipLabel?: boolean; followVisibility?: string }) => {
       const res = await apiRequest("PATCH", `/api/users/${user?.id}`, data);
       return res.json();
     },
@@ -439,6 +443,10 @@ export function ProfileDropdown({
     setSelectedDecoration((user as any)?.profileDecoration || "none");
     setSelectedAnimation((user as any)?.profileAnimation || "none");
     setSelectedTitleColor((user as any)?.titleColor || "");
+    setShowBadge((user as any)?.showBadge !== false);
+    setShowStatusBio((user as any)?.showStatusBio !== false);
+    setShowVipLabel((user as any)?.showVipLabel !== false);
+    setFollowVisibility((user as any)?.followVisibility || "everyone");
     setSettingsOpen(true);
   };
 
@@ -449,6 +457,10 @@ export function ProfileDropdown({
       profileDecoration: selectedDecoration,
       profileAnimation: selectedAnimation,
       titleColor: selectedTitleColor || null,
+      showBadge,
+      showStatusBio,
+      showVipLabel,
+      followVisibility,
     });
   };
 
@@ -1062,6 +1074,55 @@ export function ProfileDropdown({
           </DialogHeader>
           <ScrollArea className="max-h-[65vh]">
             <div className="space-y-6 pr-4">
+
+              {/* Supporter Settings — VIP only */}
+              {isVipUser(user) && (
+              <div className="rounded-lg border border-cyan-500/30 bg-[#0d1117] p-4 space-y-4">
+                <h3 className="text-sm font-semibold flex items-center gap-1.5 bg-gradient-to-r from-cyan-400 to-teal-400 bg-clip-text text-transparent">
+                  ⚙️ Supporter Settings
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="flex flex-col items-start gap-1.5">
+                    <Label className="text-xs text-muted-foreground">Badge</Label>
+                    <Switch
+                      checked={showBadge}
+                      onCheckedChange={setShowBadge}
+                      className="data-[state=checked]:bg-cyan-500"
+                    />
+                  </div>
+                  <div className="flex flex-col items-start gap-1.5">
+                    <Label className="text-xs text-muted-foreground">Status/Bio</Label>
+                    <Switch
+                      checked={showStatusBio}
+                      onCheckedChange={setShowStatusBio}
+                      className="data-[state=checked]:bg-cyan-500"
+                    />
+                  </div>
+                  <div className="flex flex-col items-start gap-1.5">
+                    <Label className="text-xs text-muted-foreground">VIP Label</Label>
+                    <Switch
+                      checked={showVipLabel}
+                      onCheckedChange={setShowVipLabel}
+                      className="data-[state=checked]:bg-cyan-500"
+                    />
+                  </div>
+                  <div className="flex flex-col items-start gap-1.5">
+                    <Label className="text-xs text-muted-foreground">Who can follow?</Label>
+                    <Select value={followVisibility} onValueChange={setFollowVisibility}>
+                      <SelectTrigger className="h-7 text-xs w-full bg-background/50 border-cyan-500/20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="everyone">Everyone</SelectItem>
+                        <SelectItem value="nobody">Nobody</SelectItem>
+                        <SelectItem value="vip_only">VIP Only</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              )}
+
               <div className="space-y-3">
                 <Label className="text-sm font-medium flex items-center gap-1.5">
                   Title color
@@ -1206,6 +1267,7 @@ export function ProfileDropdown({
                   const professionalItems = PROFILE_DECORATIONS.filter(d => d.category === "professional");
                   const tacticalItems = PROFILE_DECORATIONS.filter(d => d.category === "tactical");
                   const expressiveItems = PROFILE_DECORATIONS.filter(d => d.category === "expressive");
+                  const legendaryItems = PROFILE_DECORATIONS.filter(d => d.category === "legendary");
 
                   return (
                     <>
@@ -1250,6 +1312,22 @@ export function ProfileDropdown({
                           {expressiveItems.map((d, i) => renderTile(d, i + coreItems.length + professionalItems.length + tacticalItems.length))}
                         </div>
                       </div>
+
+                      {/* Legendary section — Free4Talk-inspired premium frames */}
+                      {legendaryItems.length > 0 && (
+                        <div className="pt-2">
+                          <p
+                            className="text-[11px] font-semibold uppercase tracking-wider mb-2"
+                            style={{ color: "rgba(251,191,36,0.95)", textShadow: "0 0 10px rgba(251,191,36,0.4)" }}
+                            data-testid="decoration-section-legendary"
+                          >
+                            ✦ Legendary
+                          </p>
+                          <div className="grid grid-cols-4 gap-2">
+                            {legendaryItems.map((d, i) => renderTile(d, i + coreItems.length + professionalItems.length + tacticalItems.length + expressiveItems.length))}
+                          </div>
+                        </div>
+                      )}
                     </>
                   );
                 })()}

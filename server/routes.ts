@@ -4369,7 +4369,7 @@ export async function registerRoutes(
       if (userId !== req.params.id) {
         return res.status(403).json({ message: "Cannot update other users" });
       }
-      const { displayName, profileImageUrl, avatarRing, flairBadge, bio, profileDecoration, profileAnimation, instagramUrl, linkedinUrl, facebookUrl, socialsPinned, status, titleColor } = req.body;
+      const { displayName, profileImageUrl, avatarRing, flairBadge, bio, profileDecoration, profileAnimation, instagramUrl, linkedinUrl, facebookUrl, socialsPinned, status, titleColor, showBadge, showStatusBio, showVipLabel, followVisibility } = req.body;
 
       // ── Content moderation ─────────────────────────────────────────────────
       const _profileUser = await storage.getUser(userId);
@@ -4402,6 +4402,10 @@ export async function registerRoutes(
       if (facebookUrl !== undefined) updateData.facebookUrl = facebookUrl;
       if (socialsPinned !== undefined) updateData.socialsPinned = !!socialsPinned;
       if (status !== undefined) updateData.status = status;
+      if (showBadge !== undefined) updateData.showBadge = !!showBadge;
+      if (showStatusBio !== undefined) updateData.showStatusBio = !!showStatusBio;
+      if (showVipLabel !== undefined) updateData.showVipLabel = !!showVipLabel;
+      if (followVisibility !== undefined) updateData.followVisibility = String(followVisibility);
       if (titleColor !== undefined) {
         if (!canUseFeature(_profileUser, "title_color")) {
           return res.status(403).json({ error: "forbidden", message: "Title colors are a VIP feature. Buy Me a Coffee to unlock them." });

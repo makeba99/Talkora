@@ -13896,3 +13896,31 @@ html.boost-mode .glass-panel {
   0%   { background-position: 0%   50%; }
   100% { background-position: 200% 50%; }
 }
+@keyframes pa-corruption-pulse {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1;   }
+}
+@keyframes pa-solar-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.97); }
+  50%       { opacity: 1;   transform: scale(1.03); }
+}
+@keyframes pa-matrix-fall {
+  0%   { transform: translateY(0);    opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(1200%); opacity: 0; }
+}
+@keyframes pa-plasma-glow {
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 1;   }
+}
+@keyframes pa-plasma-flicker {
+  0%  { opacity: 0.1; }
+  50% { opacity: 0.8; }
+}
+@keyframes pa-petal-fall {
+  0%   { transform: translateY(0)    translateX(0)    rotate(0deg);   opacity: 0; }
+  10%  { opacity: 0.8; }
+  90%  { opacity: 0.8; }
+  100% { transform: translateY(1400%) translateX(30px) rotate(360deg); opacity: 0; }
+}

@@ -41,6 +41,16 @@ export const PROFILE_DECORATIONS = [
   { id: "bubbles", label: "🫧 Bubbles", description: "Rising bubble aura", category: "expressive" },
   { id: "flowers", label: "🌸 Flowers", description: "Petal shower", category: "expressive" },
   { id: "catears", label: "🐱 Cat Ears", description: "Cute cat ears", category: "expressive" },
+
+  // ── Legendary (Free4Talk-inspired premium frames) ─────────────────────
+  { id: "crystals", label: "💎 Crystals", description: "Floating crystal shards with sparkle", category: "legendary" },
+  { id: "crystals-aqua", label: "💎 Crystals Aquamarine", description: "Aquamarine crystal formation", category: "legendary" },
+  { id: "neon-chaos", label: "🎆 Neon Chaos", description: "Wild neon butterfly frame", category: "legendary" },
+  { id: "neon-chaos-purple", label: "🎆 Neon Chaos Purple", description: "Purple neon butterfly frame", category: "legendary" },
+  { id: "dragon", label: "🐉 Dragon", description: "Ornate dragon frame with fire", category: "legendary" },
+  { id: "dragon-ruby", label: "🐉 Dragon Ruby", description: "Ruby dragon frame with embers", category: "legendary" },
+  { id: "solar-eclipse", label: "🌑 Solar Eclipse", description: "Solar eclipse corona frame", category: "legendary" },
+  { id: "inferno-skull", label: "💀 Inferno Skull", description: "Burning skull dark frame", category: "legendary" },
 ] as const;
 
 export type DecorationId = typeof PROFILE_DECORATIONS[number]["id"];
@@ -1124,6 +1134,520 @@ function CircuitCoreRing({ size }: { size: number }) {
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   Legendary set — Free4Talk-inspired premium animated frames
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function CrystalsFrame({ size }: { size: number }) {
+  const pad = Math.round(size * 0.32);
+  const w = size + pad * 2;
+  const c = w / 2;
+  const half = size / 2 + pad * 0.55;
+  const cr = AVATAR_TILE_RADIUS + pad * 0.55;
+  const id = `crys${size}`;
+  const crystals = 10;
+  const sparkles = 14;
+
+  return (
+    <div style={{ position: "absolute", top: -pad, left: -pad, width: w, height: w, pointerEvents: "none", zIndex: 20 }}>
+      <svg width={w} height={w} style={{ overflow: "visible" }}>
+        <defs>
+          <linearGradient id={`${id}g`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#c084fc" />
+            <stop offset="50%" stopColor="#a855f7" />
+            <stop offset="100%" stopColor="#7c3aed" />
+          </linearGradient>
+          <filter id={`${id}gl`} x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="3" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        <style>{`
+          @keyframes ${id}-float { 0%,100%{transform:translateY(0) scale(1);opacity:.85} 50%{transform:translateY(-3px) scale(1.08);opacity:1} }
+          @keyframes ${id}-sparkle { 0%,100%{opacity:0;transform:scale(0.3)} 50%{opacity:1;transform:scale(1)} }
+        `}</style>
+        <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke={`url(#${id}g)`} strokeWidth="2" opacity="0.5" />
+        {Array.from({ length: crystals }, (_, i) => {
+          const p = pointOnRoundedRect(c, c, half, cr, i / crystals);
+          const angle = Math.atan2(p.y - c, p.x - c) * (180 / Math.PI);
+          const len = 6 + (i % 3) * 3;
+          return (
+            <g key={i} style={{ animation: `${id}-float ${2 + (i % 3) * 0.7}s ease-in-out ${i * 0.2}s infinite` }}>
+              <polygon
+                points={`${p.x},${p.y - len} ${p.x + 3},${p.y} ${p.x},${p.y + len * 0.4} ${p.x - 3},${p.y}`}
+                fill={`url(#${id}g)`}
+                filter={`url(#${id}gl)`}
+                transform={`rotate(${angle},${p.x},${p.y})`}
+                opacity="0.9"
+              />
+            </g>
+          );
+        })}
+        {Array.from({ length: sparkles }, (_, i) => {
+          const p = pointOnRoundedRect(c, c, half * 1.1, cr, i / sparkles + 0.05);
+          return (
+            <circle key={`s${i}`} cx={p.x} cy={p.y} r={1.2} fill="#e9d5ff"
+              style={{ animation: `${id}-sparkle ${1.5 + (i % 4) * 0.4}s ease-in-out ${i * 0.3}s infinite` }} />
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function CrystalsAquaFrame({ size }: { size: number }) {
+  const pad = Math.round(size * 0.32);
+  const w = size + pad * 2;
+  const c = w / 2;
+  const half = size / 2 + pad * 0.55;
+  const cr = AVATAR_TILE_RADIUS + pad * 0.55;
+  const id = `cryaq${size}`;
+  const crystals = 10;
+  const sparkles = 14;
+
+  return (
+    <div style={{ position: "absolute", top: -pad, left: -pad, width: w, height: w, pointerEvents: "none", zIndex: 20 }}>
+      <svg width={w} height={w} style={{ overflow: "visible" }}>
+        <defs>
+          <linearGradient id={`${id}g`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#67e8f9" />
+            <stop offset="50%" stopColor="#22d3ee" />
+            <stop offset="100%" stopColor="#06b6d4" />
+          </linearGradient>
+          <filter id={`${id}gl`} x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="3" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        <style>{`
+          @keyframes ${id}-float { 0%,100%{transform:translateY(0) scale(1);opacity:.85} 50%{transform:translateY(-3px) scale(1.08);opacity:1} }
+          @keyframes ${id}-sparkle { 0%,100%{opacity:0;transform:scale(0.3)} 50%{opacity:1;transform:scale(1)} }
+        `}</style>
+        <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke={`url(#${id}g)`} strokeWidth="2" opacity="0.5" />
+        {Array.from({ length: crystals }, (_, i) => {
+          const p = pointOnRoundedRect(c, c, half, cr, i / crystals);
+          const angle = Math.atan2(p.y - c, p.x - c) * (180 / Math.PI);
+          const len = 6 + (i % 3) * 3;
+          return (
+            <g key={i} style={{ animation: `${id}-float ${2 + (i % 3) * 0.7}s ease-in-out ${i * 0.2}s infinite` }}>
+              <polygon
+                points={`${p.x},${p.y - len} ${p.x + 3},${p.y} ${p.x},${p.y + len * 0.4} ${p.x - 3},${p.y}`}
+                fill={`url(#${id}g)`}
+                filter={`url(#${id}gl)`}
+                transform={`rotate(${angle},${p.x},${p.y})`}
+                opacity="0.9"
+              />
+            </g>
+          );
+        })}
+        {Array.from({ length: sparkles }, (_, i) => {
+          const p = pointOnRoundedRect(c, c, half * 1.1, cr, i / sparkles + 0.05);
+          return (
+            <circle key={`s${i}`} cx={p.x} cy={p.y} r={1.2} fill="#cffafe"
+              style={{ animation: `${id}-sparkle ${1.5 + (i % 4) * 0.4}s ease-in-out ${i * 0.3}s infinite` }} />
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function NeonChaosFrame({ size }: { size: number }) {
+  const pad = Math.round(size * 0.32);
+  const w = size + pad * 2;
+  const c = w / 2;
+  const half = size / 2 + pad * 0.6;
+  const cr = AVATAR_TILE_RADIUS + pad * 0.6;
+  const id = `nch${size}`;
+
+  const butterflyWing = (cx: number, cy: number, s: number, flip: boolean) => {
+    const f = flip ? -1 : 1;
+    return `M${cx},${cy} C${cx + f * s * 0.8},${cy - s * 1.2} ${cx + f * s * 1.5},${cy - s * 0.3} ${cx + f * s * 0.3},${cy + s * 0.4} C${cx + f * s * 0.6},${cy + s * 0.1} ${cx + f * s * 0.2},${cy + s * 0.5} ${cx},${cy}`;
+  };
+
+  const corners = [
+    { t: 0.125, rot: 45 }, { t: 0.375, rot: 135 },
+    { t: 0.625, rot: 225 }, { t: 0.875, rot: 315 },
+  ];
+
+  return (
+    <div style={{ position: "absolute", top: -pad, left: -pad, width: w, height: w, pointerEvents: "none", zIndex: 20 }}>
+      <svg width={w} height={w} style={{ overflow: "visible" }}>
+        <defs>
+          <filter id={`${id}gl`} x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="4" result="b" />
+            <feComposite in="SourceGraphic" in2="b" operator="over" />
+          </filter>
+          <filter id={`${id}gl2`} x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="6" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        <style>{`
+          @keyframes ${id}-pulse { 0%,100%{opacity:.7;transform:scale(1)} 50%{opacity:1;transform:scale(1.12)} }
+          @keyframes ${id}-glow { 0%,100%{opacity:.4} 50%{opacity:.9} }
+          @keyframes ${id}-dot { 0%,100%{opacity:0} 30%,70%{opacity:1} }
+        `}</style>
+        <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke="#ff2d95" strokeWidth="1.5" opacity="0.3" filter={`url(#${id}gl)`} />
+        <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke="#ff2d95" strokeWidth="0.8" opacity="0.15"
+          style={{ animation: `${id}-glow 2s ease-in-out infinite` }} filter={`url(#${id}gl2)`} />
+        {corners.map((co, i) => {
+          const p = pointOnRoundedRect(c, c, half, cr, co.t);
+          const bSize = 7;
+          return (
+            <g key={i} style={{ animation: `${id}-pulse ${2.5 + i * 0.3}s ease-in-out ${i * 0.4}s infinite`, transformOrigin: `${p.x}px ${p.y}px` }}>
+              <path d={butterflyWing(p.x, p.y, bSize, false)} fill="#ff2d95" opacity="0.8" filter={`url(#${id}gl)`} />
+              <path d={butterflyWing(p.x, p.y, bSize, true)} fill="#ff69b4" opacity="0.7" filter={`url(#${id}gl)`} />
+              <circle cx={p.x} cy={p.y} r={1.5} fill="#fff" opacity="0.9" />
+            </g>
+          );
+        })}
+        {Array.from({ length: 8 }, (_, i) => {
+          const p = pointOnRoundedRect(c, c, half * 0.95, cr, i / 8 + 0.0625);
+          return (
+            <circle key={`d${i}`} cx={p.x} cy={p.y} r={1} fill="#39ff14"
+              style={{ animation: `${id}-dot ${1.8 + i * 0.2}s ease-in-out ${i * 0.25}s infinite` }} />
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function NeonChaosPurpleFrame({ size }: { size: number }) {
+  const pad = Math.round(size * 0.32);
+  const w = size + pad * 2;
+  const c = w / 2;
+  const half = size / 2 + pad * 0.6;
+  const cr = AVATAR_TILE_RADIUS + pad * 0.6;
+  const id = `nchp${size}`;
+
+  const butterflyWing = (cx: number, cy: number, s: number, flip: boolean) => {
+    const f = flip ? -1 : 1;
+    return `M${cx},${cy} C${cx + f * s * 0.8},${cy - s * 1.2} ${cx + f * s * 1.5},${cy - s * 0.3} ${cx + f * s * 0.3},${cy + s * 0.4} C${cx + f * s * 0.6},${cy + s * 0.1} ${cx + f * s * 0.2},${cy + s * 0.5} ${cx},${cy}`;
+  };
+
+  const corners = [
+    { t: 0.125, rot: 45 }, { t: 0.375, rot: 135 },
+    { t: 0.625, rot: 225 }, { t: 0.875, rot: 315 },
+  ];
+
+  return (
+    <div style={{ position: "absolute", top: -pad, left: -pad, width: w, height: w, pointerEvents: "none", zIndex: 20 }}>
+      <svg width={w} height={w} style={{ overflow: "visible" }}>
+        <defs>
+          <filter id={`${id}gl`} x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="4" result="b" />
+            <feComposite in="SourceGraphic" in2="b" operator="over" />
+          </filter>
+          <filter id={`${id}gl2`} x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="6" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        <style>{`
+          @keyframes ${id}-pulse { 0%,100%{opacity:.7;transform:scale(1)} 50%{opacity:1;transform:scale(1.12)} }
+          @keyframes ${id}-glow { 0%,100%{opacity:.4} 50%{opacity:.9} }
+          @keyframes ${id}-dot { 0%,100%{opacity:0} 30%,70%{opacity:1} }
+        `}</style>
+        <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke="#8b5cf6" strokeWidth="1.5" opacity="0.3" filter={`url(#${id}gl)`} />
+        <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke="#8b5cf6" strokeWidth="0.8" opacity="0.15"
+          style={{ animation: `${id}-glow 2s ease-in-out infinite` }} filter={`url(#${id}gl2)`} />
+        {corners.map((co, i) => {
+          const p = pointOnRoundedRect(c, c, half, cr, co.t);
+          const bSize = 7;
+          return (
+            <g key={i} style={{ animation: `${id}-pulse ${2.5 + i * 0.3}s ease-in-out ${i * 0.4}s infinite`, transformOrigin: `${p.x}px ${p.y}px` }}>
+              <path d={butterflyWing(p.x, p.y, bSize, false)} fill="#8b5cf6" opacity="0.8" filter={`url(#${id}gl)`} />
+              <path d={butterflyWing(p.x, p.y, bSize, true)} fill="#a78bfa" opacity="0.7" filter={`url(#${id}gl)`} />
+              <circle cx={p.x} cy={p.y} r={1.5} fill="#fff" opacity="0.9" />
+            </g>
+          );
+        })}
+        {Array.from({ length: 8 }, (_, i) => {
+          const p = pointOnRoundedRect(c, c, half * 0.95, cr, i / 8 + 0.0625);
+          return (
+            <circle key={`d${i}`} cx={p.x} cy={p.y} r={1} fill="#60a5fa"
+              style={{ animation: `${id}-dot ${1.8 + i * 0.2}s ease-in-out ${i * 0.25}s infinite` }} />
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function DragonFrame({ size }: { size: number }) {
+  const pad = Math.round(size * 0.32);
+  const w = size + pad * 2;
+  const c = w / 2;
+  const half = size / 2 + pad * 0.55;
+  const cr = AVATAR_TILE_RADIUS + pad * 0.55;
+  const id = `drg${size}`;
+  const segments = 20;
+  const fireParticles = 8;
+
+  return (
+    <div style={{ position: "absolute", top: -pad, left: -pad, width: w, height: w, pointerEvents: "none", zIndex: 20 }}>
+      <svg width={w} height={w} style={{ overflow: "visible" }}>
+        <defs>
+          <linearGradient id={`${id}g`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#2dd4bf" />
+            <stop offset="50%" stopColor="#14b8a6" />
+            <stop offset="100%" stopColor="#0d9488" />
+          </linearGradient>
+          <filter id={`${id}gl`} x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="2.5" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+          <filter id={`${id}fire`} x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="3" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        <style>{`
+          @keyframes ${id}-slither { 0%,100%{transform:translate(0,0)} 25%{transform:translate(1px,-1px)} 50%{transform:translate(0,1px)} 75%{transform:translate(-1px,0)} }
+          @keyframes ${id}-scale { 0%,100%{opacity:.6} 50%{opacity:1} }
+          @keyframes ${id}-fire { 0%{transform:translateY(0) scale(1);opacity:.9} 100%{transform:translateY(-8px) scale(0.3);opacity:0} }
+        `}</style>
+        <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke={`url(#${id}g)`} strokeWidth="2.5" opacity="0.4" />
+        <g style={{ animation: `${id}-slither 3s ease-in-out infinite` }}>
+          {Array.from({ length: segments }, (_, i) => {
+            const t = i / segments;
+            const p = pointOnRoundedRect(c, c, half, cr, t);
+            const segSize = 3 + Math.sin(i * 0.8) * 1.5;
+            return (
+              <g key={i}>
+                <circle cx={p.x} cy={p.y} r={segSize} fill={`url(#${id}g)`} opacity={0.7 + Math.sin(i * 0.5) * 0.3}
+                  filter={`url(#${id}gl)`}
+                  style={{ animation: `${id}-scale ${2 + (i % 4) * 0.3}s ease-in-out ${i * 0.1}s infinite` }} />
+                {i % 3 === 0 && (
+                  <circle cx={p.x} cy={p.y} r={segSize * 0.4} fill="#5eead4" opacity="0.6" />
+                )}
+              </g>
+            );
+          })}
+        </g>
+        {/* Dragon head fire at t=0 position */}
+        {Array.from({ length: fireParticles }, (_, i) => {
+          const headPos = pointOnRoundedRect(c, c, half, cr, 0);
+          const spread = (i - fireParticles / 2) * 2;
+          return (
+            <circle key={`f${i}`} cx={headPos.x + spread} cy={headPos.y} r={2 + Math.random()}
+              fill={i % 2 === 0 ? "#5eead4" : "#99f6e4"} opacity="0.8"
+              filter={`url(#${id}fire)`}
+              style={{ animation: `${id}-fire ${1 + i * 0.15}s ease-out ${i * 0.1}s infinite` }} />
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function DragonRubyFrame({ size }: { size: number }) {
+  const pad = Math.round(size * 0.32);
+  const w = size + pad * 2;
+  const c = w / 2;
+  const half = size / 2 + pad * 0.55;
+  const cr = AVATAR_TILE_RADIUS + pad * 0.55;
+  const id = `drgr${size}`;
+  const segments = 20;
+  const fireParticles = 8;
+
+  return (
+    <div style={{ position: "absolute", top: -pad, left: -pad, width: w, height: w, pointerEvents: "none", zIndex: 20 }}>
+      <svg width={w} height={w} style={{ overflow: "visible" }}>
+        <defs>
+          <linearGradient id={`${id}g`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#f87171" />
+            <stop offset="50%" stopColor="#dc2626" />
+            <stop offset="100%" stopColor="#991b1b" />
+          </linearGradient>
+          <filter id={`${id}gl`} x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="2.5" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+          <filter id={`${id}fire`} x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="3" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        <style>{`
+          @keyframes ${id}-slither { 0%,100%{transform:translate(0,0)} 25%{transform:translate(1px,-1px)} 50%{transform:translate(0,1px)} 75%{transform:translate(-1px,0)} }
+          @keyframes ${id}-scale { 0%,100%{opacity:.6} 50%{opacity:1} }
+          @keyframes ${id}-fire { 0%{transform:translateY(0) scale(1);opacity:.9} 100%{transform:translateY(-8px) scale(0.3);opacity:0} }
+        `}</style>
+        <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke={`url(#${id}g)`} strokeWidth="2.5" opacity="0.4" />
+        <g style={{ animation: `${id}-slither 3s ease-in-out infinite` }}>
+          {Array.from({ length: segments }, (_, i) => {
+            const t = i / segments;
+            const p = pointOnRoundedRect(c, c, half, cr, t);
+            const segSize = 3 + Math.sin(i * 0.8) * 1.5;
+            return (
+              <g key={i}>
+                <circle cx={p.x} cy={p.y} r={segSize} fill={`url(#${id}g)`} opacity={0.7 + Math.sin(i * 0.5) * 0.3}
+                  filter={`url(#${id}gl)`}
+                  style={{ animation: `${id}-scale ${2 + (i % 4) * 0.3}s ease-in-out ${i * 0.1}s infinite` }} />
+                {i % 3 === 0 && (
+                  <circle cx={p.x} cy={p.y} r={segSize * 0.4} fill="#fbbf24" opacity="0.6" />
+                )}
+              </g>
+            );
+          })}
+        </g>
+        {Array.from({ length: fireParticles }, (_, i) => {
+          const headPos = pointOnRoundedRect(c, c, half, cr, 0);
+          const spread = (i - fireParticles / 2) * 2;
+          return (
+            <circle key={`f${i}`} cx={headPos.x + spread} cy={headPos.y} r={2 + Math.random()}
+              fill={i % 2 === 0 ? "#f87171" : "#fbbf24"} opacity="0.8"
+              filter={`url(#${id}fire)`}
+              style={{ animation: `${id}-fire ${1 + i * 0.15}s ease-out ${i * 0.1}s infinite` }} />
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function SolarEclipseFrame({ size }: { size: number }) {
+  const pad = Math.round(size * 0.32);
+  const w = size + pad * 2;
+  const c = w / 2;
+  const half = size / 2 + pad * 0.55;
+  const cr = AVATAR_TILE_RADIUS + pad * 0.55;
+  const id = `solec${size}`;
+  const rays = 16;
+  const stars = 12;
+
+  return (
+    <div style={{ position: "absolute", top: -pad, left: -pad, width: w, height: w, pointerEvents: "none", zIndex: 20 }}>
+      <svg width={w} height={w} style={{ overflow: "visible" }}>
+        <defs>
+          <radialGradient id={`${id}rg`} cx="50%" cy="50%" r="50%">
+            <stop offset="60%" stopColor="#1c1917" stopOpacity="0" />
+            <stop offset="85%" stopColor="#f59e0b" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
+          </radialGradient>
+          <filter id={`${id}gl`} x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="3" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+          <filter id={`${id}gl2`} x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="5" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        <style>{`
+          @keyframes ${id}-flare { 0%,100%{opacity:.5;transform:scaleY(1)} 50%{opacity:1;transform:scaleY(1.3)} }
+          @keyframes ${id}-star { 0%,100%{opacity:0} 50%{opacity:.8} }
+          @keyframes ${id}-corona { 0%,100%{opacity:.6} 50%{opacity:1} }
+        `}</style>
+        <rect x="0" y="0" width={w} height={w} fill={`url(#${id}rg)`} />
+        {/* Corona glow ring */}
+        <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke="#f59e0b" strokeWidth="3" opacity="0.6"
+          filter={`url(#${id}gl2)`} style={{ animation: `${id}-corona 3s ease-in-out infinite` }} />
+        <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke="#fbbf24" strokeWidth="1.5" opacity="0.8" />
+        {/* Corona rays */}
+        {Array.from({ length: rays }, (_, i) => {
+          const p1 = pointOnRoundedRect(c, c, half, cr, i / rays);
+          const p2 = pointOnRoundedRect(c, c, half * 1.2, cr * 1.1, i / rays);
+          const rayLen = 4 + (i % 3) * 3;
+          const dx = p2.x - p1.x, dy = p2.y - p1.y;
+          const len = Math.sqrt(dx * dx + dy * dy) || 1;
+          const nx = dx / len, ny = dy / len;
+          return (
+            <line key={i} x1={p1.x} y1={p1.y} x2={p1.x + nx * rayLen} y2={p1.y + ny * rayLen}
+              stroke={i % 2 === 0 ? "#f59e0b" : "#fbbf24"} strokeWidth={1.5} opacity="0.7"
+              filter={`url(#${id}gl)`}
+              style={{ animation: `${id}-flare ${2 + (i % 4) * 0.5}s ease-in-out ${i * 0.2}s infinite`, transformOrigin: `${p1.x}px ${p1.y}px` }} />
+          );
+        })}
+        {/* Background stars */}
+        {Array.from({ length: stars }, (_, i) => {
+          const angle = (i / stars) * Math.PI * 2;
+          const dist = half * 1.3 + (i % 3) * 4;
+          const sx = c + Math.cos(angle) * dist;
+          const sy = c + Math.sin(angle) * dist;
+          return (
+            <circle key={`st${i}`} cx={sx} cy={sy} r={0.8} fill="#fef3c7"
+              style={{ animation: `${id}-star ${2 + (i % 5) * 0.6}s ease-in-out ${i * 0.4}s infinite` }} />
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function InfernoSkullFrame({ size }: { size: number }) {
+  const pad = Math.round(size * 0.32);
+  const w = size + pad * 2;
+  const c = w / 2;
+  const half = size / 2 + pad * 0.55;
+  const cr = AVATAR_TILE_RADIUS + pad * 0.55;
+  const id = `infsk${size}`;
+  const embers = 16;
+  const fireBottom = 10;
+
+  return (
+    <div style={{ position: "absolute", top: -pad, left: -pad, width: w, height: w, pointerEvents: "none", zIndex: 20 }}>
+      <svg width={w} height={w} style={{ overflow: "visible" }}>
+        <defs>
+          <linearGradient id={`${id}g`} x1="50%" y1="100%" x2="50%" y2="0%">
+            <stop offset="0%" stopColor="#ea580c" />
+            <stop offset="40%" stopColor="#dc2626" />
+            <stop offset="80%" stopColor="#7c2d12" />
+            <stop offset="100%" stopColor="#581c87" />
+          </linearGradient>
+          <filter id={`${id}gl`} x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="3" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+          <filter id={`${id}gl2`} x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="5" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        <style>{`
+          @keyframes ${id}-ember { 0%{transform:translateY(0) scale(1);opacity:.8} 100%{transform:translateY(-${pad * 1.5}px) scale(0.2);opacity:0} }
+          @keyframes ${id}-fire { 0%{transform:translateY(0) scaleY(1);opacity:.7} 50%{transform:translateY(-4px) scaleY(1.3);opacity:1} 100%{transform:translateY(-8px) scaleY(0.5);opacity:0} }
+          @keyframes ${id}-skull { 0%,100%{opacity:.3} 50%{opacity:.6} }
+        `}</style>
+        {/* Dark gradient frame */}
+        <path d={roundedRectPath(c, c, half, cr)} fill="none" stroke={`url(#${id}g)`} strokeWidth="3" filter={`url(#${id}gl)`} />
+        <path d={roundedRectPath(c, c, half * 0.97, cr)} fill="none" stroke="#1c1917" strokeWidth="1.5" opacity="0.6" />
+        {/* Bottom fire glow */}
+        <ellipse cx={c} cy={c + half - 2} rx={half * 0.7} ry={6} fill="#ea580c" opacity="0.25" filter={`url(#${id}gl2)`}
+          style={{ animation: `${id}-skull 2s ease-in-out infinite` }} />
+        {/* Fire particles rising from bottom */}
+        {Array.from({ length: fireBottom }, (_, i) => {
+          const fx = c - half * 0.5 + (i / fireBottom) * half;
+          const fy = c + half;
+          return (
+            <ellipse key={`fb${i}`} cx={fx} cy={fy} rx={2} ry={4}
+              fill={i % 3 === 0 ? "#f97316" : i % 3 === 1 ? "#ef4444" : "#fbbf24"} opacity="0.7"
+              filter={`url(#${id}gl)`}
+              style={{ animation: `${id}-fire ${1.5 + (i % 4) * 0.3}s ease-out ${i * 0.15}s infinite` }} />
+          );
+        })}
+        {/* Floating embers */}
+        {Array.from({ length: embers }, (_, i) => {
+          const p = pointOnRoundedRect(c, c, half, cr, i / embers);
+          return (
+            <circle key={`e${i}`} cx={p.x} cy={p.y} r={1 + (i % 2)} fill={i % 2 === 0 ? "#f97316" : "#fbbf24"}
+              style={{ animation: `${id}-ember ${2 + (i % 5) * 0.5}s ease-out ${i * 0.3}s infinite` }} />
+          );
+        })}
+        {/* Skull hint at center-bottom using simple shapes */}
+        <g opacity="0.2" style={{ animation: `${id}-skull 3s ease-in-out infinite` }}>
+          <circle cx={c - 4} cy={c + half * 0.6} r={2} fill="#fef2f2" />
+          <circle cx={c + 4} cy={c + half * 0.6} r={2} fill="#fef2f2" />
+          <ellipse cx={c} cy={c + half * 0.7} rx={3} ry={1.5} fill="#fef2f2" />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
 interface ProfileDecorationProps {
   decorationId: string | null | undefined;
   size?: number;
@@ -1168,6 +1692,15 @@ export function ProfileDecoration({ decorationId, size = 56, children }: Profile
       {decorationId === "bubbles" && <BubblesAura size={size} />}
       {decorationId === "flowers" && <PetalsAura size={size} />}
       {decorationId === "catears" && <CatEarsDecoration size={size} />}
+      {/* Legendary set (Free4Talk-inspired premium frames) */}
+      {decorationId === "crystals" && <CrystalsFrame size={size} />}
+      {decorationId === "crystals-aqua" && <CrystalsAquaFrame size={size} />}
+      {decorationId === "neon-chaos" && <NeonChaosFrame size={size} />}
+      {decorationId === "neon-chaos-purple" && <NeonChaosPurpleFrame size={size} />}
+      {decorationId === "dragon" && <DragonFrame size={size} />}
+      {decorationId === "dragon-ruby" && <DragonRubyFrame size={size} />}
+      {decorationId === "solar-eclipse" && <SolarEclipseFrame size={size} />}
+      {decorationId === "inferno-skull" && <InfernoSkullFrame size={size} />}
       {children}
     </div>
   );
