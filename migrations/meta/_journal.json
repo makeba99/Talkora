@@ -99,6 +99,13 @@
       "when": 1779230000000,
       "tag": "0015_title_color",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1779240000000,
+      "tag": "0016_supporter_settings",
+      "breakpoints": true
     }
   ]
 }

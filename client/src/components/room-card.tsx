@@ -1004,7 +1004,25 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
                 {room.title && (
-                  <h3 className="font-extrabold text-sm leading-5 text-white truncate tracking-tight" data-testid={`text-room-title-${room.id}`}>
+                  <h3
+                    className="font-extrabold text-sm leading-5 truncate tracking-tight"
+                    data-testid={`text-room-title-${room.id}`}
+                    style={{
+                      color: (room as any).titleStyle === "gradient" ? undefined : ((room as any).titleColor || "#ffffff"),
+                      fontStyle: (room as any).titleStyle === "italic" ? "italic" : undefined,
+                      fontWeight: (room as any).titleStyle === "bold" ? 900 : undefined,
+                      textShadow: (room as any).titleStyle === "glow"
+                        ? `0 0 8px ${(room as any).titleColor || "#8B5CF6"}, 0 0 16px ${(room as any).titleColor || "#8B5CF6"}55`
+                        : (room as any).titleStyle === "neon"
+                        ? `0 0 4px #fff, 0 0 10px ${(room as any).titleColor || "#00e5ff"}, 0 0 20px ${(room as any).titleColor || "#00e5ff"}`
+                        : undefined,
+                      ...((room as any).titleStyle === "gradient" ? {
+                        background: `linear-gradient(90deg, ${(room as any).titleColor || "#8B5CF6"}, #38bdf8)`,
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                      } : {}),
+                    }}
+                  >
                     {room.title}
                   </h3>
                 )}

@@ -4838,7 +4838,7 @@ export async function registerRoutes(
       if (!room) return res.status(404).json({ message: "Room not found" });
       if (room.ownerId !== userId) return res.status(403).json({ message: "Only the host can edit this room" });
 
-      const { title, language, level, maxUsers, roomTheme, isPublic, hologramVideoUrl, welcomeMessage, welcomeMediaUrls, welcomeMediaTypes, welcomeMediaPosition, welcomeAccentColor, talkPermission, cameraPermission, screenPermission, youtubePermission, chatPermission } = req.body;
+      const { title, language, level, maxUsers, roomTheme, isPublic, hologramVideoUrl, welcomeMessage, welcomeMediaUrls, welcomeMediaTypes, welcomeMediaPosition, welcomeAccentColor, talkPermission, cameraPermission, screenPermission, youtubePermission, chatPermission, titleColor: roomTitleColor, titleStyle: roomTitleStyle } = req.body;
 
       // ── Content moderation ─────────────────────────────────────────────────
       const _ruUser = await storage.getUser(userId);
@@ -4887,6 +4887,10 @@ export async function registerRoutes(
       }
       if (chatPermission !== undefined && ["everyone", "members", "co_owners", "owner_only"].includes(chatPermission)) {
         updateData.chatPermission = chatPermission;
+      }
+      if (roomTitleColor !== undefined) updateData.titleColor = roomTitleColor || null;
+      if (roomTitleStyle !== undefined && ["normal", "bold", "italic", "gradient", "glow", "neon"].includes(roomTitleStyle)) {
+        updateData.titleStyle = roomTitleStyle;
       }
 
       const updated = await storage.updateRoom(roomId, updateData);
