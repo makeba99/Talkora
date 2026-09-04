@@ -861,11 +861,6 @@ export function useAiTutor(deps: AiTutorDeps) {
       return;
     }
     wakeWordRef.current?.start();
-    const onInteract = () => {
-      wakeWordRef.current?.restart();
-    };
-    window.addEventListener("pointerdown", onInteract);
-    return () => window.removeEventListener("pointerdown", onInteract);
   }, [aiActive, aiSettings.wakeWordEnabled, aiRoomEnabled]);
 
   const primeWakeWord = useCallback(() => {

@@ -80,17 +80,17 @@ function computeCircleScale(displayCount: number): number {
   const w = _vpWidth;
   // Scale by both viewport and participant density for efficient lobby packing
   const density =
-    displayCount >= 12 ? 0.72 :
-    displayCount >= 8 ? 0.8 :
-    displayCount >= 5 ? 0.88 :
-    displayCount >= 3 ? 0.94 :
+    displayCount >= 12 ? 0.78 :
+    displayCount >= 8 ? 0.88 :
+    displayCount >= 5 ? 0.94 :
+    displayCount >= 3 ? 0.98 :
     1;
   let base = 1;
-  if (w >= 1536) base = 1.02;
-  else if (w >= 1280) base = 0.98;
-  else if (w >= 1024) base = 0.94;
-  else if (w >= 768) base = 0.9;
-  else base = 0.86;
+  if (w >= 1536) base = 1.06;
+  else if (w >= 1280) base = 1.02;
+  else if (w >= 1024) base = 0.98;
+  else if (w >= 768) base = 0.94;
+  else base = 0.9;
   return Math.round(base * density * 100) / 100;
 }
 
@@ -791,7 +791,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
      when many participants are present while staying readable with 1–2 users. */
   const lobbyStyle = resolveLobbyProfileStyle((room as any).lobbyProfileStyle);
   const lobbyShape = lobbyShapeFromStyle(lobbyStyle);
-  const baseCircleSize = 56;
+  const baseCircleSize = 68;
   const circleSize = Math.round(baseCircleSize * circleScale);
   const isCircle = lobbyStyle === "circle";
   const avatarClip = isCircle ? "50%" : "14px";

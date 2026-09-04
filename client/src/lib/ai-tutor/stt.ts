@@ -38,6 +38,8 @@ const WAKE_MILES = "(?:miles|myles)";
 const WAKE_AI = "(?:ai|a\\.i\\.?|a\\s*i|aye|eye|tutor|afi(?:\\s*k)?|eva|dude|agent)";
 const WAKE_SKIP_AFTER_HEY = /^(everyone|everybody|guys|all|y'?all|people|folks|friends|chat|room)\b/i;
 
+const WAKE_AI_MISS = /^(i|a|ay|eh)$/i;
+
 function normalizeWakeText(raw: string): string {
   return raw
     .trim()
@@ -54,6 +56,11 @@ function normalizeWakeText(raw: string): string {
 export function matchWakePhrase(raw: string): WakeMatch | null {
   const text = normalizeWakeText(raw);
   if (!text) return null;
+
+  const compact = text.replace(/[\s,!.]+/g, "").toLowerCase();
+  if (/^(hey|hi|hello)(ai|i|aye|eye|a)$/.test(compact)) {
+    return { persona: "ai", afterText: "" };
+  }
 
   if (new RegExp(`^${WAKE_MAYA}$`, "i").test(text)) {
     return { persona: "maya", afterText: "" };
@@ -82,6 +89,10 @@ export function matchWakePhrase(raw: string): WakeMatch | null {
   const ai = new RegExp(`^${WAKE_AI}\\b[,!.]?\\s*(.*)$`, "i").exec(rest);
   if (ai) return { persona: "ai", afterText: (ai[1] || "").trim() };
 
+  if (WAKE_AI_MISS.test(rest)) {
+    return { persona: "ai", afterText: "" };
+  }
+
   const isSoft = new RegExp(`^${WAKE_SOFT_GREET}$`, "i").test(lastGreet.token);
   if (isSoft && (!rest || /^(there|you)$/i.test(rest))) {
     return { persona: "ai", afterText: "" };
@@ -95,7 +106,11 @@ export function matchWakePhrase(raw: string): WakeMatch | null {
 /** True when the phrase is distinctive enough to fire on interim STT. */
 export function isStrongWakeMatch(match: WakeMatch, raw: string): boolean {
   if (match.persona === "maya" || match.persona === "miles") return true;
-  return /\b(ai|a\.i\.?|tutor|maya|maia|miles|myles)\b/i.test(raw);
+  const t = raw.toLowerCase();
+  if (/\b(ai|a\.i\.?|a\s*i|tutor|maya|maia|miles|myles|eva)\b/.test(t)) return true;
+  if (/\b(hey|hi|hello)\b/.test(t) && /\b(i|aye|eye|a)\b/.test(t)) return true;
+  if (/^(hey|hi|hello)(ai|i|aye|eye|a)$/.test(t.replace(/[\s,!.]+/g, ""))) return true;
+  return false;
 }
 
 /**
@@ -132,6 +147,8 @@ export class WakeWordDetector {
   private lang = "en-US";
   private _active = false;
   private restartTimer: ReturnType<typeof setTimeout> | null = null;
+  private pendingWake: ReturnType<typeof setTimeout> | null = null;
+  private lastLaunch = 0;
   private rolling = "";
   private onWake: (match: WakeMatch) => void;
   private onStatusChange: (listening: boolean) => void;
@@ -154,30 +171,39 @@ export class WakeWordDetector {
 
   start() {
     if (!SpeechRec) return;
-    if (this._active) return;
     this._active = true;
-    this.rolling = "";
-    this._launch();
+    if (!this.rec) {
+      this.rolling = "";
+      this._launch();
+    }
   }
 
-  /** Relaunch after getUserMedia / a user tap so Chrome grants the recognizer. */
+  /** Relaunch after getUserMedia / unmute so Chrome grants the recognizer. */
   restart() {
     if (!SpeechRec) return;
     this._active = true;
+    if (this.rec && Date.now() - this.lastLaunch < 1800) return;
     this.rolling = "";
     this._launch();
   }
 
   stop() {
     this._active = false;
+    this._clearPending();
     if (this.restartTimer) { clearTimeout(this.restartTimer); this.restartTimer = null; }
     try { this.rec?.abort(); } catch {}
     this.rec = null;
     this.onStatusChange(false);
   }
 
+  private _clearPending() {
+    if (this.pendingWake) { clearTimeout(this.pendingWake); this.pendingWake = null; }
+  }
+
   private _launch() {
     if (!SpeechRec || !this._active) return;
+    this.lastLaunch = Date.now();
+    this._clearPending();
 
     try { this.rec?.abort(); } catch {}
     const rec = new SpeechRec();
@@ -205,13 +231,24 @@ export class WakeWordDetector {
 
       const combined = `${this.rolling} ${interimTail}`.trim();
       const match = matchWakePhrase(combined) || matchWakePhrase(interimTail);
-      if (!match) return;
+      if (!match) {
+        this._clearPending();
+        return;
+      }
 
       const lastIsFinal = e.results[e.results.length - 1]?.isFinal;
-      if (!isStrongWakeMatch(match, combined) && !lastIsFinal) return;
-
-      this.stop();
-      this.onWake(match);
+      const fire = () => {
+        this._clearPending();
+        if (!this._active) return;
+        this.stop();
+        this.onWake(match);
+      };
+      if (isStrongWakeMatch(match, combined) || lastIsFinal) {
+        fire();
+        return;
+      }
+      this._clearPending();
+      this.pendingWake = setTimeout(fire, 400);
     };
 
     rec.onerror = (e: any) => {

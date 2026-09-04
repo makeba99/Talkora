@@ -6305,6 +6305,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     }
     setIsMuted(newMuted);
     socket?.emit("room:mute", { roomId: room.id, userId: user?.id, isMuted: newMuted });
+    if (!newMuted) primeWakeWord();
   };
 
   const retryMicPermission = async () => {
