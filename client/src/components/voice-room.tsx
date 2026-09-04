@@ -10,7 +10,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -26,7 +27,7 @@ import {
   Pin, Languages, Headphones, ListMusic, Captions, AlignJustify,
   Bookmark, BookmarkCheck
 } from "lucide-react";
-import { SiInstagram, SiFacebook } from "react-icons/si";
+import { SiInstagram, SiFacebook, SiLinkedin } from "react-icons/si";
 import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -708,6 +709,8 @@ function ParticipantCard({
   const isFollowing = followingIds.has(p.id);
   const [roomPresenceStatus, setRoomPresenceStatus] = useState((p as any).status || "online");
   const [icePickOpen, setIcePickOpen] = useState(false);
+  const [gearOpen, setGearOpen] = useState(false);
+  const isMobileViewport = useIsMobile();
   useEffect(() => {
     setRoomPresenceStatus((p as any).status || "online");
   }, [p.id, (p as any).status]);
@@ -718,28 +721,38 @@ function ParticipantCard({
   });
 
   const gearPopover = (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button className="absolute top-1 right-1 z-30 cursor-pointer pointer-events-auto" onClick={(e) => e.stopPropagation()} data-testid={`button-settings-${p.id}`}>
-          <Settings className="w-4 h-4 text-white/80 drop-shadow-md hover:text-white" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-[min(18.5rem,calc(100vw-1rem))] max-h-[min(92dvh,calc(100svh-0.75rem))] p-0 bg-card border-border text-card-foreground shadow-xl overflow-y-auto overscroll-contain"
-        align="end"
-        side="bottom"
-        sideOffset={6}
-        avoidCollisions
-        collisionPadding={12}
-        onClick={(e) => e.stopPropagation()}
-        onInteractOutside={(e) => {
-          const target = e.target as HTMLElement;
-          if (target?.closest('[data-radix-popper-content-wrapper]')) e.preventDefault();
+    <>
+      <button
+        type="button"
+        className={`absolute top-1 right-1 z-30 cursor-pointer pointer-events-auto rounded-md bg-black/35 backdrop-blur-[2px] hover:bg-black/55 ${cardPx <= 56 ? "p-px" : "p-0.5"}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          setGearOpen(true);
         }}
+        data-testid={`button-settings-${p.id}`}
+        aria-label="Open participant settings"
       >
-        <div className="flex flex-col p-3 gap-3">
+        <Settings className={`${cardPx <= 56 ? "w-3 h-3" : "w-4 h-4"} text-white/90 drop-shadow-md`} />
+      </button>
+      <Sheet open={gearOpen} onOpenChange={setGearOpen}>
+        <SheetContent
+          side={isMobileViewport ? "bottom" : "right"}
+          className={
+            isMobileViewport
+              ? "flex h-[min(92dvh,40rem)] max-h-[92dvh] w-full flex-col gap-0 overflow-hidden rounded-t-2xl border-border p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+              : "flex h-full max-h-[100dvh] w-[min(22rem,calc(100vw-0.75rem))] max-w-[calc(100vw-0.5rem)] flex-col gap-0 overflow-hidden border-border p-0 sm:max-w-[min(22rem,calc(100vw-0.75rem))]"
+          }
+          onClick={(e) => e.stopPropagation()}
+          data-testid={`sheet-participant-${p.id}`}
+        >
+          <SheetHeader className="flex-shrink-0 space-y-0 border-b border-border/60 px-4 py-3 pr-12 text-left">
+            <SheetTitle className="truncate text-sm font-semibold tracking-tight">
+              {getUserDisplayName(p)}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain p-3">
           <div className="flex gap-3 items-start">
-             <Avatar className="w-16 h-16 rounded-md border border-border flex-shrink-0">
+             <Avatar className="w-14 h-14 rounded-md border border-border flex-shrink-0">
                 <AvatarImage src={p.profileImageUrl || undefined} alt="" />
                 <AvatarFallback className="bg-muted text-lg">{getUserInitials(p)}</AvatarFallback>
              </Avatar>
@@ -1127,9 +1140,10 @@ function ParticipantCard({
               <input type="range" min="0" max="1" step="0.05" value={volume ?? 1} onChange={(e) => onVolumeChange && onVolumeChange(p.id, parseFloat(e.target.value))} className="flex-1 accent-orange-500 h-1 cursor-pointer" aria-label="Adjust participant volume" />
             </div>
           )}
-        </div>
-      </PopoverContent>
-    </Popover>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 
   if (isBlocked) {
@@ -1165,7 +1179,7 @@ function ParticipantCard({
       {mood?.emoji && (
         <div
           key={mood.id}
-          className="absolute left-1/2 -top-10 sm:-top-12 z-30 select-none group/mood"
+          className="absolute left-1/2 -top-8 sm:-top-10 z-30 select-none group/mood"
           data-testid={`mood-${p.id}`}
           style={{
             animation: "moodFloat 0.9s cubic-bezier(0.22, 0.61, 0.36, 1) forwards, moodBob 3.6s ease-in-out 0.9s infinite",
@@ -1173,7 +1187,7 @@ function ParticipantCard({
           }}
         >
           <div
-            className="text-4xl sm:text-5xl drop-shadow-[0_4px_10px_rgba(0,0,0,0.6)] pointer-events-none"
+            className={`${cardPx <= 60 ? "text-2xl" : "text-3xl sm:text-4xl"} drop-shadow-[0_4px_10px_rgba(0,0,0,0.6)] pointer-events-none`}
             style={{ filter: "drop-shadow(0 0 12px rgba(255,255,255,0.35))" }}
           >
             {mood.emoji}
@@ -1196,10 +1210,13 @@ function ParticipantCard({
         </div>
       )}
       <div
-        className={`relative overflow-hidden bg-muted/20 group border-[3px] select-none ${
-          isSpeaking ? "border-[hsl(var(--neu-orange))]/60 shadow-[0_0_14px_hsl(var(--neu-orange)/0.45)]" : "border-transparent hover:border-white/20"
-        } transition-all duration-300 ${fillMode ? "w-full h-full rounded-xl" : "rounded-md"}`}
-        style={fillMode ? { flexShrink: 0 } : { width: cardPx, height: cardPx, flexShrink: 0 }}
+        className={`relative overflow-hidden bg-muted/20 group border select-none ${
+          isSpeaking ? "border-[hsl(var(--neu-orange))]/60 shadow-[0_0_10px_hsl(var(--neu-orange)/0.35)]" : "border-white/10 hover:border-white/25"
+        } transition-all duration-300 ${fillMode ? "w-full h-full max-w-full max-h-full rounded-lg" : "rounded-lg"}`}
+        style={fillMode
+          ? { flexShrink: 0, maxWidth: Math.max(cardPx, 96), maxHeight: Math.max(cardPx, 96), aspectRatio: "1 / 1", margin: "0 auto" }
+          : { width: cardPx, height: cardPx, flexShrink: 0 }
+        }
       >
         {/* Profile card animation overlay — renders behind avatar content */}
         <ProfileAnimationOverlay
@@ -1530,50 +1547,50 @@ function ParticipantCard({
 
         {!(hasActiveYoutube && youtubeVideoId) && (isRoomOwner ? (
           <div
-            className="absolute bottom-0 left-0 text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5"
+            className={`absolute bottom-0 left-0 font-bold rounded-tr-md shadow-sm z-20 flex items-center gap-0.5 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`}
             style={{
               background: "linear-gradient(145deg, hsl(var(--neu-orange-hi) / 0.95) 0%, hsl(var(--neu-orange-lo) / 0.92) 100%)",
               boxShadow: "0 0 10px hsl(var(--neu-orange) / 0.45), inset 0 1px 0 rgba(220,210,255,0.30)",
               color: "#fff",
             }}
           >
-            👑 Owner
+            {cardPx <= 56 ? "👑" : "👑 Owner"}
           </div>
         ) : participantRole === "co-owner" ? (
           <div
-            className="absolute bottom-0 left-0 text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5"
+            className={`absolute bottom-0 left-0 font-bold rounded-tr-md shadow-sm z-20 flex items-center gap-0.5 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`}
             style={{
               background: "linear-gradient(145deg, rgba(56,189,248,0.85) 0%, rgba(14,165,233,0.82) 100%)",
               boxShadow: "0 0 8px rgba(56,189,248,0.35), inset 0 1px 0 rgba(186,230,253,0.25)",
               color: "#fff",
             }}
           >
-            ⚡ Co-Owner
+            {cardPx <= 56 ? "⚡" : "⚡ Co-Owner"}
           </div>
         ) : participantRole === "guest" ? (
           <div
-            className="absolute bottom-0 left-0 text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5"
+            className={`absolute bottom-0 left-0 font-bold rounded-tr-md shadow-sm z-20 flex items-center gap-0.5 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`}
             style={{
               background: "linear-gradient(145deg, rgba(99,102,241,0.82) 0%, rgba(67,56,202,0.80) 100%)",
               boxShadow: "0 0 8px rgba(99,102,241,0.35), inset 0 1px 0 rgba(199,210,254,0.20)",
               color: "#fff",
             }}
           >
-            🎫 Guest
+            {cardPx <= 56 ? "🎫" : "🎫 Guest"}
           </div>
         ) : participantRole === "troll" ? (
           <div
-            className="absolute bottom-0 left-0 text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20 flex items-center gap-0.5"
+            className={`absolute bottom-0 left-0 font-bold rounded-tr-md shadow-sm z-20 flex items-center gap-0.5 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`}
             style={{
               background: "linear-gradient(145deg, rgba(161,124,0,0.88) 0%, rgba(120,90,0,0.85) 100%)",
               boxShadow: "0 0 8px rgba(234,179,8,0.40), inset 0 1px 0 rgba(253,224,71,0.22)",
               color: "#fde047",
             }}
           >
-            🧌 Troll
+            {cardPx <= 56 ? "🧌" : "🧌 Troll"}
           </div>
         ) : isMe ? (
-          <div className="absolute bottom-0 left-0 bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold px-1.5 py-0.5 rounded-tr-md shadow-sm z-20">
+          <div className={`absolute bottom-0 left-0 bg-white/20 backdrop-blur-sm text-white font-bold rounded-tr-md shadow-sm z-20 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`}>
             You
           </div>
         ) : null)}
@@ -1601,15 +1618,26 @@ function ParticipantCard({
   );
 
   return (
-    <ProfileDecoration decorationId={(p as any).profileDecoration} size={Math.max(64, fillMode ? Math.round(cardPx * 1.35) : cardPx - 8)}>
-      <div 
-         className={`cursor-pointer ${fillMode ? "w-full h-full" : ""}`}
-         onClick={onProfileClick} 
-         data-testid={`card-wrapper-${p.id}`}
-      >
-        {avatarContent}
-      </div>
-    </ProfileDecoration>
+    <div className="flex flex-col items-center gap-0.5 min-w-0 max-w-full">
+      <ProfileDecoration decorationId={(p as any).profileDecoration} size={Math.max(40, cardPx - (cardPx <= 72 ? 2 : 6))}>
+        <div 
+           className={`cursor-pointer ${fillMode ? "w-full h-full flex items-center justify-center" : ""}`}
+           onClick={onProfileClick} 
+           data-testid={`card-wrapper-${p.id}`}
+        >
+          {avatarContent}
+        </div>
+      </ProfileDecoration>
+      {!(hasActiveYoutube && youtubeVideoId) && !fillMode && (
+        <span
+          className="text-muted-foreground/80 font-medium text-center truncate leading-tight"
+          style={{ fontSize: cardPx <= 56 ? 9 : 10, maxWidth: Math.max(cardPx, 48) }}
+          title={getUserDisplayName(p)}
+        >
+          {isMe ? "You" : getUserDisplayName(p)}
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -14214,7 +14242,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       <Dialog open={editDialogOpen} onOpenChange={(open) => { setEditDialogOpen(open); if (!open) { setDeleteRoomOpen(false); setEditTab("basics"); } }}>
         <DialogContent
           className="sm:max-w-lg flex flex-col gap-0 p-0"
-          style={{ maxHeight: "min(92svh, 600px)" }}
+          style={{ maxHeight: "min(92dvh, 92svh, 600px)" }}
           aria-describedby={undefined}
         >
           {/* Sticky header */}
@@ -16365,21 +16393,40 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
           {(() => {
             const visibleCount = participants.filter(p => !foreverBlockedIds.has(p.id)).length;
-            const cardPx =
-              visibleCount <= 2 ? 128 :
-              visibleCount <= 4 ? 110 :
-              visibleCount <= 6 ? 94 :
-              visibleCount <= 8 ? 82 :
-              visibleCount <= 10 ? 72 :
-              visibleCount <= 14 ? 64 :
-              56;
-            const gapPx = cardPx <= 72 ? 6 : 8;
+            const vw = typeof window !== "undefined" ? window.innerWidth : 1280;
+            let cardPx =
+              visibleCount <= 2 ? 118 :
+              visibleCount <= 4 ? 98 :
+              visibleCount <= 6 ? 84 :
+              visibleCount <= 8 ? 72 :
+              visibleCount <= 12 ? 60 :
+              visibleCount <= 18 ? 52 :
+              44;
+            if (vw < 400) cardPx = Math.min(cardPx, visibleCount <= 2 ? 96 : 72);
+            else if (vw < 640) cardPx = Math.min(cardPx, visibleCount <= 2 ? 104 : 80);
+            const gapPx = cardPx <= 60 ? 4 : 6;
+            const decoBleed = Math.round(cardPx * (cardPx <= 60 ? 0.16 : 0.22));
             const isInOverlayMode = (activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || !!(room as any).hologramVideoUrl || (currentTheme && currentTheme !== "none");
-            const gridCols = visibleCount === 1 ? 1 : visibleCount <= 4 ? 2 : visibleCount <= 9 ? 3 : 4;
+            let gridCols =
+              visibleCount === 1 ? 1 :
+              visibleCount <= 4 ? 2 :
+              visibleCount <= 9 ? 3 :
+              visibleCount <= 16 ? 4 :
+              visibleCount <= 25 ? 5 :
+              6;
+            if (vw < 480) gridCols = Math.min(gridCols, visibleCount <= 2 ? 2 : 3);
+            else if (vw < 768) gridCols = Math.min(gridCols, 4);
           return (
           <div
-            className={isInOverlayMode ? "flex items-end justify-center p-2 pb-4 absolute bottom-0 left-0 right-0 z-20 pt-16 overflow-visible" : "flex-1 min-h-0 p-2 pt-14 overflow-y-auto overflow-x-visible"}
-            style={isInOverlayMode ? {} : { display: "grid", gridTemplateColumns: `repeat(${gridCols}, 1fr)`, gridAutoRows: "minmax(0, 1fr)", gap: Math.max(12, gapPx + 8), alignContent: "start" }}
+            className={isInOverlayMode ? "flex items-end justify-center p-2 pb-4 absolute bottom-0 left-0 right-0 z-20 pt-16 overflow-visible" : "flex-1 min-h-0 p-2 pt-14 overflow-y-auto overflow-x-hidden"}
+            style={isInOverlayMode ? {} : {
+              display: "grid",
+              gridTemplateColumns: `repeat(${gridCols}, minmax(0, ${cardPx + decoBleed * 2}px))`,
+              justifyContent: "center",
+              alignContent: "center",
+              gap: `${gapPx + 2}px ${Math.max(gapPx, decoBleed)}px`,
+              rowGap: gapPx + decoBleed + 10,
+            }}
           >
             <div
               className={isInOverlayMode ? "overflow-x-auto w-full" : "contents"}
@@ -16397,9 +16444,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 return (
                   <div
                     key={p.id}
-                    className={isInOverlayMode ? "flex flex-col items-center gap-2 group relative" : "relative min-h-0"}
+                    className={isInOverlayMode ? "flex flex-col items-center gap-2 group relative" : "relative min-h-0 flex flex-col items-center justify-start"}
                     data-testid={`card-participant-${p.id}`}
                     style={{
+                      ...(isInOverlayMode ? {} : { paddingInline: Math.max(2, Math.round(decoBleed * 0.35)) }),
                       ...(djModeActive && !isRoomOwner ? (() => {
                         const resolvedStyle = djMoveStyle === "auto"
                           ? DJ_AUTO_CYCLE[(djMoveTick + index * 3) % DJ_AUTO_CYCLE.length]
@@ -16840,7 +16888,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         socket?.emit("room:movie-watching", { roomId: room.id, hostId: p.id, watching: true });
                       } : undefined}
                       cardPx={cardPx}
-                      fillMode={!isInOverlayMode}
+                      fillMode={false}
                       hologramVideoUrl={null}
                       avatarGifUrl={participantAvatarGifs[p.id] || null}
                       onSetAvatarGif={isMe ? (gifUrl: string | null) => {

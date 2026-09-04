@@ -25,8 +25,9 @@ export function AvatarFrameOverlay({
   src: string;
   size: number;
 }) {
-  // Enough bleed for ears/tails/petals without drowning the avatar
-  const pad = Math.round(size * 0.32);
+  // Dense grids need tighter bleed so frames don't collide with neighbors
+  const padRatio = size <= 52 ? 0.14 : size <= 72 ? 0.2 : size <= 96 ? 0.26 : 0.3;
+  const pad = Math.round(size * padRatio);
   const outer = size + pad * 2;
   return (
     <img

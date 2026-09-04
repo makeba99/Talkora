@@ -172,7 +172,7 @@ export function RoomEditDialog({ room, onClose }: RoomEditDialogProps) {
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent
         className="sm:max-w-md flex flex-col gap-0 p-0"
-        style={{ maxHeight: "min(90svh, 640px)" }}
+        style={{ maxHeight: "min(90dvh, 90svh, 640px)" }}
         aria-describedby={undefined}
       >
         {/* Sticky header */}

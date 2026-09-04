@@ -76,11 +76,20 @@ function subscribeVpResize(cb: () => void): () => void {
 
 function computeCircleScale(displayCount: number): number {
   const w = _vpWidth;
-  const crowded = displayCount >= 4;
-  if (w >= 1536) return crowded ? 1.10 : 1.35;
-  if (w >= 1280) return crowded ? 1.00 : 1.18;
-  if (w >= 1024) return crowded ? 0.94 : 1.06;
-  return crowded ? 0.90 : 0.98;
+  // Scale by both viewport and participant density for efficient lobby packing
+  const density =
+    displayCount >= 12 ? 0.72 :
+    displayCount >= 8 ? 0.8 :
+    displayCount >= 5 ? 0.88 :
+    displayCount >= 3 ? 0.94 :
+    1;
+  let base = 1;
+  if (w >= 1536) base = 1.12;
+  else if (w >= 1280) base = 1.02;
+  else if (w >= 1024) base = 0.94;
+  else if (w >= 768) base = 0.88;
+  else base = 0.82;
+  return Math.round(base * density * 100) / 100;
 }
 
 /**
@@ -776,10 +785,9 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
     return subscribeVpResize(() => setCircleScale(computeCircleScale(displayCount)));
   }, [displayCount]);
 
-  /* Fixed circle size — avatars stay the same size regardless of how many
-     participants or slots there are. The scale factor still adjusts for
-     viewport width so they look right on all screen sizes. */
-  const baseCircleSize = 68;
+  /* Base avatar size — density scaling via circleScale keeps rooms compact
+     when many participants are present while staying readable with 1–2 users. */
+  const baseCircleSize = 52;
   const circleSize = Math.round(baseCircleSize * circleScale);
 
   const settingsButton = isOwner ? (
@@ -1189,20 +1197,20 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
 
                   const avatarEl = (
                     <div
-                      className={`relative rounded-2xl flex-shrink-0 flex items-center justify-center ${hasRing ? ringClass : ""}`}
+                      className={`relative rounded-lg flex-shrink-0 flex items-center justify-center ${hasRing ? ringClass : ""}`}
                       style={{
-                        width: circleSize + 6,
-                        height: circleSize + 6,
-                        padding: 3,
+                        width: circleSize + 4,
+                        height: circleSize + 4,
+                        padding: 2,
                         background: hasRing ? undefined : `linear-gradient(135deg, ${glow.from}, ${glow.to})`,
                         boxShadow: hasRing
                           ? undefined
                           : isPremiumAtmosphere
-                            ? `0 0 7px rgba(145,40,130,0.40), 0 0 14px rgba(145,40,130,0.20), 0 0 22px rgba(100,50,180,0.15)`
-                            : `0 0 10px ${glow.from}, 0 0 20px ${glow.to}`,
+                            ? `0 0 5px rgba(145,40,130,0.35), 0 0 10px rgba(145,40,130,0.15)`
+                            : `0 0 6px ${glow.from}, 0 0 12px ${glow.to}`,
                       }}
                     >
-                      <Avatar style={{ width: circleSize, height: circleSize }} className={`rounded-2xl border-2 ${hasRing ? "border-transparent" : isPremiumAtmosphere ? "border-white/20 shadow-[inset_0_0_18px_rgba(255,255,255,0.08)]" : "border-[#0a1228]"}`}>
+                      <Avatar style={{ width: circleSize, height: circleSize }} className={`rounded-lg border ${hasRing ? "border-transparent" : isPremiumAtmosphere ? "border-white/20 shadow-[inset_0_0_12px_rgba(255,255,255,0.06)]" : "border-[#0a1228]"}`}>
                         {(() => {
                           const a = buildAvatarSources(p.profileImageUrl);
                           return <AvatarImage
@@ -1213,10 +1221,10 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                             height={circleSize}
                             loading="lazy"
                             decoding="async"
-                            className="rounded-2xl"
+                            className="rounded-lg"
                           />;
                         })()}
-                        <AvatarFallback className="rounded-2xl text-base font-bold bg-[#1a1520] text-white/70">
+                        <AvatarFallback className="rounded-lg text-sm font-bold bg-[#1a1520] text-white/70">
                           {getUserInitials(p)}
                         </AvatarFallback>
                       </Avatar>
@@ -1291,20 +1299,17 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                 return (
                   <div key={i} className="flex flex-col items-center">
                     <div
-                      className="rounded-2xl flex items-center justify-center flex-shrink-0"
+                      className="rounded-lg flex items-center justify-center flex-shrink-0"
                       style={{
-                        width: circleSize + 6,
-                        height: circleSize + 6,
+                        width: circleSize + 4,
+                        height: circleSize + 4,
                         background: "linear-gradient(155deg, hsl(228 18% 13%) 0%, hsl(228 16% 8%) 60%, hsl(228 14% 6%) 100%)",
                         border: "1px solid rgba(255,255,255,0.07)",
                         boxShadow: [
-                          "-5px -5px 10px rgba(255,255,255,0.045)",
-                          "6px 6px 16px rgba(0,0,0,0.92)",
-                          "2px 2px 5px rgba(0,0,0,0.70)",
-                          "inset 0 2px 0 rgba(255,255,255,0.08)",
-                          "inset 0 -2px 0 rgba(0,0,0,0.55)",
-                          "inset 2px 0 0 rgba(255,255,255,0.03)",
-                          "inset -1px 0 0 rgba(0,0,0,0.4)",
+                          "-3px -3px 8px rgba(255,255,255,0.04)",
+                          "4px 4px 12px rgba(0,0,0,0.85)",
+                          "inset 0 1px 0 rgba(255,255,255,0.06)",
+                          "inset 0 -1px 0 rgba(0,0,0,0.45)",
                         ].join(", "),
                       }}
                     >
