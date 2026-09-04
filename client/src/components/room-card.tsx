@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getAvatarRingClass } from "@/lib/avatar-ring";
 import { ROOM_THEMES } from "@/lib/room-theme-utils";
 import { UserBadgePips } from "@/components/user-badge-pips";
+import { densityFromSize } from "@/components/vip-avatar-frames";
 
 // Heavy components — only loaded on user interaction, never on initial paint.
 // profile-decorations.tsx is 1,900 lines of SVG data; keeping it out of the
@@ -1245,7 +1246,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                   const decorated = (p as any).profileDecoration
                     ? (
                       <Suspense fallback={avatarEl}>
-                        <ProfileDecoration decorationId={(p as any).profileDecoration} size={circleSize}>
+                        <ProfileDecoration decorationId={(p as any).profileDecoration} size={circleSize + 4} density={densityFromSize(circleSize)} soft={circleSize <= 48}>
                           {avatarEl}
                         </ProfileDecoration>
                       </Suspense>

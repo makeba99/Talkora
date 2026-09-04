@@ -2962,7 +2962,48 @@ function formatRelative(ts: number): string {
   return `${Math.floor(diff / 86_400_000)}d ago`;
 }
 
-type WebPushResult = { success: boolean; sent: number; failed: number; total: number };
+type WebPushResult = {
+  success: boolean;
+  sent: number;
+  failed: number;
+  total: number;
+  accepted?: number;
+  attempted?: number;
+  invalidRemoved?: number;
+  targetUsers?: number;
+  targetDevices?: number;
+  campaignId?: string | null;
+};
+
+type PushCampaignRow = {
+  id: string;
+  title: string;
+  body: string;
+  destinationUrl: string;
+  audience: string;
+  targetUsers: number;
+  targetDevices: number;
+  attempted: number;
+  accepted: number;
+  failed: number;
+  invalidRemoved: number;
+  clickCount: number;
+  isTest: boolean;
+  createdAt: string;
+};
+
+const PUSH_AUDIENCES: { id: string; label: string }[] = [
+  { id: "all_subscribed", label: "All subscribed users" },
+  { id: "active_7d", label: "Active in last 7 days" },
+  { id: "inactive_1d", label: "Inactive 1+ day" },
+  { id: "inactive_3d", label: "Inactive 3+ days" },
+  { id: "inactive_7d", label: "Inactive 7+ days" },
+  { id: "inactive_14d", label: "Inactive 14+ days" },
+  { id: "inactive_30d", label: "Inactive 30+ days" },
+  { id: "vip", label: "VIP users" },
+  { id: "non_vip", label: "Non-VIP users" },
+  { id: "never_joined_room", label: "Never joined a room" },
+];
 
 type EmailCampaign = {
   id: string;
@@ -2991,6 +3032,9 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
   const [pushUrl, setPushUrl] = useState("/");
   const [pushImageUrl, setPushImageUrl] = useState("");
   const [pushImageUploading, setPushImageUploading] = useState(false);
+  const [pushAudience, setPushAudience] = useState("all_subscribed");
+  const [pushConfirmOpen, setPushConfirmOpen] = useState(false);
+  const [lastPushResult, setLastPushResult] = useState<WebPushResult | null>(null);
   const pushImageInputRef = useRef<HTMLInputElement>(null);
 
   const registeredWithEmail = users.filter((u) => u.email);
@@ -3012,9 +3056,29 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
     refetchInterval: 60000,
   });
 
+  const { data: pushStats } = useQuery<{ subscribedUsers: number; activeDevices: number; campaignsSent: number; invalidDevices: number }>({
+    queryKey: ["/api/admin/push/stats"],
+    refetchInterval: 60000,
+  });
+
   const { data: pushSubscribers = [] } = useQuery<Array<{ userId: string; displayName: string | null; email: string | null; deviceCount: number }>>({
     queryKey: ["/api/admin/push/subscribers"],
     refetchInterval: 60000,
+  });
+
+  const { data: pushAudiencePreview } = useQuery<{ users: number; devices: number }>({
+    queryKey: ["/api/admin/push/preview", pushAudience],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/push/preview?audience=${encodeURIComponent(pushAudience)}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to preview audience");
+      return res.json();
+    },
+    refetchInterval: 60000,
+  });
+
+  const { data: pushCampaigns = [], refetch: refetchPushCampaigns } = useQuery<PushCampaignRow[]>({
+    queryKey: ["/api/admin/push/campaigns"],
+    refetchInterval: 30000,
   });
 
   const emailMutation = useMutation({
@@ -3059,24 +3123,38 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
   });
 
   const webPushMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (opts: { isTest?: boolean; confirm?: boolean }) => {
       const res = await apiRequest("POST", "/api/admin/push/send", {
         title: pushTitle,
         body: pushBody,
         url: pushUrl || "/",
         imageUrl: pushImageUrl || undefined,
+        audience: pushAudience,
+        isTest: !!opts.isTest,
+        confirm: !!opts.confirm,
       });
       return res.json() as Promise<WebPushResult>;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, vars) => {
+      setLastPushResult(data);
+      setPushConfirmOpen(false);
       toast({
-        title: "Web push sent!",
-        description: `Delivered to ${data.sent} of ${data.total} subscriber${data.total !== 1 ? "s" : ""}${data.failed > 0 ? ` (${data.failed} failed)` : ""}.`,
+        title: vars.isTest ? "Test push accepted" : "Web push campaign sent",
+        description: `Accepted by push service: ${data.accepted ?? data.sent} / ${data.attempted ?? data.total} devices` +
+          `${(data.invalidRemoved ?? 0) > 0 ? ` · ${data.invalidRemoved} invalid removed` : ""}` +
+          `${(data.failed ?? 0) > 0 ? ` · ${data.failed} failed` : ""}.`,
       });
-      setPushTitle("");
-      setPushBody("");
-      setPushUrl("/");
-      setPushImageUrl("");
+      if (!vars.isTest) {
+        setPushTitle("");
+        setPushBody("");
+        setPushUrl("/");
+        setPushImageUrl("");
+      }
+      refetchPushCampaigns();
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/push/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/push/subscriber-count"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/push/subscribers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/push/preview", pushAudience] });
     },
     onError: (err: any) => toast({ title: "Failed to send web push", description: err.message, variant: "destructive" }),
   });
@@ -3343,23 +3421,34 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
       <Card className="bg-card/75 border-emerald-400/20">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold flex items-center gap-2 text-emerald-300">
-            <Smartphone className="w-4 h-4" /> Web Push Broadcast
+            <Smartphone className="w-4 h-4" /> Push Notifications
             <Badge variant="outline" className="ml-auto text-[10px] border-emerald-400/40 text-emerald-300">
-              {pushSubCount?.count ?? "—"} subscriber{pushSubCount?.count !== 1 ? "s" : ""}
+              {pushStats?.subscribedUsers ?? pushSubCount?.count ?? "—"} users · {pushStats?.activeDevices ?? "—"} devices
             </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg bg-emerald-500/10 border border-emerald-400/20 p-3 text-xs text-emerald-300 space-y-1.5">
             <p className="font-semibold flex items-center gap-1.5">
-              <Smartphone className="w-3.5 h-3.5 shrink-0" /> Real device &amp; browser notifications
+              <Smartphone className="w-3.5 h-3.5 shrink-0" /> Real Web Push (VAPID)
             </p>
             <p className="text-emerald-300/80">
-              Web Push sends native OS notifications to users who've clicked "Enable notifications" — they appear even when the browser tab is closed.
+              Native OS/browser notifications for users who enabled them after Google login. Works with the tab closed.
             </p>
-            <p className="text-emerald-300/60">
-              VAPID keys are auto-provisioned on server startup — no manual setup needed. Users must grant permission via the bell prompt that appears after login.
-            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {[
+              { label: "Subscribed users", value: pushStats?.subscribedUsers },
+              { label: "Active devices", value: pushStats?.activeDevices },
+              { label: "Campaigns sent", value: pushStats?.campaignsSent },
+              { label: "Inactive devices", value: pushStats?.invalidDevices },
+            ].map((s) => (
+              <div key={s.label} className="rounded-lg border border-border/40 bg-background/40 px-3 py-2">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{s.label}</p>
+                <p className="text-sm font-semibold tabular-nums mt-0.5">{s.value ?? "—"}</p>
+              </div>
+            ))}
           </div>
 
           {pushSubscribers.length > 0 && (
@@ -3367,7 +3456,7 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
               <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                 <Bell className="w-3 h-3" /> Opted-in users ({pushSubscribers.length})
               </p>
-              <div className="rounded-lg border border-border/50 bg-background/40 divide-y divide-border/30 max-h-40 overflow-y-auto">
+              <div className="rounded-lg border border-border/50 bg-background/40 divide-y divide-border/30 max-h-36 overflow-y-auto">
                 {pushSubscribers.map((s) => (
                   <div key={s.userId} className="flex items-center justify-between px-3 py-1.5 text-xs">
                     <span className="truncate text-foreground/80">{s.displayName ?? s.userId}</span>
@@ -3378,47 +3467,62 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
             </div>
           )}
 
-          {pushSubscribers.length === 0 && (pushSubCount?.count ?? 0) === 0 && (
-            <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 text-center">
-              No users have enabled push notifications yet. The bell prompt appears automatically a few seconds after users log in.
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Audience</Label>
+            <Select value={pushAudience} onValueChange={setPushAudience}>
+              <SelectTrigger data-testid="select-push-audience" className="w-full">
+                <SelectValue placeholder="Choose audience" />
+              </SelectTrigger>
+              <SelectContent>
+                {PUSH_AUDIENCES.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>{a.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">
+              Preview: <span className="text-foreground/80 font-medium">{pushAudiencePreview?.users ?? "—"}</span> users ·{" "}
+              <span className="text-foreground/80 font-medium">{pushAudiencePreview?.devices ?? "—"}</span> devices
             </p>
-          )}
+          </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Notification title</Label>
+            <Label className="text-xs text-muted-foreground">Title</Label>
             <Input
               value={pushTitle}
               onChange={(e) => setPushTitle(e.target.value)}
-              placeholder="New feature on Vextorn!"
+              placeholder="🔥 People are online!"
+              maxLength={80}
               data-testid="input-push-title"
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Message body</Label>
+            <Label className="text-xs text-muted-foreground">Message</Label>
             <Textarea
               value={pushBody}
               onChange={(e) => setPushBody(e.target.value)}
-              placeholder="Check out what's new..."
+              placeholder="Join a room and say hello..."
               rows={3}
+              maxLength={240}
               className="resize-none"
               data-testid="input-push-body"
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Click destination URL (optional)</Label>
+            <Label className="text-xs text-muted-foreground">Destination URL</Label>
             <Input
               value={pushUrl}
               onChange={(e) => setPushUrl(e.target.value)}
               placeholder="/"
               data-testid="input-push-url"
             />
+            <p className="text-[10px] text-muted-foreground/60">Prefer relative paths like <code>/</code> or <code>/teachers</code>.</p>
           </div>
 
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <ImageIcon className="w-3.5 h-3.5" /> Notification Image <span className="text-muted-foreground/50 font-normal">(optional)</span>
+              <ImageIcon className="w-3.5 h-3.5" /> Image <span className="text-muted-foreground/50 font-normal">(optional)</span>
             </Label>
             <input
               ref={pushImageInputRef}
@@ -3432,7 +3536,7 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
               }}
             />
             <div className="flex gap-2">
-              <div className="relative flex-1">
+              <div className="relative flex-1 min-w-0">
                 <Input
                   value={pushImageUrl}
                   onChange={(e) => setPushImageUrl(e.target.value)}
@@ -3454,10 +3558,9 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
                 data-testid="button-push-upload-image"
               >
                 {pushImageUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
-                <span className="ml-1.5 text-xs">Upload</span>
+                <span className="ml-1.5 text-xs hidden sm:inline">Upload</span>
               </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground/60">Upload a file, paste from clipboard (Ctrl+V), or enter a URL directly.</p>
             {pushImageUrl.trim() && (
               <div className="relative rounded-lg overflow-hidden border border-emerald-400/20 bg-black/20 max-h-32 group">
                 <img
@@ -3471,6 +3574,7 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
                   type="button"
                   onClick={() => setPushImageUrl("")}
                   className="absolute top-1.5 right-1.5 bg-black/60 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Remove image"
                 >
                   <X className="w-3 h-3 text-white" />
                 </button>
@@ -3478,15 +3582,142 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
             )}
           </div>
 
-          <Button
-            className="w-full bg-emerald-700 hover:bg-emerald-600"
-            onClick={() => webPushMutation.mutate()}
-            disabled={webPushMutation.isPending || !pushTitle.trim() || !pushBody.trim()}
-            data-testid="button-send-web-push"
-          >
-            {webPushMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Smartphone className="w-4 h-4 mr-2" />}
-            {webPushMutation.isPending ? "Sending..." : `Send to ${pushSubCount?.count ?? 0} device${pushSubCount?.count !== 1 ? "s" : ""}`}
-          </Button>
+          {/* Live preview */}
+          <div className="rounded-xl border border-white/10 bg-[#111218] p-3 space-y-2">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Preview</p>
+            <div className="flex gap-3 items-start">
+              <div className="w-9 h-9 rounded-lg bg-emerald-500/20 flex items-center justify-center shrink-0">
+                <BellRing className="w-4 h-4 text-emerald-300" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-white truncate">{pushTitle.trim() || "Notification title"}</p>
+                <p className="text-xs text-white/70 whitespace-pre-wrap break-words">{pushBody.trim() || "Message body appears here."}</p>
+                <p className="text-[10px] text-white/35 mt-1 truncate">Opens {pushUrl.trim() || "/"}</p>
+              </div>
+            </div>
+          </div>
+
+          {lastPushResult && (
+            <div className="rounded-lg border border-border/50 bg-muted/20 p-3 text-xs space-y-1" data-testid="push-last-result">
+              <p className="font-semibold text-foreground/90">Last send report</p>
+              <p>Target users: {lastPushResult.targetUsers ?? "—"} · Devices: {lastPushResult.targetDevices ?? lastPushResult.total}</p>
+              <p>Attempted: {lastPushResult.attempted ?? lastPushResult.total}</p>
+              <p className="text-emerald-300">Accepted by push service: {lastPushResult.accepted ?? lastPushResult.sent}</p>
+              <p className="text-amber-300">Failed: {lastPushResult.failed}</p>
+              <p className="text-rose-300">Invalid subscriptions removed: {lastPushResult.invalidRemoved ?? 0}</p>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 border-emerald-400/30 text-emerald-200"
+              onClick={() => webPushMutation.mutate({ isTest: true })}
+              disabled={webPushMutation.isPending || !pushTitle.trim() || !pushBody.trim()}
+              data-testid="button-push-send-test"
+            >
+              {webPushMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Bell className="w-4 h-4 mr-2" />}
+              Send test to me
+            </Button>
+            <Button
+              type="button"
+              className="flex-1 bg-emerald-700 hover:bg-emerald-600"
+              onClick={() => setPushConfirmOpen(true)}
+              disabled={webPushMutation.isPending || !pushTitle.trim() || !pushBody.trim()}
+              data-testid="button-send-web-push"
+            >
+              <Send className="w-4 h-4 mr-2" />
+              Send notification
+            </Button>
+          </div>
+
+          <Dialog open={pushConfirmOpen} onOpenChange={setPushConfirmOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Confirm push broadcast</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 text-sm">
+                <p className="text-muted-foreground text-xs">
+                  Audience: <span className="text-foreground font-medium">{PUSH_AUDIENCES.find((a) => a.id === pushAudience)?.label}</span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  About <span className="text-foreground font-semibold">{pushAudiencePreview?.users ?? "—"}</span> users
+                  {" "}(<span className="text-foreground font-semibold">{pushAudiencePreview?.devices ?? "—"}</span> devices)
+                </p>
+                <div className="rounded-lg border border-border/50 bg-muted/30 p-3">
+                  <p className="font-semibold">{pushTitle}</p>
+                  <p className="text-muted-foreground text-xs mt-1 whitespace-pre-wrap">{pushBody}</p>
+                  <p className="text-[10px] text-muted-foreground/70 mt-2">→ {pushUrl || "/"}</p>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button type="button" variant="outline" className="flex-1" onClick={() => setPushConfirmOpen(false)}>Cancel</Button>
+                  <Button
+                    type="button"
+                    className="flex-1 bg-emerald-700 hover:bg-emerald-600"
+                    disabled={webPushMutation.isPending}
+                    onClick={() => webPushMutation.mutate({ confirm: true })}
+                    data-testid="button-push-confirm-send"
+                  >
+                    {webPushMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    Send now
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </CardContent>
+      </Card>
+
+      {/* Push Campaign History */}
+      <Card className="bg-card/75 border-emerald-400/15">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <BarChart2 className="w-4 h-4 text-emerald-300" />
+            Push Campaign History
+            <Badge variant="outline" className="ml-auto text-xs">{pushCampaigns.length}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {pushCampaigns.length === 0 ? (
+            <p className="text-center text-muted-foreground text-sm py-8">No push campaigns yet. Send a test first.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs min-w-[640px]">
+                <thead>
+                  <tr className="border-b border-border/50 text-muted-foreground">
+                    <th className="text-left px-4 py-2 font-medium">Title</th>
+                    <th className="text-left px-4 py-2 font-medium">Audience</th>
+                    <th className="text-right px-4 py-2 font-medium">Attempted</th>
+                    <th className="text-right px-4 py-2 font-medium">Accepted</th>
+                    <th className="text-right px-4 py-2 font-medium">Failed</th>
+                    <th className="text-right px-4 py-2 font-medium">Clicks</th>
+                    <th className="text-right px-4 py-2 font-medium">When</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pushCampaigns.map((c) => (
+                    <tr key={c.id} className="border-b border-border/30 hover:bg-muted/20" data-testid={`row-push-campaign-${c.id}`}>
+                      <td className="px-4 py-2.5 max-w-[180px]">
+                        <span className="truncate block font-medium" title={c.title}>
+                          {c.isTest ? <Badge variant="outline" className="mr-1 text-[9px]">TEST</Badge> : null}
+                          {c.title}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5"><Badge variant="outline" className="text-[10px]">{c.audience}</Badge></td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">{c.attempted}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums text-emerald-300">{c.accepted}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums text-amber-300">{c.failed}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">{c.clickCount}</td>
+                      <td className="px-4 py-2.5 text-right text-muted-foreground whitespace-nowrap">
+                        {new Date(c.createdAt).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
 

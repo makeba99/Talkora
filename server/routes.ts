@@ -13,6 +13,7 @@ import fs from "fs";
 import { execFile } from "child_process";
 import nodemailer from "nodemailer";
 import webpush from "web-push";
+import { sendPushCampaign, previewPushAudience } from "./push-service";
 import { externalCache } from "./cache";
 import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, aiTutorRateLimiter, messageRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
 import { setCleanupContext, getCleanupStats, runCleanupNow } from "./cleanup";
@@ -301,7 +302,7 @@ async function notifyFollowersRoomJoin(
         if (now - lastNotified < FOLLOWER_NOTIFY_COOLDOWN_MS) return;
         followerNotifyCooldown.set(cooldownKey, now);
 
-        const subs = await storage.getPushSubscriptionsByUser(followerUserId);
+        const subs = await storage.getActivePushSubscriptionsByUser(followerUserId);
         if (subs.length === 0) return;
 
         await Promise.allSettled(
@@ -312,8 +313,8 @@ async function notifyFollowersRoomJoin(
                 payload,
               );
             } catch (err: any) {
-              if (err.statusCode === 410) {
-                await storage.deletePushSubscription(sub.endpoint).catch(() => {});
+              if (err.statusCode === 410 || err.statusCode === 404 || err.statusCode === 401 || err.statusCode === 403) {
+                await storage.deactivatePushSubscription(sub.endpoint).catch(() => {});
               }
             }
           }),
@@ -339,7 +340,7 @@ async function notifyNewFollowerPush(followerId: string, followedId: string): Pr
     const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
     if (!vapidPublic || !vapidPrivate) return;
 
-    const subs = await storage.getPushSubscriptionsByUser(followedId);
+    const subs = await storage.getActivePushSubscriptionsByUser(followedId);
     if (subs.length === 0) return;
 
     const follower = await storage.getUser(followerId);
@@ -363,7 +364,9 @@ async function notifyNewFollowerPush(followerId: string, followedId: string): Pr
             payload,
           );
         } catch (err: any) {
-          if (err.statusCode === 410) await storage.deletePushSubscription(sub.endpoint).catch(() => {});
+          if (err.statusCode === 410 || err.statusCode === 404 || err.statusCode === 401 || err.statusCode === 403) {
+            await storage.deactivatePushSubscription(sub.endpoint).catch(() => {});
+          }
         }
       }),
     );
@@ -390,7 +393,7 @@ async function notifyDmPush(senderId: string, recipientId: string, senderUser: U
     const blocked = await storage.getDmNotifBlocked(senderId, recipientId);
     if (blocked) return;
 
-    const subs = await storage.getPushSubscriptionsByUser(recipientId);
+    const subs = await storage.getActivePushSubscriptionsByUser(recipientId);
     if (subs.length === 0) return;
 
     dmNotifyCooldown.set(cooldownKey, now);
@@ -414,7 +417,9 @@ async function notifyDmPush(senderId: string, recipientId: string, senderUser: U
         try {
           await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload);
         } catch (err: any) {
-          if (err.statusCode === 410) await storage.deletePushSubscription(sub.endpoint).catch(() => {});
+          if (err.statusCode === 410 || err.statusCode === 404 || err.statusCode === 401 || err.statusCode === 403) {
+            await storage.deactivatePushSubscription(sub.endpoint).catch(() => {});
+          }
         }
       }),
     );
@@ -5944,11 +5949,21 @@ export async function registerRoutes(
   // ── Web Push: subscribe ────────────────────────────────────────────────────
   app.post("/api/push/subscribe", isAuthenticated, async (req: any, res) => {
     try {
-      const { endpoint, p256dh, auth } = req.body;
+      const { endpoint, p256dh, auth, userAgent } = req.body;
       if (!endpoint || !p256dh || !auth) {
         return res.status(400).json({ message: "endpoint, p256dh, and auth are required." });
       }
-      await storage.savePushSubscription((req.user as any).id, { endpoint, p256dh, auth });
+      if (typeof endpoint !== "string" || endpoint.length > 2048) {
+        return res.status(400).json({ message: "Invalid endpoint." });
+      }
+      const userId = (req.user as any).id;
+      await storage.savePushSubscription(userId, {
+        endpoint,
+        p256dh,
+        auth,
+        userAgent: typeof userAgent === "string" ? userAgent.slice(0, 400) : (req.headers["user-agent"] || null),
+      });
+      await storage.touchUserLastSeen(userId).catch(() => {});
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
@@ -5960,8 +5975,29 @@ export async function registerRoutes(
     try {
       const { endpoint } = req.body;
       if (!endpoint) return res.status(400).json({ message: "endpoint is required." });
+      // Only remove if this subscription belongs to the authenticated user
+      const mine = await storage.getPushSubscriptionsByUser((req.user as any).id);
+      const owned = mine.some((s) => s.endpoint === endpoint);
+      if (!owned) {
+        // Still allow client to drop local sub; do not delete another user's row
+        return res.json({ success: true });
+      }
       await storage.deletePushSubscription(endpoint);
       res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // Lightweight click beacon from SW / landing
+  app.post("/api/push/click", async (req, res) => {
+    try {
+      const campaignId = String(req.body?.campaignId || "").slice(0, 36);
+      if (!campaignId) return res.status(400).json({ message: "campaignId required" });
+      const campaign = await storage.getPushCampaign(campaignId);
+      if (!campaign) return res.status(404).json({ message: "Not found" });
+      await storage.incrementPushCampaignClicks(campaignId);
+      res.json({ ok: true });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -6043,12 +6079,43 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/push/stats", isAuthenticated, isSuperAdmin, async (_req, res) => {
+    try {
+      const stats = await storage.getPushStats();
+      res.json(stats);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   app.get("/api/admin/push/subscribers", isAuthenticated, isSuperAdmin, async (_req, res) => {
     try {
       const subscribers = await storage.getPushSubscribersWithUsers();
       res.json(subscribers);
     } catch (err: any) {
       res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/admin/push/campaigns", isAuthenticated, isSuperAdmin, async (_req, res) => {
+    try {
+      const campaigns = await storage.getPushCampaigns(50);
+      res.json(campaigns);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  app.get("/api/admin/push/preview", isAuthenticated, isSuperAdmin, async (req: any, res) => {
+    try {
+      const audience = String(req.query.audience || "all_subscribed") as any;
+      const preview = await previewPushAudience({
+        audience,
+        adminUserId: (req.user as any).id,
+      });
+      res.json(preview);
+    } catch (err: any) {
+      res.status(err.status || 500).json({ message: err.message });
     }
   });
 
@@ -6063,46 +6130,61 @@ export async function registerRoutes(
     }
   });
 
-  // ── Web Push: admin broadcast ─────────────────────────────────────────────
+  // Simple in-memory rate limit for broadcast sends (per admin)
+  const pushSendCooldown = new Map<string, number>();
+
+  // ── Web Push: admin broadcast / test ───────────────────────────────────────
   app.post("/api/admin/push/send", isAuthenticated, isSuperAdmin, async (req: any, res) => {
     try {
-      const { title, body, url, imageUrl: pushImageUrl } = req.body;
+      const adminId = (req.user as any).id;
+      const { title, body, url, imageUrl: pushImageUrl, audience, isTest, confirm } = req.body;
+
       if (!title?.trim() || !body?.trim()) {
         return res.status(400).json({ message: "title and body are required." });
       }
-      const vapidPublic = process.env.VAPID_PUBLIC_KEY;
-      const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
-      if (!vapidPublic || !vapidPrivate) {
-        return res.status(503).json({ message: "VAPID keys not configured. Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY in secrets." });
+
+      const audienceKey = isTest ? "test_self" : String(audience || "all_subscribed");
+      const allowedAudiences = new Set([
+        "all_subscribed", "active_7d",
+        "inactive_1d", "inactive_3d", "inactive_7d", "inactive_14d", "inactive_30d",
+        "vip", "non_vip", "never_joined_room", "test_self",
+      ]);
+      if (!allowedAudiences.has(audienceKey)) {
+        return res.status(400).json({ message: "Invalid audience." });
       }
-      webpush.setVapidDetails("mailto:hello@vextorn.app", vapidPublic, vapidPrivate);
 
-      const subs = await storage.getAllPushSubscriptions();
-      let sent = 0;
-      let failed = 0;
-      const payload = JSON.stringify({ title, body, url: url || "/", image: pushImageUrl?.trim() || undefined });
+      // Require explicit confirm for non-test broadcasts
+      if (!isTest && audienceKey !== "test_self" && confirm !== true) {
+        return res.status(400).json({ message: "Broadcast requires confirm: true." });
+      }
 
-      await Promise.allSettled(
-        subs.map(async (sub) => {
-          try {
-            await webpush.sendNotification(
-              { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-              payload
-            );
-            sent++;
-          } catch (err: any) {
-            failed++;
-            // 410 Gone = subscription expired/removed; clean it up
-            if (err.statusCode === 410) {
-              await storage.deletePushSubscription(sub.endpoint).catch(() => {});
-            }
-          }
-        })
-      );
+      const now = Date.now();
+      const last = pushSendCooldown.get(adminId) || 0;
+      if (!isTest && now - last < 15_000) {
+        return res.status(429).json({ message: "Please wait a few seconds before sending another broadcast." });
+      }
 
-      res.json({ success: true, sent, failed, total: subs.length });
+      const result = await sendPushCampaign({
+        adminUserId: adminId,
+        title,
+        body,
+        url,
+        imageUrl: pushImageUrl,
+        audience: audienceKey as any,
+        isTest: !!isTest,
+      });
+
+      if (!isTest) pushSendCooldown.set(adminId, now);
+
+      res.json({
+        success: true,
+        ...result,
+        // Back-compat aliases used by older UI toast copy
+        sent: result.accepted,
+        total: result.attempted,
+      });
     } catch (err: any) {
-      res.status(500).json({ message: err.message });
+      res.status(err.status || 500).json({ message: err.message });
     }
   });
 

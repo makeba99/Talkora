@@ -66,6 +66,8 @@ import { getAvatarRingClass } from "@/lib/avatar-ring";
 import { ProfileAnimationOverlay } from "@/lib/profile-animations";
 import { FlairBadgeDisplay } from "@/components/profile-dropdown";
 import { ProfileDecoration, ROOM_THEMES, PRESET_BACKGROUNDS, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
+import { densityFromParticipantCount, getMaxDecorationBleedPx } from "@/components/avatar-shell";
+import type { DecorationDensity } from "@/components/vip-avatar-frames";
 import { BadgeFireworksOverlay } from "@/components/badge-fireworks";
 import { NeuParticipantSlider } from "@/components/neu-participant-slider";
 import { UserNotePopover } from "@/components/social-panel";
@@ -680,6 +682,7 @@ function ParticipantCard({
   onWatchMovie,
   roomLevel,
   cardPx = 128,
+  decoDensity = "full" as DecorationDensity,
   hologramVideoUrl,
   avatarGifUrl,
   onSetAvatarGif,
@@ -1172,7 +1175,7 @@ function ParticipantCard({
   }
 
   const avatarContent = (
-    <div className="flex flex-col items-start gap-1 relative">
+    <div className="relative w-full h-full">
       {/* Mood emoji "sticker" — fires when this participant picks an emoji
           from the mood picker. Animation: pop in with a playful bounce, then
           settles above the avatar and gently bobs forever (until cleared).
@@ -1211,12 +1214,12 @@ function ParticipantCard({
         </div>
       )}
       <div
-        className={`relative overflow-hidden bg-muted/20 group border select-none ${
+        className={`relative overflow-hidden bg-muted/20 group border select-none w-full h-full ${
           isSpeaking ? "border-[hsl(var(--neu-orange))]/60 shadow-[0_0_10px_hsl(var(--neu-orange)/0.35)]" : "border-white/10 hover:border-white/25"
-        } transition-all duration-300 ${fillMode ? "w-full h-full max-w-full max-h-full rounded-lg" : "rounded-lg"}`}
+        } transition-all duration-300 ${fillMode ? "max-w-full max-h-full rounded-lg" : "rounded-lg"}`}
         style={fillMode
           ? { flexShrink: 0, maxWidth: Math.max(cardPx, 96), maxHeight: Math.max(cardPx, 96), aspectRatio: "1 / 1", margin: "0 auto" }
-          : { width: cardPx, height: cardPx, flexShrink: 0 }
+          : { flexShrink: 0 }
         }
       >
         {/* Profile card animation overlay — renders behind avatar content */}
@@ -1620,10 +1623,15 @@ function ParticipantCard({
 
   return (
     <div className="flex flex-col items-center gap-0.5 min-w-0 max-w-full">
-      <ProfileDecoration decorationId={(p as any).profileDecoration} size={Math.max(40, cardPx - (cardPx <= 72 ? 2 : 6))}>
-        <div 
-           className={`cursor-pointer ${fillMode ? "w-full h-full flex items-center justify-center" : ""}`}
-           onClick={onProfileClick} 
+      <ProfileDecoration
+        decorationId={(p as any).profileDecoration}
+        size={cardPx}
+        density={decoDensity}
+        soft={decoDensity !== "full"}
+      >
+        <div
+           className={`cursor-pointer w-full h-full ${fillMode ? "flex items-center justify-center" : ""}`}
+           onClick={onProfileClick}
            data-testid={`card-wrapper-${p.id}`}
         >
           {avatarContent}
@@ -16412,18 +16420,21 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           {(() => {
             const visibleCount = participants.filter(p => !foreverBlockedIds.has(p.id)).length;
             const vw = typeof window !== "undefined" ? window.innerWidth : 1280;
+            // Avatar-first sizing: slightly larger heroes; decoration scale shrinks first via density
             let cardPx =
-              visibleCount <= 2 ? 118 :
-              visibleCount <= 4 ? 98 :
-              visibleCount <= 6 ? 84 :
-              visibleCount <= 8 ? 72 :
-              visibleCount <= 12 ? 60 :
-              visibleCount <= 18 ? 52 :
-              44;
-            if (vw < 400) cardPx = Math.min(cardPx, visibleCount <= 2 ? 96 : 72);
-            else if (vw < 640) cardPx = Math.min(cardPx, visibleCount <= 2 ? 104 : 80);
+              visibleCount <= 2 ? 128 :
+              visibleCount <= 4 ? 108 :
+              visibleCount <= 6 ? 92 :
+              visibleCount <= 8 ? 80 :
+              visibleCount <= 12 ? 68 :
+              visibleCount <= 18 ? 56 :
+              48;
+            if (vw < 400) cardPx = Math.min(cardPx, visibleCount <= 2 ? 104 : 76);
+            else if (vw < 640) cardPx = Math.min(cardPx, visibleCount <= 2 ? 112 : 86);
+            const decoDensity = densityFromParticipantCount(visibleCount);
             const gapPx = cardPx <= 60 ? 4 : 6;
-            const decoBleed = Math.round(cardPx * (cardPx <= 60 ? 0.16 : 0.22));
+            // Bleed matches max decoration visual extent (config-driven) + mood emoji headroom
+            const decoBleed = getMaxDecorationBleedPx(cardPx, decoDensity) + (cardPx <= 60 ? 6 : 10);
             const isInOverlayMode = (activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || !!(room as any).hologramVideoUrl || (currentTheme && currentTheme !== "none");
             let gridCols =
               visibleCount === 1 ? 1 :
@@ -16436,14 +16447,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             else if (vw < 768) gridCols = Math.min(gridCols, 4);
           return (
           <div
-            className={isInOverlayMode ? "flex items-end justify-center p-2 pb-4 absolute bottom-0 left-0 right-0 z-20 pt-16 overflow-visible" : "flex-1 min-h-0 p-2 pt-14 overflow-y-auto overflow-x-hidden"}
+            className={isInOverlayMode ? "flex items-end justify-center p-2 pb-4 absolute bottom-0 left-0 right-0 z-20 pt-16 overflow-visible" : "flex-1 min-h-0 p-2 pt-14 overflow-y-auto overflow-x-auto"}
             style={isInOverlayMode ? {} : {
               display: "grid",
               gridTemplateColumns: `repeat(${gridCols}, minmax(0, ${cardPx + decoBleed * 2}px))`,
               justifyContent: "center",
               alignContent: "center",
-              gap: `${gapPx + 2}px ${Math.max(gapPx, decoBleed)}px`,
-              rowGap: gapPx + decoBleed + 10,
+              columnGap: `${Math.max(gapPx, Math.round(decoBleed * 0.85))}px`,
+              rowGap: `${gapPx + decoBleed + 12}px`,
             }}
           >
             <div
@@ -16465,7 +16476,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     className={isInOverlayMode ? "flex flex-col items-center gap-2 group relative" : "relative min-h-0 flex flex-col items-center justify-start"}
                     data-testid={`card-participant-${p.id}`}
                     style={{
-                      ...(isInOverlayMode ? {} : { paddingInline: Math.max(2, Math.round(decoBleed * 0.35)) }),
+                      ...(isInOverlayMode ? {} : { paddingInline: Math.max(4, decoBleed) }),
                       ...(djModeActive && !isRoomOwner ? (() => {
                         const resolvedStyle = djMoveStyle === "auto"
                           ? DJ_AUTO_CYCLE[(djMoveTick + index * 3) % DJ_AUTO_CYCLE.length]
@@ -16906,6 +16917,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         socket?.emit("room:movie-watching", { roomId: room.id, hostId: p.id, watching: true });
                       } : undefined}
                       cardPx={cardPx}
+                      decoDensity={decoDensity}
                       fillMode={false}
                       hologramVideoUrl={null}
                       avatarGifUrl={participantAvatarGifs[p.id] || null}

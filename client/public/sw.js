@@ -1,4 +1,4 @@
-const CACHE_VERSION = "vextorn-v16";
+const CACHE_VERSION = "vextorn-v17";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const ASSET_CACHE  = `${CACHE_VERSION}-assets`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
@@ -185,13 +185,16 @@ self.addEventListener("message", (event) => {
 
 self.addEventListener("push", (event) => {
   if (!event.data) return;
-  const data = event.data.json();
+  let data = {};
+  try { data = event.data.json(); } catch { data = { body: event.data.text() }; }
   const options = {
     body:    data.body || "",
-    icon:    "/vextorn-icon-192.png",
+    icon:    data.icon || "/vextorn-icon-192.png",
     badge:   "/vextorn-icon-192.png",
-    data:    { url: data.url || "/" },
+    data:    { url: data.url || "/", campaignId: data.campaignId || null },
     vibrate: [200, 100, 200],
+    tag:     data.campaignId ? `vxt-push-${data.campaignId}` : undefined,
+    renotify: false,
   };
   if (data.image) options.image = data.image;
   if (data.actions) options.actions = data.actions;
@@ -202,15 +205,49 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || "/";
-  event.waitUntil(
-    self.clients
-      .matchAll({ type: "window", includeUncontrolled: true })
-      .then((clientList) => {
-        for (const client of clientList) {
-          if (client.url === url && "focus" in client) return client.focus();
+  const rawUrl = event.notification.data?.url || "/";
+  const campaignId = event.notification.data?.campaignId || null;
+
+  event.waitUntil((async () => {
+    // Privacy-light click beacon (no PII)
+    if (campaignId) {
+      try {
+        await fetch("/api/push/click", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ campaignId }),
+          credentials: "same-origin",
+          keepalive: true,
+        });
+      } catch { /* ignore */ }
+    }
+
+    const absolute = new URL(rawUrl, self.location.origin).href;
+    const clientList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of clientList) {
+      try {
+        const clientUrl = new URL(client.url);
+        const targetUrl = new URL(absolute);
+        // Focus existing tab on same origin (prefer matching path)
+        if (clientUrl.origin === targetUrl.origin && "focus" in client) {
+          if (clientUrl.pathname === targetUrl.pathname || clientUrl.pathname === "/") {
+            await client.focus();
+            if ("navigate" in client && clientUrl.href !== absolute) {
+              try { await client.navigate(absolute); } catch { /* older browsers */ }
+            }
+            return;
+          }
         }
-        return self.clients.openWindow(url);
-      })
-  );
+      } catch { /* continue */ }
+    }
+    for (const client of clientList) {
+      if ("focus" in client) {
+        await client.focus();
+        if ("navigate" in client) {
+          try { await client.navigate(absolute); return; } catch { /* */ }
+        }
+      }
+    }
+    await self.clients.openWindow(absolute);
+  })());
 });

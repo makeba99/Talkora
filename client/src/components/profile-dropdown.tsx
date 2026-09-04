@@ -1169,11 +1169,11 @@ export function ProfileDropdown({
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Avatar Ring</Label>
                 <div className="flex justify-center mb-3">
-                  <ProfileDecoration decorationId={selectedDecoration} size={64}>
-                    <div className={`rounded-full p-0.5 ${getAvatarRingClass(selectedRing)}`}>
-                      <Avatar className="w-16 h-16">
-                        <AvatarImage src={user?.profileImageUrl || undefined} alt={user?.displayName || user?.firstName || "Your profile"} />
-                        <AvatarFallback className="text-xl bg-primary/10 text-primary">
+                  <ProfileDecoration decorationId={selectedDecoration} size={72} soft={false}>
+                    <div className={`rounded-lg p-0.5 w-full h-full ${getAvatarRingClass(selectedRing)}`}>
+                      <Avatar className="w-full h-full rounded-lg">
+                        <AvatarImage src={user?.profileImageUrl || undefined} alt={user?.displayName || user?.firstName || "Your profile"} className="rounded-lg object-cover" />
+                        <AvatarFallback className="text-xl bg-primary/10 text-primary rounded-lg">
                           {getUserInitials(user)}
                         </AvatarFallback>
                       </Avatar>
@@ -1247,9 +1247,9 @@ export function ProfileDropdown({
                         {deco.id === "none" ? (
                           <span className="neu-deco-tile-none" />
                         ) : (
-                          <span className="neu-deco-tile-preview" style={{ width: 36, height: 36, background: "transparent", boxShadow: "none" }}>
-                            <ProfileDecoration decorationId={deco.id} size={36}>
-                              <span className="block w-5 h-5 rounded-full bg-background/80 ring-1 ring-border" />
+                          <span className="neu-deco-tile-preview" style={{ width: 40, height: 40, background: "transparent", boxShadow: "none" }}>
+                            <ProfileDecoration decorationId={deco.id} size={40} density="reduced" soft>
+                              <span className="block w-full h-full rounded-lg bg-background/80 ring-1 ring-border" />
                             </ProfileDecoration>
                           </span>
                         )}

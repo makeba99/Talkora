@@ -43,6 +43,7 @@ export const users = pgTable("users", {
   followVisibility: varchar("follow_visibility", { length: 20 }).notNull().default("everyone"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  lastSeenAt: timestamp("last_seen_at"),
 });
 
 export type UpsertUser = typeof users.$inferInsert;

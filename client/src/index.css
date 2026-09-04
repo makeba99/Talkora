@@ -11158,6 +11158,69 @@ html.neomorphic-light .pinned-socials-link {
   overflow: visible !important;
   isolation: isolate;
 }
+
+/* ── AvatarShell: avatar owns layout; decoration is an absolute layer ── */
+.avatar-shell {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+  overflow: visible;
+  isolation: isolate;
+  container-type: size;
+  container-name: avatar-shell;
+}
+.avatar-shell__media {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+.avatar-shell__media > * {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+}
+.avatar-shell__deco {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  overflow: visible;
+}
+.avatar-shell__status {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+}
+.avatar-shell__badge {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+.avatar-frame-overlay {
+  max-width: none;
+  max-height: none;
+}
+/* Soften decoration so the photo stays primary */
+.deco-wrap--soft .avatar-shell__deco {
+  opacity: 0.72;
+  filter: saturate(0.85) contrast(0.96);
+}
+/* Dense rooms: prefer transform/opacity only; respect reduced motion */
+.avatar-shell--lite .avatar-frame-overlay {
+  opacity: 0.65;
+  filter: saturate(0.75);
+}
+@media (prefers-reduced-motion: reduce) {
+  .avatar-shell .avatar-frame-overlay {
+    animation: none !important;
+  }
+}
 .chat-color-none-dot::before {
   content: "";
   position: absolute;
@@ -11328,10 +11391,18 @@ html.boost-mode .glass-panel {
 @keyframes dec-particle-orbit { from{transform:rotate(var(--a)) translateX(var(--r)) rotate(calc(-1 * var(--a)));} to{transform:rotate(calc(var(--a) + 360deg)) translateX(var(--r)) rotate(calc(-1 * (var(--a) + 360deg)));} }
 @keyframes dec-breath { 0%,100% { opacity:0.55; } 50% { opacity:1; } }
 
-/* Discord-like: soften busy particle/legendary frames so the avatar stays readable */
-.deco-wrap--soft > *:not(:last-child) {
-  opacity: 0.58;
-  filter: saturate(0.8) contrast(0.95);
+/* Discord-like: soften busy frames so the avatar stays readable.
+   Target only the decoration layer — never the avatar media. */
+.deco-wrap--soft > .avatar-shell__deco,
+.deco-wrap--soft.avatar-shell .avatar-shell__deco {
+  opacity: 0.72;
+  filter: saturate(0.85) contrast(0.96);
+}
+/* Legacy: frame components rendered as prior siblings of avatar children */
+.deco-wrap--soft > img.avatar-frame-overlay,
+.deco-wrap--soft > [data-testid="avatar-frame-overlay"] {
+  opacity: 0.72;
+  filter: saturate(0.85) contrast(0.96);
 }
 @keyframes dec-sentinel-expand {
   0% { transform: scale(1); opacity: 0.9; }

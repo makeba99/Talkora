@@ -22,8 +22,8 @@ Use the table below — copy the values from your Replit Secrets panel for the s
 | `REPL_ID` | Replit → your Repl → URL (the ID after `/repl/`) or Secrets tab |
 | `REPLIT_DOMAINS` | Your Railway domain e.g. `vextorn.up.railway.app` |
 | `CALLBACK_URL` | `https://vextorn.up.railway.app/api/auth/callback` |
-| `VAPID_PUBLIC_KEY` | Already in `.env.railway` — copy the value shown |
-| `VAPID_PRIVATE_KEY` | From your Replit Secrets panel |
+| `VAPID_PUBLIC_KEY` | Optional — if unset, auto-generated & stored in `app_settings`. For multi-instance, set the same keys on every replica (`npx web-push generate-vapid-keys`) |
+| `VAPID_PRIVATE_KEY` | Optional — pair with `VAPID_PUBLIC_KEY`; never expose to the client |
 | `SMTP_USER` | `vextornweb@gmail.com` |
 | `SMTP_PASS` | From your Replit Secrets panel |
 

@@ -550,12 +550,43 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   endpoint: text("endpoint").notNull(),
   p256dh: text("p256dh").notNull(),
   auth: text("auth").notNull(),
+  userAgent: text("user_agent"),
+  isActive: boolean("is_active").notNull().default(true),
+  failureCount: integer("failure_count").notNull().default(0),
+  lastSeenAt: timestamp("last_seen_at").notNull().defaultNow(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => ({
   psUserIdx: index("push_subscriptions_user_id_idx").on(table.userId),
   psEndpointIdx: uniqueIndex("push_subscriptions_endpoint_idx").on(table.endpoint),
+  psActiveIdx: index("push_subscriptions_active_idx").on(table.isActive),
 }));
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+
+export const pushCampaigns = pgTable("push_campaigns", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  adminId: varchar("admin_id", { length: 36 }).notNull(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  destinationUrl: text("destination_url").notNull().default("/"),
+  imageUrl: text("image_url"),
+  audience: varchar("audience", { length: 40 }).notNull(),
+  inactiveDays: integer("inactive_days"),
+  targetUsers: integer("target_users").notNull().default(0),
+  targetDevices: integer("target_devices").notNull().default(0),
+  attempted: integer("attempted").notNull().default(0),
+  accepted: integer("accepted").notNull().default(0),
+  failed: integer("failed").notNull().default(0),
+  invalidRemoved: integer("invalid_removed").notNull().default(0),
+  clickCount: integer("click_count").notNull().default(0),
+  isTest: boolean("is_test").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  pcAdminIdx: index("push_campaigns_admin_id_idx").on(table.adminId),
+  pcCreatedAtIdx: index("push_campaigns_created_at_idx").on(table.createdAt),
+}));
+export type PushCampaign = typeof pushCampaigns.$inferSelect;
+export type InsertPushCampaign = typeof pushCampaigns.$inferInsert;
 
 export const themeVisibility = pgTable("theme_visibility", {
   themeId: varchar("theme_id", { length: 50 }).primaryKey(),

@@ -61,11 +61,16 @@ export function usePushSubscription() {
         endpoint: json.endpoint,
         p256dh: (json.keys as any)?.p256dh,
         auth: (json.keys as any)?.auth,
+        userAgent: navigator.userAgent,
       });
       return sub;
     },
     onSuccess: () => setState("subscribed"),
-    onError: async () => {
+    onError: async (err: any) => {
+      if (typeof Notification !== "undefined" && Notification.permission === "denied") {
+        setState("denied");
+        return;
+      }
       await checkState();
     },
   });
@@ -75,7 +80,11 @@ export function usePushSubscription() {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
       if (sub) {
-        await apiRequest("DELETE", "/api/push/unsubscribe", { endpoint: sub.endpoint });
+        try {
+          await apiRequest("DELETE", "/api/push/unsubscribe", { endpoint: sub.endpoint });
+        } catch {
+          // still drop local subscription
+        }
         await sub.unsubscribe();
       }
     },
@@ -84,9 +93,10 @@ export function usePushSubscription() {
 
   return {
     state,
-    subscribe: () => subscribeMutation.mutate(),
-    unsubscribe: () => unsubscribeMutation.mutate(),
+    subscribe: () => subscribeMutation.mutateAsync(),
+    unsubscribe: () => unsubscribeMutation.mutateAsync(),
     isLoading: subscribeMutation.isPending || unsubscribeMutation.isPending,
-    error: subscribeMutation.error,
+    error: subscribeMutation.error as Error | null,
+    refresh: checkState,
   };
 }

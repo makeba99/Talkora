@@ -65,6 +65,9 @@ import {
   notificationMutes,
   pushSubscriptions,
   type PushSubscription,
+  pushCampaigns,
+  type PushCampaign,
+  type InsertPushCampaign,
   transactions,
   type Transaction,
   type InsertTransaction,
@@ -260,10 +263,15 @@ export interface IStorage {
   updateMessageRequestStatus(id: string, status: "accepted" | "declined"): Promise<MessageRequest | undefined>;
   deleteMessageRequest(fromId: string, toId: string): Promise<void>;
 
-  savePushSubscription(userId: string, sub: { endpoint: string; p256dh: string; auth: string }): Promise<void>;
+  savePushSubscription(userId: string, sub: { endpoint: string; p256dh: string; auth: string; userAgent?: string | null }): Promise<void>;
   deletePushSubscription(endpoint: string): Promise<void>;
+  deactivatePushSubscription(endpoint: string, hardDelete?: boolean): Promise<void>;
+  touchPushSubscriptionSuccess(endpoint: string): Promise<void>;
+  incrementPushSubscriptionFailure(endpoint: string): Promise<void>;
   getPushSubscriptionsByUser(userId: string): Promise<PushSubscription[]>;
+  getActivePushSubscriptionsByUser(userId: string): Promise<PushSubscription[]>;
   getAllPushSubscriptions(): Promise<PushSubscription[]>;
+  getActivePushSubscriptions(): Promise<PushSubscription[]>;
   getRoomJoinNotifyPrefs(userIds: string[]): Promise<Record<string, string>>;
   setRoomJoinNotifyPref(userId: string, pref: string): Promise<void>;
   getAllNotifPrefs(muterId: string): Promise<Record<string, { notifyRoomJoin: boolean; notifyDm: boolean }>>;
@@ -273,7 +281,15 @@ export interface IStorage {
   getFollowerNotifPrefs(targetId: string, followerIds: string[]): Promise<Record<string, { notifyRoomJoin: boolean; notifyDm: boolean }>>;
   getDmNotifBlocked(senderId: string, recipientId: string): Promise<boolean>;
   getPushSubscriberCount(): Promise<number>;
+  getPushStats(): Promise<{ subscribedUsers: number; activeDevices: number; campaignsSent: number; invalidDevices: number }>;
   getPushSubscribersWithUsers(): Promise<Array<{ userId: string; displayName: string | null; email: string | null; deviceCount: number }>>;
+  getUserIdsWhoJoinedRooms(userIds: string[]): Promise<Set<string>>;
+  touchUserLastSeen(userId: string): Promise<void>;
+  createPushCampaign(data: InsertPushCampaign): Promise<PushCampaign>;
+  updatePushCampaignStats(id: string, stats: { attempted: number; accepted: number; failed: number; invalidRemoved: number }): Promise<void>;
+  incrementPushCampaignClicks(id: string): Promise<void>;
+  getPushCampaigns(limit?: number): Promise<PushCampaign[]>;
+  getPushCampaign(id: string): Promise<PushCampaign | undefined>;
 
   createTransaction(data: InsertTransaction): Promise<Transaction>;
   getPaypalPaymentByTxnId(txnId: string): Promise<PaypalPayment | undefined>;
@@ -1834,18 +1850,82 @@ export class DatabaseStorage implements IStorage {
     await db.execute(sql`UPDATE email_campaigns SET click_count = click_count + 1 WHERE id = ${id}`);
   }
 
-  async savePushSubscription(userId: string, sub: { endpoint: string; p256dh: string; auth: string }): Promise<void> {
+  async savePushSubscription(userId: string, sub: { endpoint: string; p256dh: string; auth: string; userAgent?: string | null }): Promise<void> {
+    const now = new Date();
     await db.insert(pushSubscriptions)
-      .values({ userId, endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth })
-      .onConflictDoNothing();
+      .values({
+        userId,
+        endpoint: sub.endpoint,
+        p256dh: sub.p256dh,
+        auth: sub.auth,
+        userAgent: sub.userAgent ?? null,
+        isActive: true,
+        failureCount: 0,
+        lastSeenAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: pushSubscriptions.endpoint,
+        set: {
+          userId,
+          p256dh: sub.p256dh,
+          auth: sub.auth,
+          userAgent: sub.userAgent ?? null,
+          isActive: true,
+          failureCount: 0,
+          lastSeenAt: now,
+          updatedAt: now,
+        },
+      });
   }
 
   async deletePushSubscription(endpoint: string): Promise<void> {
     await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
   }
 
+  async deactivatePushSubscription(endpoint: string, hardDelete = false): Promise<void> {
+    if (hardDelete) {
+      await this.deletePushSubscription(endpoint);
+      return;
+    }
+    await db.update(pushSubscriptions)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(pushSubscriptions.endpoint, endpoint));
+  }
+
+  async touchPushSubscriptionSuccess(endpoint: string): Promise<void> {
+    await db.update(pushSubscriptions)
+      .set({ lastSeenAt: new Date(), failureCount: 0, isActive: true, updatedAt: new Date() })
+      .where(eq(pushSubscriptions.endpoint, endpoint));
+  }
+
+  async incrementPushSubscriptionFailure(endpoint: string): Promise<void> {
+    await db.execute(sql`
+      UPDATE push_subscriptions
+      SET failure_count = failure_count + 1,
+          updated_at = now(),
+          is_active = CASE WHEN failure_count + 1 >= 5 THEN false ELSE is_active END
+      WHERE endpoint = ${endpoint}
+    `);
+  }
+
   async getPushSubscriptionsByUser(userId: string): Promise<PushSubscription[]> {
     return db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
+  }
+
+  async getActivePushSubscriptionsByUser(userId: string): Promise<PushSubscription[]> {
+    return db.select().from(pushSubscriptions).where(and(
+      eq(pushSubscriptions.userId, userId),
+      eq(pushSubscriptions.isActive, true),
+    ));
+  }
+
+  async getAllPushSubscriptions(): Promise<PushSubscription[]> {
+    return db.select().from(pushSubscriptions);
+  }
+
+  async getActivePushSubscriptions(): Promise<PushSubscription[]> {
+    return db.select().from(pushSubscriptions).where(eq(pushSubscriptions.isActive, true));
   }
 
   async getRoomJoinNotifyPrefs(userIds: string[]): Promise<Record<string, string>> {
@@ -1918,13 +1998,26 @@ export class DatabaseStorage implements IStorage {
     return !row.notifyDm;
   }
 
-  async getAllPushSubscriptions(): Promise<PushSubscription[]> {
-    return db.select().from(pushSubscriptions);
+  async getPushSubscriberCount(): Promise<number> {
+    const res = await db.execute(sql`SELECT COUNT(DISTINCT user_id)::int AS cnt FROM push_subscriptions WHERE is_active = true`);
+    return Number((res.rows[0] as any)?.cnt ?? 0);
   }
 
-  async getPushSubscriberCount(): Promise<number> {
-    const res = await db.execute(sql`SELECT COUNT(*)::int AS cnt FROM push_subscriptions`);
-    return Number((res.rows[0] as any)?.cnt ?? 0);
+  async getPushStats(): Promise<{ subscribedUsers: number; activeDevices: number; campaignsSent: number; invalidDevices: number }> {
+    const res = await db.execute(sql`
+      SELECT
+        (SELECT COUNT(DISTINCT user_id)::int FROM push_subscriptions WHERE is_active = true) AS subscribed_users,
+        (SELECT COUNT(*)::int FROM push_subscriptions WHERE is_active = true) AS active_devices,
+        (SELECT COUNT(*)::int FROM push_campaigns WHERE is_test = false) AS campaigns_sent,
+        (SELECT COUNT(*)::int FROM push_subscriptions WHERE is_active = false) AS invalid_devices
+    `);
+    const row = res.rows[0] as any;
+    return {
+      subscribedUsers: Number(row?.subscribed_users ?? 0),
+      activeDevices: Number(row?.active_devices ?? 0),
+      campaignsSent: Number(row?.campaigns_sent ?? 0),
+      invalidDevices: Number(row?.invalid_devices ?? 0),
+    };
   }
 
   async getPushSubscribersWithUsers(): Promise<Array<{ userId: string; displayName: string | null; email: string | null; deviceCount: number }>> {
@@ -1935,6 +2028,7 @@ export class DatabaseStorage implements IStorage {
              COUNT(*)::int AS device_count
       FROM push_subscriptions ps
       LEFT JOIN users u ON u.id = ps.user_id
+      WHERE ps.is_active = true
       GROUP BY ps.user_id, u.display_name, u.first_name, u.email
       ORDER BY device_count DESC, display_name ASC
     `);
@@ -1944,6 +2038,48 @@ export class DatabaseStorage implements IStorage {
       email: r.email ?? null,
       deviceCount: Number(r.device_count),
     }));
+  }
+
+  async getUserIdsWhoJoinedRooms(userIds: string[]): Promise<Set<string>> {
+    if (userIds.length === 0) return new Set();
+    const rows = await db
+      .selectDistinct({ userId: roomJoins.userId })
+      .from(roomJoins)
+      .where(inArray(roomJoins.userId, userIds));
+    return new Set(rows.map((r) => r.userId));
+  }
+
+  async touchUserLastSeen(userId: string): Promise<void> {
+    await db.execute(sql`UPDATE users SET last_seen_at = now() WHERE id = ${userId}`);
+  }
+
+  async createPushCampaign(data: InsertPushCampaign): Promise<PushCampaign> {
+    const [row] = await db.insert(pushCampaigns).values(data).returning();
+    return row;
+  }
+
+  async updatePushCampaignStats(id: string, stats: { attempted: number; accepted: number; failed: number; invalidRemoved: number }): Promise<void> {
+    await db.update(pushCampaigns)
+      .set({
+        attempted: stats.attempted,
+        accepted: stats.accepted,
+        failed: stats.failed,
+        invalidRemoved: stats.invalidRemoved,
+      })
+      .where(eq(pushCampaigns.id, id));
+  }
+
+  async incrementPushCampaignClicks(id: string): Promise<void> {
+    await db.execute(sql`UPDATE push_campaigns SET click_count = click_count + 1 WHERE id = ${id}`);
+  }
+
+  async getPushCampaigns(limit = 50): Promise<PushCampaign[]> {
+    return db.select().from(pushCampaigns).orderBy(desc(pushCampaigns.createdAt)).limit(limit);
+  }
+
+  async getPushCampaign(id: string): Promise<PushCampaign | undefined> {
+    const [row] = await db.select().from(pushCampaigns).where(eq(pushCampaigns.id, id));
+    return row;
   }
 
   async getPaypalPaymentByTxnId(txnId: string): Promise<PaypalPayment | undefined> {

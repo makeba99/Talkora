@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  SleepingCatFrame,
-  DragonCoilFrame,
-  FoxSpiritFrame,
-  SakuraOrbitFrame,
-  EmberFlameFrame,
-  LunaButterfliesFrame,
+  VIP_OVERLAY_FRAMES,
+  type VipOverlayId,
+  type DecorationDensity,
 } from "@/components/vip-avatar-frames";
+import { AvatarShell } from "@/components/avatar-shell";
 
 /**
  * Premium character decorations — Free4Talk / Discord Nitro overlay model.
@@ -1656,34 +1654,44 @@ function InfernoSkullFrame({ size }: { size: number }) {
 
 interface ProfileDecorationProps {
   decorationId: string | null | undefined;
+  /** Avatar shell size in px — decoration does not expand this footprint. */
   size?: number;
+  /** Density budget for rooms with many users. */
+  density?: DecorationDensity;
+  /** Soften decoration so the avatar stays the hero. */
+  soft?: boolean;
+  className?: string;
   children: React.ReactNode;
 }
 
-export function ProfileDecoration({ decorationId, size = 56, children }: ProfileDecorationProps) {
+/**
+ * Shared decoration renderer for room, lobby, and profile settings.
+ * Uses AvatarShell so layout size is always driven by the avatar, not the frame.
+ */
+export function ProfileDecoration({
+  decorationId,
+  size = 56,
+  density,
+  soft,
+  className,
+  children,
+}: ProfileDecorationProps) {
   const id = resolveDecorationId(decorationId);
-  if (!id || id === "none") return <>{children}</>;
+  const frameId =
+    id && id !== "none" && id in VIP_OVERLAY_FRAMES
+      ? (id as VipOverlayId)
+      : null;
 
   return (
-    <div
-      style={{
-        position: "relative",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        overflow: "visible",
-      }}
-      className="deco-wrap"
-      data-decoration={id}
+    <AvatarShell
+      size={size}
+      frameId={frameId}
+      density={density}
+      soft={soft}
+      className={className}
     >
-      {id === "sleeping-cat" && <SleepingCatFrame size={size} />}
-      {id === "dragon-coil" && <DragonCoilFrame size={size} />}
-      {id === "fox-spirit" && <FoxSpiritFrame size={size} />}
-      {id === "sakura-orbit" && <SakuraOrbitFrame size={size} />}
-      {id === "ember-flame" && <EmberFlameFrame size={size} />}
-      {id === "luna-butterflies" && <LunaButterfliesFrame size={size} />}
       {children}
-    </div>
+    </AvatarShell>
   );
 }
 

@@ -25,6 +25,8 @@ export function registerAuthRoutes(app: Express): void {
       if (user && user.email === SUPER_ADMIN_EMAIL && user.role !== "superadmin") {
         user = await authStorage.updateUser(userId, { role: "superadmin" }) ?? user;
       }
+      // Fire-and-forget activity stamp for re-engagement targeting
+      void authStorage.updateUser(userId, { lastSeenAt: new Date() } as any).catch(() => {});
       return res.json(user ?? null);
     } catch (error) {
       console.error("Error fetching user:", error);
