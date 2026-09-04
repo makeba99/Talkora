@@ -27,7 +27,8 @@ import {
   Pin, Languages, Headphones, ListMusic, Captions, AlignJustify,
   Bookmark, BookmarkCheck
 } from "lucide-react";
-import { SiInstagram, SiFacebook, SiLinkedin } from "react-icons/si";
+import { SiInstagram, SiFacebook } from "react-icons/si";
+import { FaLinkedin } from "react-icons/fa6";
 import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -860,7 +861,7 @@ function ParticipantCard({
                     )}
                     {p.linkedinUrl && (
                       <a href={p.linkedinUrl.startsWith("http") ? p.linkedinUrl : `https://${p.linkedinUrl}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-500 transition-colors" title="LinkedIn">
-                        <SiLinkedin className="w-3.5 h-3.5" />
+                        <FaLinkedin className="w-3.5 h-3.5" />
                       </a>
                     )}
                     {p.facebookUrl && (
