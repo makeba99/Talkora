@@ -10,13 +10,12 @@
       <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
-  <!-- Rounded-square rim matching room avatar tiles -->
-  <rect x="36" y="36" width="128" height="128" rx="22" ry="22" stroke="#fbbf24" stroke-width="3" opacity="0.7" filter="url(#soft)">
+  <!-- Rim hugs the portrait edge so the cat sits around the card, not inside it -->
+  <rect x="14" y="14" width="172" height="172" rx="38" ry="38" stroke="#fbbf24" stroke-width="3" opacity="0.75" filter="url(#soft)">
     <animate attributeName="opacity" values="0.45;0.85;0.45" dur="2.8s" repeatCount="indefinite"/>
   </rect>
-  <rect x="42" y="42" width="116" height="116" rx="18" ry="18" stroke="#fde68a" stroke-width="1.2" opacity="0.35"/>
-  <!-- Sleeping cat on top edge -->
-  <g transform="translate(100,28)">
+  <!-- Sleeping cat perched on the top edge -->
+  <g transform="translate(100,10)">
     <ellipse cx="0" cy="10" rx="32" ry="16" fill="url(#fur)"/>
     <ellipse cx="-20" cy="2" rx="8" ry="11" fill="#fbbf24" transform="rotate(-16)"/>
     <ellipse cx="20" cy="2" rx="8" ry="11" fill="#fbbf24" transform="rotate(16)"/>

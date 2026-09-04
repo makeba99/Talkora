@@ -37,12 +37,12 @@ export type DecorationLayoutConfig = {
  * slightly higher scale; ring-only assets stay tighter so the avatar stays hero.
  */
 export const DECORATION_LAYOUT: Record<VipOverlayId, DecorationLayoutConfig> = {
-  "sleeping-cat": { scale: 1.18, offsetX: 0, offsetY: -0.02 },
-  "dragon-coil": { scale: 1.16, offsetX: 0.015, offsetY: 0 },
-  "fox-spirit": { scale: 1.17, offsetX: 0, offsetY: -0.015 },
-  "sakura-orbit": { scale: 1.12, offsetX: 0, offsetY: 0 },
-  "ember-flame": { scale: 1.13, offsetX: 0, offsetY: 0.01 },
-  "luna-butterflies": { scale: 1.15, offsetX: 0, offsetY: 0 },
+  "sleeping-cat": { scale: 1.24, offsetX: 0, offsetY: -0.05 },
+  "dragon-coil": { scale: 1.22, offsetX: 0.02, offsetY: 0 },
+  "fox-spirit": { scale: 1.22, offsetX: 0, offsetY: -0.04 },
+  "sakura-orbit": { scale: 1.2, offsetX: 0, offsetY: 0 },
+  "ember-flame": { scale: 1.2, offsetX: 0, offsetY: 0.02 },
+  "luna-butterflies": { scale: 1.22, offsetX: 0, offsetY: 0 },
 };
 
 const DENSITY_SCALE: Record<DecorationDensity, number> = {
@@ -61,9 +61,9 @@ export function getDecorationVisualScale(
   id: VipOverlayId,
   density: DecorationDensity = "full",
 ): number {
-  const base = DECORATION_LAYOUT[id]?.scale ?? 1.12;
-  // Cap so decorations never approach 1.6× (old padRatio bug)
-  return Math.min(1.22, base * DENSITY_SCALE[density]);
+  const base = DECORATION_LAYOUT[id]?.scale ?? 1.16;
+  // Keep frames around the portrait — never large enough to cover the photo.
+  return Math.min(1.28, base * DENSITY_SCALE[density]);
 }
 
 /** Half of the extra visual size — use for grid bleed / gap. */

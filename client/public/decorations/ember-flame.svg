@@ -15,41 +15,41 @@
       <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
-  <rect x="36" y="36" width="128" height="128" rx="22" ry="22" stroke="url(#fireRim)" stroke-width="3.2" filter="url(#glow)">
+  <rect x="14" y="14" width="172" height="172" rx="38" ry="38" stroke="url(#fireRim)" stroke-width="3.2" filter="url(#glow)">
     <animate attributeName="opacity" values="0.6;1;0.6" dur="1.4s" repeatCount="indefinite"/>
   </rect>
   <g transform="translate(100,100)">
-    <g transform="rotate(-30) translate(0,-66)">
+    <g transform="rotate(-30) translate(0,-88)">
       <path d="M0,8 Q-6,-2 0,-14 Q6,-2 0,8 Z" fill="url(#flame)" opacity="0.95">
         <animateTransform attributeName="transform" type="scale" values="1,1;1.08,1.15;1,1" dur="0.7s" repeatCount="indefinite"/>
       </path>
     </g>
-    <g transform="rotate(0) translate(0,-68)">
+    <g transform="rotate(0) translate(0,-90)">
       <path d="M0,10 Q-7,0 0,-18 Q7,0 0,10 Z" fill="url(#flame)">
         <animateTransform attributeName="transform" type="scale" values="1,1;1.1,1.2;1,1" dur="0.65s" begin="0.1s" repeatCount="indefinite"/>
       </path>
     </g>
-    <g transform="rotate(30) translate(0,-66)">
+    <g transform="rotate(30) translate(0,-88)">
       <path d="M0,8 Q-6,-2 0,-14 Q6,-2 0,8 Z" fill="url(#flame)" opacity="0.95">
         <animateTransform attributeName="transform" type="scale" values="1,1;1.08,1.15;1,1" dur="0.72s" begin="0.15s" repeatCount="indefinite"/>
       </path>
     </g>
-    <g transform="rotate(90) translate(0,-64)">
+    <g transform="rotate(90) translate(0,-86)">
       <path d="M0,6 Q-5,0 0,-10 Q5,0 0,6 Z" fill="#fb923c" opacity="0.85">
         <animateTransform attributeName="transform" type="scale" values="1,1;1.12,1.18;1,1" dur="0.68s" begin="0.2s" repeatCount="indefinite"/>
       </path>
     </g>
-    <g transform="rotate(150) translate(0,-64)">
+    <g transform="rotate(150) translate(0,-86)">
       <path d="M0,7 Q-5.5,-1 0,-12 Q5.5,-1 0,7 Z" fill="#f97316" opacity="0.9">
         <animateTransform attributeName="transform" type="scale" values="1,1;1.1,1.16;1,1" dur="0.7s" begin="0.05s" repeatCount="indefinite"/>
       </path>
     </g>
-    <g transform="rotate(210) translate(0,-64)">
+    <g transform="rotate(210) translate(0,-86)">
       <path d="M0,7 Q-5.5,-1 0,-12 Q5.5,-1 0,7 Z" fill="#ef4444" opacity="0.88">
         <animateTransform attributeName="transform" type="scale" values="1,1;1.08,1.14;1,1" dur="0.66s" begin="0.25s" repeatCount="indefinite"/>
       </path>
     </g>
-    <g transform="rotate(270) translate(0,-64)">
+    <g transform="rotate(270) translate(0,-86)">
       <path d="M0,6 Q-5,0 0,-11 Q5,0 0,6 Z" fill="#fb923c" opacity="0.82">
         <animateTransform attributeName="transform" type="scale" values="1,1;1.1,1.15;1,1" dur="0.7s" begin="0.12s" repeatCount="indefinite"/>
       </path>

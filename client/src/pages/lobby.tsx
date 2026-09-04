@@ -1004,6 +1004,8 @@ export default function Lobby() {
       hologramVideoUrl?: string | null;
       titleColor?: string | null;
       titleStyle?: string | null;
+      lobbyProfileStyle?: string | null;
+      lobbyProfileSize?: string | null;
       talkPermission?: "everyone" | "co_owners" | "owner_only" | "muted";
     }) => {
       const res = await apiRequest("POST", "/api/rooms", {

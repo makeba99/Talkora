@@ -46,7 +46,7 @@ import {
   type VoicePresetId,
 } from "@/lib/voice-processor";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
-import { LANGUAGES, LEVELS } from "@shared/constants";
+import { LANGUAGES, LEVELS, DEFAULT_LOBBY_PROFILE_STYLE, DEFAULT_LOBBY_PROFILE_SIZE, type LobbyProfileStyle, type LobbyProfileSize } from "@shared/constants";
 import { DmDialog } from "@/components/dm-dialog";
 import { ReportDialog } from "@/components/report-dialog";
 import { RoomOnboardingTour } from "@/components/room-onboarding-tour";
@@ -67,6 +67,7 @@ import { ProfileAnimationOverlay } from "@/lib/profile-animations";
 import { FlairBadgeDisplay } from "@/components/profile-dropdown";
 import { ProfileDecoration, ROOM_THEMES, PRESET_BACKGROUNDS, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
 import { densityFromParticipantCount, getMaxDecorationBleedPx } from "@/components/avatar-shell";
+import { LobbyProfilePicker } from "@/components/lobby-profile-picker";
 import type { DecorationDensity } from "@/components/vip-avatar-frames";
 import { BadgeFireworksOverlay } from "@/components/badge-fireworks";
 import { NeuParticipantSlider } from "@/components/neu-participant-slider";
@@ -1153,7 +1154,7 @@ function ParticipantCard({
   if (isBlocked) {
     return (
       <div className="flex flex-col items-center gap-1">
-        <div className="relative rounded-md overflow-hidden bg-muted/30 border-[3px] border-transparent select-none opacity-70" style={{ width: cardPx, height: cardPx, flexShrink: 0 }}>
+        <div className="relative rounded-[22%] overflow-hidden bg-muted/30 border-[3px] border-transparent select-none opacity-70" style={{ width: cardPx, height: cardPx, flexShrink: 0 }}>
           <div className="w-full h-full flex flex-col items-center justify-center bg-muted/60 gap-2">
             <Ban className="w-8 h-8 text-muted-foreground/60" />
             <button
@@ -1175,7 +1176,7 @@ function ParticipantCard({
   }
 
   const avatarContent = (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full overflow-visible">
       {/* Mood emoji "sticker" — fires when this participant picks an emoji
           from the mood picker. Animation: pop in with a playful bounce, then
           settles above the avatar and gently bobs forever (until cleared).
@@ -1213,20 +1214,19 @@ function ParticipantCard({
           )}
         </div>
       )}
+      <ProfileAnimationOverlay
+        animationId={(p as any).profileAnimation}
+        isHost={isRoomOwner}
+      />
       <div
         className={`relative overflow-hidden bg-muted/20 group border select-none w-full h-full ${
-          isSpeaking ? "border-[hsl(var(--neu-orange))]/60 shadow-[0_0_10px_hsl(var(--neu-orange)/0.35)]" : "border-white/10 hover:border-white/25"
-        } transition-all duration-300 ${fillMode ? "max-w-full max-h-full rounded-lg" : "rounded-lg"}`}
+          isSpeaking ? "border-[hsl(var(--neu-orange))]/60 shadow-[0_0_14px_hsl(var(--neu-orange)/0.4)]" : "border-white/10 hover:border-white/25"
+        } transition-all duration-300 ${fillMode ? "max-w-full max-h-full rounded-2xl" : "rounded-[22%]"}`}
         style={fillMode
           ? { flexShrink: 0, maxWidth: Math.max(cardPx, 96), maxHeight: Math.max(cardPx, 96), aspectRatio: "1 / 1", margin: "0 auto" }
           : { flexShrink: 0 }
         }
       >
-        {/* Profile card animation overlay — renders behind avatar content */}
-        <ProfileAnimationOverlay
-          animationId={(p as any).profileAnimation}
-          isHost={isRoomOwner}
-        />
         {hasActiveYoutube && youtubeVideoId ? (
           <>
             <img
@@ -1628,6 +1628,7 @@ function ParticipantCard({
         size={cardPx}
         density={decoDensity}
         soft={decoDensity !== "full"}
+        shape="rounded"
       >
         <div
            className={`cursor-pointer w-full h-full ${fillMode ? "flex items-center justify-center" : ""}`}
@@ -2579,6 +2580,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     return "gif";
   });
   const [editHologramUploading, setEditHologramUploading] = useState(false);
+  const [editLobbyProfileStyle, setEditLobbyProfileStyle] = useState<LobbyProfileStyle>(
+    ((roomProp as any).lobbyProfileStyle as LobbyProfileStyle) || DEFAULT_LOBBY_PROFILE_STYLE
+  );
+  const [editLobbyProfileSize, setEditLobbyProfileSize] = useState<LobbyProfileSize>(
+    ((roomProp as any).lobbyProfileSize as LobbyProfileSize) || DEFAULT_LOBBY_PROFILE_SIZE
+  );
   const editHologramFileRef = useRef<HTMLInputElement>(null);
   const [youtubeFeatured, setYoutubeFeatured] = useState<any[]>([]);
   const [youtubeFeaturedLoading, setYoutubeFeaturedLoading] = useState(false);
@@ -3341,7 +3348,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   });
 
   const updateRoomMutation = useMutation({
-    mutationFn: async (data: { title: string; language: string; level: string; maxUsers: number; roomTheme?: string; isPublic?: boolean; hologramVideoUrl?: string | null; welcomeMessage?: string | null; welcomeMediaUrls?: string[]; welcomeMediaTypes?: string[]; welcomeMediaPosition?: string; welcomeAccentColor?: string; talkPermission?: string; cameraPermission?: string; screenPermission?: string; youtubePermission?: string; chatPermission?: string }) => {
+    mutationFn: async (data: { title: string; language: string; level: string; maxUsers: number; roomTheme?: string; isPublic?: boolean; hologramVideoUrl?: string | null; welcomeMessage?: string | null; welcomeMediaUrls?: string[]; welcomeMediaTypes?: string[]; welcomeMediaPosition?: string; welcomeAccentColor?: string; talkPermission?: string; cameraPermission?: string; screenPermission?: string; youtubePermission?: string; chatPermission?: string; lobbyProfileStyle?: string; lobbyProfileSize?: string }) => {
       const res = await apiRequest("PATCH", `/api/rooms/${room.id}`, data);
       return await res.json();
     },
@@ -9318,6 +9325,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       screenPermission: editScreenPermission,
       youtubePermission: editYoutubePermission,
       chatPermission: editChatPermission,
+      lobbyProfileStyle: editLobbyProfileStyle,
+      lobbyProfileSize: editLobbyProfileSize,
     });
   };
 
@@ -14369,6 +14378,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               {/* ── Tab: Appearance ── */}
               {editTab === "appearance" && (
                 <div className="space-y-4">
+                  <LobbyProfilePicker
+                    style={editLobbyProfileStyle}
+                    size={editLobbyProfileSize}
+                    onStyleChange={setEditLobbyProfileStyle}
+                    onSizeChange={setEditLobbyProfileSize}
+                    testIdPrefix="edit-lobby-profile"
+                  />
                   {/* Card Theme */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -15064,6 +15080,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       const themeIndex = ROOM_THEMES.findIndex((theme) => theme.id === currentEditTheme);
                       setEditRoomTheme(currentEditTheme);
                       setEditThemeOffset(Math.max(0, Math.floor(Math.max(0, themeIndex) / 4) * 4));
+                      setEditLobbyProfileStyle((((room as any).lobbyProfileStyle as LobbyProfileStyle) || DEFAULT_LOBBY_PROFILE_STYLE));
+                      setEditLobbyProfileSize((((room as any).lobbyProfileSize as LobbyProfileSize) || DEFAULT_LOBBY_PROFILE_SIZE));
                       setEditDialogOpen(true);
                     }}
                     data-testid="button-host-settings"
@@ -16422,15 +16440,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             const vw = typeof window !== "undefined" ? window.innerWidth : 1280;
             // Avatar-first sizing: slightly larger heroes; decoration scale shrinks first via density
             let cardPx =
-              visibleCount <= 2 ? 128 :
-              visibleCount <= 4 ? 108 :
-              visibleCount <= 6 ? 92 :
-              visibleCount <= 8 ? 80 :
-              visibleCount <= 12 ? 68 :
-              visibleCount <= 18 ? 56 :
-              48;
-            if (vw < 400) cardPx = Math.min(cardPx, visibleCount <= 2 ? 104 : 76);
-            else if (vw < 640) cardPx = Math.min(cardPx, visibleCount <= 2 ? 112 : 86);
+              visibleCount <= 2 ? 168 :
+              visibleCount <= 4 ? 144 :
+              visibleCount <= 6 ? 118 :
+              visibleCount <= 8 ? 102 :
+              visibleCount <= 12 ? 86 :
+              visibleCount <= 18 ? 70 :
+              60;
+            if (vw < 400) cardPx = Math.min(cardPx, visibleCount <= 2 ? 124 : 88);
+            else if (vw < 640) cardPx = Math.min(cardPx, visibleCount <= 2 ? 140 : 100);
             const decoDensity = densityFromParticipantCount(visibleCount);
             const gapPx = cardPx <= 60 ? 4 : 6;
             // Bleed matches max decoration visual extent (config-driven) + mood emoji headroom
@@ -16447,7 +16465,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             else if (vw < 768) gridCols = Math.min(gridCols, 4);
           return (
           <div
-            className={isInOverlayMode ? "flex items-end justify-center p-2 pb-4 absolute bottom-0 left-0 right-0 z-20 pt-16 overflow-visible" : "flex-1 min-h-0 p-2 pt-14 overflow-y-auto overflow-x-auto"}
+            className={isInOverlayMode ? "flex items-end justify-center p-2 pb-4 absolute bottom-0 left-0 right-0 z-20 pt-16 overflow-visible" : "flex-1 min-h-0 p-2 pt-14 overflow-y-auto overflow-x-visible"}
             style={isInOverlayMode ? {} : {
               display: "grid",
               gridTemplateColumns: `repeat(${gridCols}, minmax(0, ${cardPx + decoBleed * 2}px))`,

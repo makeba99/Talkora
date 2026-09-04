@@ -3,7 +3,7 @@ import { type Server } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { storage } from "./storage";
 import { isAuthenticated } from "./replit_integrations/auth";
-import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema, insertUserCommentSchema, insertBadgeApplicationSchema, insertAnnouncementSchema, BADGE_TYPES, VIP_PLANS, vipPlanFromAmount, vipRank, BADGE_CELEBRATION_GIF, BADGE_CELEBRATION_MOOD, BADGE_CELEBRATION_DURATION_MS, VIP_SHOUTOUT_GIF, VIP_SHOUTOUT_DAILY_LIMIT } from "@shared/schema";
+import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema, insertUserCommentSchema, insertBadgeApplicationSchema, insertAnnouncementSchema, BADGE_TYPES, VIP_PLANS, vipPlanFromAmount, vipRank, BADGE_CELEBRATION_GIF, BADGE_CELEBRATION_MOOD, BADGE_CELEBRATION_DURATION_MS, VIP_SHOUTOUT_GIF, VIP_SHOUTOUT_DAILY_LIMIT, LOBBY_PROFILE_STYLES, LOBBY_PROFILE_SIZES } from "@shared/schema";
 import type { User } from "@shared/schema";
 import { SEO_STATIC_PAGES } from "@shared/seo-pages";
 import { z } from "zod";
@@ -4823,6 +4823,8 @@ export async function registerRoutes(
 
   const createRoomBody = insertRoomSchema.extend({
     ownerId: z.string().min(1),
+    lobbyProfileStyle: z.enum(LOBBY_PROFILE_STYLES).optional(),
+    lobbyProfileSize: z.enum(LOBBY_PROFILE_SIZES).optional(),
   });
 
   const isUserRestricted = (user: User | undefined | null) =>
@@ -4989,6 +4991,8 @@ export async function registerRoutes(
         hologramVideoUrl: parsed.data.hologramVideoUrl || null,
         titleColor: (parsed.data as any).titleColor || null,
         titleStyle: (parsed.data as any).titleStyle || null,
+        lobbyProfileStyle: (parsed.data as any).lobbyProfileStyle || "circle",
+        lobbyProfileSize: (parsed.data as any).lobbyProfileSize || "md",
         ownerId,
       });
 
@@ -5013,7 +5017,7 @@ export async function registerRoutes(
       if (!room) return res.status(404).json({ message: "Room not found" });
       if (room.ownerId !== userId) return res.status(403).json({ message: "Only the host can edit this room" });
 
-      const { title, language, level, maxUsers, roomTheme, isPublic, hologramVideoUrl, welcomeMessage, welcomeMediaUrls, welcomeMediaTypes, welcomeMediaPosition, welcomeAccentColor, talkPermission, cameraPermission, screenPermission, youtubePermission, chatPermission, titleColor: roomTitleColor, titleStyle: roomTitleStyle } = req.body;
+      const { title, language, level, maxUsers, roomTheme, isPublic, hologramVideoUrl, welcomeMessage, welcomeMediaUrls, welcomeMediaTypes, welcomeMediaPosition, welcomeAccentColor, talkPermission, cameraPermission, screenPermission, youtubePermission, chatPermission, titleColor: roomTitleColor, titleStyle: roomTitleStyle, lobbyProfileStyle, lobbyProfileSize } = req.body;
 
       // ── Content moderation ─────────────────────────────────────────────────
       const _ruUser = await storage.getUser(userId);
@@ -5066,6 +5070,12 @@ export async function registerRoutes(
       if (roomTitleColor !== undefined) updateData.titleColor = roomTitleColor || null;
       if (roomTitleStyle !== undefined && ["normal", "bold", "italic", "gradient", "glow", "neon"].includes(roomTitleStyle)) {
         updateData.titleStyle = roomTitleStyle;
+      }
+      if (lobbyProfileStyle !== undefined && (LOBBY_PROFILE_STYLES as readonly string[]).includes(lobbyProfileStyle)) {
+        updateData.lobbyProfileStyle = lobbyProfileStyle;
+      }
+      if (lobbyProfileSize !== undefined && (LOBBY_PROFILE_SIZES as readonly string[]).includes(lobbyProfileSize)) {
+        updateData.lobbyProfileSize = lobbyProfileSize;
       }
 
       const updated = await storage.updateRoom(roomId, updateData);

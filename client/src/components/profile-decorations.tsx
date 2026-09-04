@@ -1660,6 +1660,8 @@ interface ProfileDecorationProps {
   density?: DecorationDensity;
   /** Soften decoration so the avatar stays the hero. */
   soft?: boolean;
+  /** Portrait clip matching lobby / in-room card shape. */
+  shape?: "circle" | "rounded" | "tile";
   className?: string;
   children: React.ReactNode;
 }
@@ -1673,6 +1675,7 @@ export function ProfileDecoration({
   size = 56,
   density,
   soft,
+  shape = "rounded",
   className,
   children,
 }: ProfileDecorationProps) {
@@ -1688,6 +1691,7 @@ export function ProfileDecoration({
       frameId={frameId}
       density={density}
       soft={soft}
+      shape={shape}
       className={className}
     >
       {children}

@@ -44,11 +44,15 @@ export function densityFromParticipantCount(count: number): DecorationDensity {
   return "full";
 }
 
+export type AvatarShellShape = "circle" | "rounded" | "tile";
+
 export interface AvatarShellProps {
   /** Layout size in px — this alone determines the footprint. */
   size: number;
   /** Already-resolved VIP overlay id, or null/none. */
   frameId?: VipOverlayId | null | "none";
+  /** Portrait clip: circle (lobby default), rounded squircle, or tile. */
+  shape?: AvatarShellShape;
   /** Override auto density (from size). */
   density?: DecorationDensity;
   /** Soften decoration so the avatar stays primary. */
@@ -68,6 +72,7 @@ export interface AvatarShellProps {
 export function AvatarShell({
   size,
   frameId,
+  shape = "rounded",
   density: densityProp,
   soft,
   className,
@@ -111,6 +116,7 @@ export function AvatarShell({
       style={shellStyle}
       data-decoration={id ?? "none"}
       data-density={density}
+      data-shape={shape}
     >
       <div className="avatar-shell__media">{children}</div>
 

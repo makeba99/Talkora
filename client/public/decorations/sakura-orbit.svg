@@ -15,17 +15,17 @@
       <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
-  <rect x="36" y="36" width="128" height="128" rx="22" ry="22" stroke="url(#sakuraRim)" stroke-width="3" filter="url(#glow)">
+  <rect x="14" y="14" width="172" height="172" rx="38" ry="38" stroke="url(#sakuraRim)" stroke-width="3" filter="url(#glow)">
     <animate attributeName="opacity" values="0.55;1;0.55" dur="2.8s" repeatCount="indefinite"/>
   </rect>
   <g transform="translate(100,100)">
     <g>
       <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="20s" repeatCount="indefinite"/>
-      <g transform="translate(0,-74)"><ellipse cx="0" cy="0" rx="9" ry="5.5" fill="url(#petalG)"/></g>
-      <g transform="rotate(72) translate(0,-74)"><ellipse cx="0" cy="0" rx="8.5" ry="5" fill="url(#petalG)" opacity="0.92"/></g>
-      <g transform="rotate(144) translate(0,-75)"><ellipse cx="0" cy="0" rx="9" ry="5.5" fill="url(#petalG)" opacity="0.9"/></g>
-      <g transform="rotate(216) translate(0,-74)"><ellipse cx="0" cy="0" rx="8" ry="5" fill="url(#petalG)" opacity="0.88"/></g>
-      <g transform="rotate(288) translate(0,-75)"><ellipse cx="0" cy="0" rx="9" ry="5.5" fill="url(#petalG)" opacity="0.93"/></g>
+      <g transform="translate(0,-90)"><ellipse cx="0" cy="0" rx="9" ry="5.5" fill="url(#petalG)"/></g>
+      <g transform="rotate(72) translate(0,-90)"><ellipse cx="0" cy="0" rx="8.5" ry="5" fill="url(#petalG)" opacity="0.92"/></g>
+      <g transform="rotate(144) translate(0,-91)"><ellipse cx="0" cy="0" rx="9" ry="5.5" fill="url(#petalG)" opacity="0.9"/></g>
+      <g transform="rotate(216) translate(0,-90)"><ellipse cx="0" cy="0" rx="8" ry="5" fill="url(#petalG)" opacity="0.88"/></g>
+      <g transform="rotate(288) translate(0,-91)"><ellipse cx="0" cy="0" rx="9" ry="5.5" fill="url(#petalG)" opacity="0.93"/></g>
     </g>
   </g>
   <circle cx="48" cy="52" r="1.4" fill="#fff">

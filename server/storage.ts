@@ -99,7 +99,7 @@ export interface IStorage {
   getRoomByShortId(shortId: string): Promise<Room | undefined>;
   getAllRooms(): Promise<Room[]>;
   getRoomsByOwner(ownerId: string): Promise<Room[]>;
-  updateRoom(id: string, data: Partial<{ title: string; language: string; level: string; maxUsers: number; ownerId: string; roomTheme: string | null; hologramVideoUrl: string | null; welcomeMessage: string | null; welcomeMediaUrls: string[]; welcomeMediaTypes: string[]; welcomeMediaPosition: string; welcomeAccentColor: string; talkPermission: string; cameraPermission: string; screenPermission: string; youtubePermission: string }>): Promise<Room | undefined>;
+  updateRoom(id: string, data: Partial<{ title: string; language: string; level: string; maxUsers: number; ownerId: string; roomTheme: string | null; hologramVideoUrl: string | null; welcomeMessage: string | null; welcomeMediaUrls: string[]; welcomeMediaTypes: string[]; welcomeMediaPosition: string; welcomeAccentColor: string; talkPermission: string; cameraPermission: string; screenPermission: string; youtubePermission: string; lobbyProfileStyle: string; lobbyProfileSize: string }>): Promise<Room | undefined>;
   updateRoomActiveUsers(id: string, count: number): Promise<void>;
   deleteRoom(id: string): Promise<void>;
 
@@ -446,7 +446,7 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(rooms).where(eq(rooms.ownerId, ownerId));
   }
 
-  async updateRoom(id: string, data: Partial<{ title: string; language: string; level: string; maxUsers: number; ownerId: string; roomTheme: string | null; hologramVideoUrl: string | null; welcomeMessage: string | null; welcomeMediaUrls: string[]; welcomeMediaTypes: string[]; welcomeMediaPosition: string; welcomeAccentColor: string }>): Promise<Room | undefined> {
+  async updateRoom(id: string, data: Partial<{ title: string; language: string; level: string; maxUsers: number; ownerId: string; roomTheme: string | null; hologramVideoUrl: string | null; welcomeMessage: string | null; welcomeMediaUrls: string[]; welcomeMediaTypes: string[]; welcomeMediaPosition: string; welcomeAccentColor: string; lobbyProfileStyle: string; lobbyProfileSize: string }>): Promise<Room | undefined> {
     const [room] = await db.update(rooms).set(data).where(eq(rooms.id, id)).returning();
     if (room) roomCache.set(`room:${id}`, room);
     roomCache.delete("rooms:all");

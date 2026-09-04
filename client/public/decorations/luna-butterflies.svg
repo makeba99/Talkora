@@ -16,16 +16,16 @@
     </filter>
   </defs>
   <!-- Transparent center hole so avatar shows through (Free4Talk / Discord overlay technique) -->
-  <circle cx="100" cy="100" r="58" fill="none" stroke="url(#ring)" stroke-width="3.5" opacity="0.95" filter="url(#glow)">
+  <circle cx="100" cy="100" r="84" fill="none" stroke="url(#ring)" stroke-width="3.5" opacity="0.95" filter="url(#glow)">
     <animate attributeName="opacity" values="0.7;1;0.7" dur="2.4s" repeatCount="indefinite"/>
   </circle>
-  <circle cx="100" cy="100" r="64" fill="none" stroke="#a78bfa" stroke-width="1" opacity="0.35"/>
+  <circle cx="100" cy="100" r="90" fill="none" stroke="#a78bfa" stroke-width="1" opacity="0.35"/>
   <!-- Butterflies around the ring -->
   <g>
     <g transform="translate(100,100)">
       <g>
         <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="18s" repeatCount="indefinite"/>
-        <g transform="translate(0,-72)">
+        <g transform="translate(0,-92)">
           <ellipse cx="-5" cy="0" rx="8" ry="5" fill="url(#wing)" transform="rotate(-25)">
             <animate attributeName="rx" values="8;5;8" dur="0.55s" repeatCount="indefinite"/>
           </ellipse>
@@ -34,7 +34,7 @@
           </ellipse>
           <circle cx="0" cy="0" r="1.6" fill="#e0e7ff"/>
         </g>
-        <g transform="rotate(60) translate(0,-70)">
+        <g transform="rotate(60) translate(0,-90)">
           <ellipse cx="-4.5" cy="0" rx="7" ry="4.5" fill="#c4b5fd" opacity="0.85" transform="rotate(-25)">
             <animate attributeName="rx" values="7;4;7" dur="0.5s" begin="0.1s" repeatCount="indefinite"/>
           </ellipse>
@@ -43,7 +43,7 @@
           </ellipse>
           <circle cx="0" cy="0" r="1.4" fill="#fff"/>
         </g>
-        <g transform="rotate(130) translate(0,-74)">
+        <g transform="rotate(130) translate(0,-93)">
           <ellipse cx="-5" cy="0" rx="7.5" ry="5" fill="#a5b4fc" opacity="0.9" transform="rotate(-20)">
             <animate attributeName="rx" values="7.5;4.5;7.5" dur="0.6s" begin="0.2s" repeatCount="indefinite"/>
           </ellipse>
@@ -52,7 +52,7 @@
           </ellipse>
           <circle cx="0" cy="0" r="1.5" fill="#e0f2fe"/>
         </g>
-        <g transform="rotate(200) translate(0,-71)">
+        <g transform="rotate(200) translate(0,-91)">
           <ellipse cx="-4" cy="0" rx="6.5" ry="4" fill="#ddd6fe" opacity="0.9" transform="rotate(-22)">
             <animate attributeName="rx" values="6.5;3.5;6.5" dur="0.48s" begin="0.15s" repeatCount="indefinite"/>
           </ellipse>
@@ -61,7 +61,7 @@
           </ellipse>
           <circle cx="0" cy="0" r="1.3" fill="#fff"/>
         </g>
-        <g transform="rotate(280) translate(0,-73)">
+        <g transform="rotate(280) translate(0,-92)">
           <ellipse cx="-5" cy="0" rx="8" ry="5" fill="#c084fc" opacity="0.8" transform="rotate(-28)">
             <animate attributeName="rx" values="8;5;8" dur="0.52s" begin="0.25s" repeatCount="indefinite"/>
           </ellipse>

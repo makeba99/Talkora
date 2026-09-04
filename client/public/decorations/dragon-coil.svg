@@ -14,11 +14,11 @@
       <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
-  <rect x="36" y="36" width="128" height="128" rx="22" ry="22" stroke="#34d399" stroke-width="2.6" opacity="0.55" filter="url(#glow)">
+  <rect x="14" y="14" width="172" height="172" rx="38" ry="38" stroke="#34d399" stroke-width="2.6" opacity="0.55" filter="url(#glow)">
     <animate attributeName="opacity" values="0.4;0.8;0.4" dur="2.4s" repeatCount="indefinite"/>
   </rect>
-  <!-- Dragon coiling around the frame -->
-  <path d="M30,128 C16,88 38,46 72,34 C96,26 118,26 140,38 C168,54 186,92 176,132" stroke="url(#scale)" stroke-width="12" stroke-linecap="round" opacity="0.96">
+  <!-- Dragon coiling around the outer edge -->
+  <path d="M22,132 C8,84 32,28 78,16 C104,8 128,8 154,22 C186,42 198,92 186,140" stroke="url(#scale)" stroke-width="12" stroke-linecap="round" opacity="0.96">
     <animate attributeName="stroke-width" values="11;13;11" dur="2.2s" repeatCount="indefinite"/>
   </path>
   <g fill="#10b981">

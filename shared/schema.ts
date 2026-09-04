@@ -7,8 +7,8 @@ export * from "./models/auth";
 // Re-export pure data constants from the zero-dependency constants module.
 // This lets server code import them from @shared/schema as before, while
 // client code can import from @shared/constants to avoid bundling drizzle/zod.
-export { TALK_PERMISSIONS, FEATURE_PERMISSIONS, BADGE_TYPES, BADGE_TYPES as BADGE_TYPE_MAP, LANGUAGES, LEVELS, SPECIALIZATIONS, VIP_PLANS, vipPlanFromAmount, vipRank, BADGE_CELEBRATION_GIF, BADGE_CELEBRATION_MOOD, BADGE_CELEBRATION_DURATION_MS, VIP_SHOUTOUT_GIF, VIP_SHOUTOUT_DAILY_LIMIT } from "./constants";
-export type { TalkPermission, FeaturePermission, BadgeType, VipPlanId } from "./constants";
+export { TALK_PERMISSIONS, FEATURE_PERMISSIONS, BADGE_TYPES, BADGE_TYPES as BADGE_TYPE_MAP, LANGUAGES, LEVELS, SPECIALIZATIONS, VIP_PLANS, vipPlanFromAmount, vipRank, BADGE_CELEBRATION_GIF, BADGE_CELEBRATION_MOOD, BADGE_CELEBRATION_DURATION_MS, VIP_SHOUTOUT_GIF, VIP_SHOUTOUT_DAILY_LIMIT, LOBBY_PROFILE_STYLES, LOBBY_PROFILE_SIZES, DEFAULT_LOBBY_PROFILE_STYLE, DEFAULT_LOBBY_PROFILE_SIZE } from "./constants";
+export type { TalkPermission, FeaturePermission, BadgeType, VipPlanId, LobbyProfileStyle, LobbyProfileSize } from "./constants";
 
 export const rooms = pgTable("rooms", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
@@ -35,6 +35,8 @@ export const rooms = pgTable("rooms", {
   chatPermission: varchar("chat_permission", { length: 20 }).notNull().default("everyone"),
   titleColor: varchar("title_color", { length: 30 }),
   titleStyle: varchar("title_style", { length: 20 }),
+  lobbyProfileStyle: varchar("lobby_profile_style", { length: 20 }).notNull().default("circle"),
+  lobbyProfileSize: varchar("lobby_profile_size", { length: 10 }).notNull().default("md"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   roomsShortIdIdx: uniqueIndex("rooms_short_id_idx").on(table.shortId),
@@ -60,6 +62,8 @@ export const insertRoomSchema = createInsertSchema(rooms).pick({
   chatPermission: true,
   titleColor: true,
   titleStyle: true,
+  lobbyProfileStyle: true,
+  lobbyProfileSize: true,
 });
 
 export type InsertRoom = z.infer<typeof insertRoomSchema>;

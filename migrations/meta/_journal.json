@@ -113,6 +113,13 @@
       "when": 1779250000000,
       "tag": "0017_push_campaigns",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1779260000000,
+      "tag": "0018_lobby_profile_display",
+      "breakpoints": true
     }
   ]
 }

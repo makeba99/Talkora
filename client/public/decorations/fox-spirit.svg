@@ -9,17 +9,17 @@
       <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
-  <rect x="36" y="36" width="128" height="128" rx="22" ry="22" stroke="#fb923c" stroke-width="2.8" opacity="0.6" filter="url(#glow)">
+  <rect x="14" y="14" width="172" height="172" rx="38" ry="38" stroke="#fb923c" stroke-width="2.8" opacity="0.65" filter="url(#glow)">
     <animate attributeName="opacity" values="0.4;0.85;0.4" dur="2.6s" repeatCount="indefinite"/>
   </rect>
   <!-- Fox ears peeking over top corners -->
-  <g transform="translate(58,42)">
+  <g transform="translate(48,16)">
     <polygon points="0,34 -22,-10 20,-8" fill="url(#fox)">
       <animateTransform attributeName="transform" type="rotate" values="0;7;0;-5;0" dur="2.4s" repeatCount="indefinite"/>
     </polygon>
     <polygon points="0,24 -10,2 10,2" fill="#ffedd5"/>
   </g>
-  <g transform="translate(142,42)">
+  <g transform="translate(152,16)">
     <polygon points="0,34 -20,-8 22,-10" fill="url(#fox)">
       <animateTransform attributeName="transform" type="rotate" values="0;-7;0;5;0" dur="2.4s" begin="0.2s" repeatCount="indefinite"/>
     </polygon>
