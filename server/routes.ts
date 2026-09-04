@@ -3,7 +3,7 @@ import { type Server } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { storage } from "./storage";
 import { isAuthenticated } from "./replit_integrations/auth";
-import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema, insertUserCommentSchema, insertBadgeApplicationSchema, insertAnnouncementSchema, BADGE_TYPES, VIP_PLANS, vipPlanFromAmount, vipRank, BADGE_CELEBRATION_GIF, VIP_SHOUTOUT_GIF, VIP_SHOUTOUT_DAILY_LIMIT } from "@shared/schema";
+import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema, insertUserCommentSchema, insertBadgeApplicationSchema, insertAnnouncementSchema, BADGE_TYPES, VIP_PLANS, vipPlanFromAmount, vipRank, BADGE_CELEBRATION_GIF, BADGE_CELEBRATION_MOOD, BADGE_CELEBRATION_DURATION_MS, VIP_SHOUTOUT_GIF, VIP_SHOUTOUT_DAILY_LIMIT } from "@shared/schema";
 import type { User } from "@shared/schema";
 import { z } from "zod";
 import multer, { type StorageEngine } from "multer";
@@ -800,6 +800,44 @@ export async function registerRoutes(
     try {
       // Broadcast to every connected client (lobby, rooms, admin).
       io.emit("badge:awarded", badgeAwardPayload);
+
+      // Live rooms: fireworks overlay + happy mood on every participant.
+      const celebrationMood = BADGE_CELEBRATION_MOOD;
+      const celebrationMs = BADGE_CELEBRATION_DURATION_MS;
+      for (const [roomId, participants] of roomParticipants.entries()) {
+        if (participants.size === 0) continue;
+        if (!roomMoods.has(roomId)) roomMoods.set(roomId, new Map());
+        const moods = roomMoods.get(roomId)!;
+        const moodMap: Record<string, string> = {};
+        for (const userId of participants.keys()) {
+          moods.set(userId, celebrationMood);
+          moodMap[userId] = celebrationMood;
+        }
+        io.to(roomId).emit("room:badge-celebration", {
+          badgeUserId: opts.target.id,
+          badgeUserName: targetName,
+          badgeLabel: badgeDef.label,
+          badgeEmoji: badgeDef.emoji,
+          durationMs: celebrationMs,
+          mood: celebrationMood,
+          moods: moodMap,
+        });
+      }
+
+      // Clear celebration moods after the party so late joiners don't inherit 🥳 forever.
+      setTimeout(() => {
+        for (const [roomId, participants] of roomParticipants.entries()) {
+          const moods = roomMoods.get(roomId);
+          if (!moods || participants.size === 0) continue;
+          for (const userId of participants.keys()) {
+            if (moods.get(userId) === celebrationMood) {
+              moods.delete(userId);
+              io.to(roomId).emit("room:mood-clear", { userId });
+            }
+          }
+        }
+      }, celebrationMs + 500);
+
       // Slight delay so the overlay can pop first, then rooms get the chat+GIF card.
       setTimeout(() => {
         emitBadgeChatToAllActiveRooms({

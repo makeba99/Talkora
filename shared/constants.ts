@@ -226,9 +226,15 @@ export const SPECIALIZATIONS = [
   "Slang & Casual",
 ] as const;
 
-/** Celebration GIF shown platform-wide when a badge is awarded (Tenor, proxy-friendly). */
+/** Celebration GIF shown platform-wide when a badge is awarded (Giphy, proxy-friendly). */
 export const BADGE_CELEBRATION_GIF =
-  "https://media.tenor.com/YGF4qF2FeX8AAAAC/congratulations-congrats.gif";
+  "https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif";
+
+/** Mood stamped on every live-room participant when a badge is awarded. */
+export const BADGE_CELEBRATION_MOOD = "🥳";
+
+/** How long room fireworks + celebration moods last (ms). */
+export const BADGE_CELEBRATION_DURATION_MS = 8000;
 
 /** Coffee / VIP shoutout flair GIF shown in every live room chat. */
 export const VIP_SHOUTOUT_GIF =

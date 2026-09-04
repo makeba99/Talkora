@@ -64,6 +64,7 @@ import { getAvatarRingClass } from "@/lib/avatar-ring";
 import { ProfileAnimationOverlay } from "@/lib/profile-animations";
 import { FlairBadgeDisplay } from "@/components/profile-dropdown";
 import { ProfileDecoration, ROOM_THEMES, PRESET_BACKGROUNDS, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
+import { BadgeFireworksOverlay } from "@/components/badge-fireworks";
 import { NeuParticipantSlider } from "@/components/neu-participant-slider";
 import { UserNotePopover } from "@/components/social-panel";
 import { useAiTutor } from "@/hooks/use-ai-tutor";
@@ -2244,7 +2245,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   // row still re-triggers the animation. Entries are auto-cleared after the
   // animation duration so the card returns to its normal state.
   const [participantAvatarGifs, setParticipantAvatarGifs] = useState<Record<string, string>>({});
-  const [participantMoods, setParticipantMoods] = useState<Record<string, { id: string; emoji: string }>>({}); 
+  const [participantMoods, setParticipantMoods] = useState<Record<string, { id: string; emoji: string }>>({});
+  /** Platform-wide badge award: fireworks + happy moods in this live room. */
+  const [badgeCelebration, setBadgeCelebration] = useState<{ key: number; durationMs: number } | null>(null);
+  const badgeMoodClearTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [djModeActive, setDjModeActive] = useState(false);
   const djModeActiveRef = useRef(false);
   const djControlsBtnRef = useRef<HTMLButtonElement>(null);
@@ -4327,6 +4331,53 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       }
     });
 
+    // Badge awarded anywhere on the platform → fireworks + 🥳 on every seat in this room.
+    socket.on(
+      "room:badge-celebration",
+      (data: {
+        durationMs?: number;
+        mood?: string;
+        moods?: Record<string, string>;
+        badgeLabel?: string;
+        badgeUserName?: string;
+      }) => {
+        const durationMs = Math.min(Math.max(Number(data?.durationMs) || 8000, 3000), 20000);
+        const mood = String(data?.mood || "🥳").slice(0, 16);
+        const moodMap = data?.moods && typeof data.moods === "object" ? data.moods : null;
+        setBadgeCelebration({ key: Date.now(), durationMs });
+        const stamp = Date.now();
+        if (moodMap && Object.keys(moodMap).length > 0) {
+          setParticipantMoods((prev) => {
+            const next = { ...prev };
+            for (const [userId, emoji] of Object.entries(moodMap)) {
+              next[userId] = { id: `badge-${stamp}-${userId}`, emoji: emoji || mood };
+            }
+            return next;
+          });
+        }
+        // Auto-clear celebration moods so rooms don't stay stuck on party face.
+        badgeMoodClearTimersRef.current.forEach(clearTimeout);
+        badgeMoodClearTimersRef.current = [];
+        const clearT = setTimeout(() => {
+          setParticipantMoods((prev) => {
+            const next = { ...prev };
+            for (const [uid, entry] of Object.entries(next)) {
+              if (String(entry.id).startsWith("badge-") || entry.emoji === mood) delete next[uid];
+            }
+            return next;
+          });
+        }, durationMs + 400);
+        badgeMoodClearTimersRef.current.push(clearT);
+        if (data?.badgeUserName && data?.badgeLabel) {
+          toast({
+            title: `${data.badgeUserName} unlocked ${data.badgeLabel}`,
+            description: "Celebration in every live room 🎆",
+            duration: 4000,
+          });
+        }
+      }
+    );
+
     socket.on("room:mute-update", (data: { userId: string; isMuted: boolean; forcedBy?: string }) => {
       setParticipants((prev) =>
         prev.map((p) => (p.id === data.userId ? { ...p, isMuted: data.isMuted } : p))
@@ -5068,6 +5119,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       socket.off("room:bye");
       socket.off("room:moods-snapshot");
       socket.off("room:mood-update");
+      socket.off("room:mood-clear");
+      socket.off("room:badge-celebration");
       socket.off("room:avatar-gifs-snapshot");
       socket.off("room:dj-mode");
       socket.off("room:dj-skip");
@@ -5075,6 +5128,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       // Cancel any in-flight mood-clear timers so they don't fire after unmount.
       Object.values(moodTimersRef.current).forEach((t) => clearTimeout(t));
       moodTimersRef.current = {};
+      badgeMoodClearTimersRef.current.forEach(clearTimeout);
+      badgeMoodClearTimersRef.current = [];
       socket.off("room:mute-update");
       socket.off("room:video-force-off");
       socket.off("room:chat-blocked");
@@ -10193,6 +10248,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                           decoding="async"
                           className="w-full h-28 object-cover"
                           data-testid={`img-badge-gif-${msg.id}`}
+                          onError={(e) => {
+                            const img = e.currentTarget;
+                            const fallback = "https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif";
+                            if (!img.dataset.fallback) {
+                              img.dataset.fallback = "1";
+                              img.src = fallback;
+                            } else {
+                              img.style.display = "none";
+                            }
+                          }}
                         />
                       )}
                       <div className="flex items-center gap-3 px-3 py-2.5">
@@ -16172,6 +16237,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
           {/* ── DJ Scene full-screen overlay (position:fixed, covers whole viewport) ── */}
           <DjSceneOverlay scene={djCurrentScene} participants={participants} active={djModeActive} />
+
+          {/* Badge award fireworks across every live room */}
+          <BadgeFireworksOverlay
+            key={badgeCelebration?.key ?? "idle"}
+            active={!!badgeCelebration}
+            durationMs={badgeCelebration?.durationMs ?? 8000}
+            onDone={() => setBadgeCelebration(null)}
+          />
 
           {/* ── DJ Intro Countdown — 3→2→1 fullscreen overlay before first scene ── */}
           {djCountdown !== null && (

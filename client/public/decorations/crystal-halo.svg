@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="halo" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#67e8f9"/>
+      <stop offset="50%" stop-color="#a5b4fc"/>
+      <stop offset="100%" stop-color="#e0e7ff"/>
+    </linearGradient>
+    <linearGradient id="shard" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="45%" stop-color="#a5f3fc"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <circle cx="100" cy="100" r="58" fill="none" stroke="url(#halo)" stroke-width="2.8" filter="url(#glow)">
+    <animate attributeName="opacity" values="0.65;1;0.65" dur="2.6s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="100" cy="100" r="64" fill="none" stroke="#c7d2fe" stroke-width="1" opacity="0.4">
+    <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="24s" repeatCount="indefinite"/>
+  </circle>
+  <!-- Crystal shards -->
+  <g transform="translate(100,100)">
+    <g>
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="20s" repeatCount="indefinite"/>
+      <polygon points="0,-78 4,-64 -4,-64" fill="url(#shard)" opacity="0.95"/>
+      <polygon points="0,-78 3,-68 -3,-68" fill="#fff" opacity="0.5"/>
+      <polygon transform="rotate(45)" points="0,-76 3.5,-63 -3.5,-63" fill="url(#shard)" opacity="0.85"/>
+      <polygon transform="rotate(90)" points="0,-77 4,-64 -4,-64" fill="url(#shard)" opacity="0.9"/>
+      <polygon transform="rotate(135)" points="0,-75 3,-62 -3,-62" fill="url(#shard)" opacity="0.8"/>
+      <polygon transform="rotate(180)" points="0,-78 4,-64 -4,-64" fill="url(#shard)" opacity="0.95"/>
+      <polygon transform="rotate(225)" points="0,-76 3.5,-63 -3.5,-63" fill="url(#shard)" opacity="0.85"/>
+      <polygon transform="rotate(270)" points="0,-77 4,-64 -4,-64" fill="url(#shard)" opacity="0.9"/>
+      <polygon transform="rotate(315)" points="0,-75 3,-62 -3,-62" fill="url(#shard)" opacity="0.8"/>
+    </g>
+  </g>
+  <circle cx="55" cy="45" r="1.4" fill="#fff">
+    <animate attributeName="opacity" values="0.2;1;0.2" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="148" cy="52" r="1.2" fill="#a5f3fc">
+    <animate attributeName="opacity" values="0.3;1;0.3" dur="1.9s" begin="0.4s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="140" cy="150" r="1.3" fill="#c7d2fe">
+    <animate attributeName="opacity" values="0.2;1;0.2" dur="1.7s" begin="0.8s" repeatCount="indefinite"/>
+  </circle>
+</svg>

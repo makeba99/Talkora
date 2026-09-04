@@ -127,6 +127,18 @@ export function PinnedSocialsButton() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
+  // Click outside to close — easier social fan UX without trapping the user.
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (e: PointerEvent) => {
+      const el = wrapRef.current;
+      if (!el) return;
+      if (e.target instanceof Node && !el.contains(e.target)) setOpen(false);
+    };
+    window.addEventListener("pointerdown", onPointer);
+    return () => window.removeEventListener("pointerdown", onPointer);
+  }, [open]);
+
   const handleHandlePointerDown = useCallback((e: React.PointerEvent<HTMLSpanElement>) => {
     if (top === null) return;
     e.preventDefault();
@@ -175,6 +187,17 @@ export function PinnedSocialsButton() {
       data-tour-target="pinned-socials"
       data-testid="pinned-socials"
       style={top !== null ? { top, right: rightOffset, bottom: "auto" } : { visibility: "hidden" }}
+      onMouseEnter={() => {
+        // Desktop: hover opens the fan so socials are one less tap.
+        if (typeof window !== "undefined" && window.matchMedia("(hover: hover)").matches) {
+          setOpen(true);
+        }
+      }}
+      onMouseLeave={() => {
+        if (typeof window !== "undefined" && window.matchMedia("(hover: hover)").matches && !dragging) {
+          setOpen(false);
+        }
+      }}
     >
       {hintVisible && (
         <span

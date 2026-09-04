@@ -8,7 +8,9 @@ import {
 
 /**
  * Curated avatar decorations — Free4Talk / Discord Nitro style.
- * VIP frames are high-quality art; free rings stay subtle.
+ * VIP frames use transparent animated overlay assets (same compositing model
+ * as Free4Talk: frame image layered over a circular avatar, hollow center).
+ * Free rings stay subtle CSS/SVG.
  * Legacy ids map to the nearest modern frame so old saves keep working.
  */
 export const PROFILE_DECORATIONS = [
@@ -20,11 +22,11 @@ export const PROFILE_DECORATIONS = [
   { id: "executive", label: "Executive", description: "Platinum highlight sweep", category: "rings", vip: false },
   { id: "hologram", label: "Hologram", description: "Cyan HUD ring", category: "rings", vip: false },
 
-  // ── VIP premium art (Free4Talk-style) ──────────────────────────────────
-  { id: "luna-butterflies", label: "Luna Butterflies", description: "Neon ring + luminous butterflies", category: "vip", vip: true },
-  { id: "violet-roses", label: "Violet Roses", description: "Purple rose crown + neon rim", category: "vip", vip: true },
-  { id: "ember-flame", label: "Ember Flame", description: "Warm realistic fire rim", category: "vip", vip: true },
-  { id: "crystal-halo", label: "Crystal Halo", description: "Crystal shard halo", category: "vip", vip: true },
+  // ── VIP premium overlays (Free4Talk / Discord technique) ───────────────
+  { id: "luna-butterflies", label: "Luna Butterflies", description: "Animated butterfly frame overlay", category: "vip", vip: true },
+  { id: "violet-roses", label: "Violet Roses", description: "Animated rose crown overlay", category: "vip", vip: true },
+  { id: "ember-flame", label: "Ember Flame", description: "Animated fire rim overlay", category: "vip", vip: true },
+  { id: "crystal-halo", label: "Crystal Halo", description: "Animated crystal shard overlay", category: "vip", vip: true },
 ] as const;
 
 export type DecorationId = typeof PROFILE_DECORATIONS[number]["id"];
@@ -1672,7 +1674,7 @@ export function ProfileDecoration({ decorationId, size = 56, children }: Profile
       {id === "executive" && <ExecutiveRing size={size} />}
       {id === "pulse" && <PulseRing size={size} />}
       {id === "hologram" && <HologramRing size={size} />}
-      {/* VIP Free4Talk-style art */}
+      {/* VIP Free4Talk/Discord overlay frames (transparent asset over avatar) */}
       {id === "luna-butterflies" && <LunaButterfliesFrame size={size} />}
       {id === "violet-roses" && <VioletRosesFrame size={size} />}
       {id === "ember-flame" && <EmberFlameFrame size={size} />}

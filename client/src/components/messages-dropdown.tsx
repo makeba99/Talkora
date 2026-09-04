@@ -241,9 +241,12 @@ export function MessagesDropdown({ onOpenDm, open: controlledOpen, onOpenChange,
         {activeTab === "messages" && (
           <ScrollArea className="max-h-80">
             {conversations.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 gap-2">
+              <div className="flex flex-col items-center justify-center py-10 gap-2 px-4 text-center">
                 <MessageSquare className="w-8 h-8 text-muted-foreground/30" />
                 <p className="text-sm text-muted-foreground">No messages yet</p>
+                <p className="text-[11px] text-muted-foreground/70 leading-snug">
+                  Open someone’s profile and tap Message to start a chat.
+                </p>
               </div>
             ) : (
               <div className="p-1">

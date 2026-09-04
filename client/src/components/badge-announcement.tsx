@@ -390,8 +390,8 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
                   data-testid="badge-celebration-gif"
                   onError={(e) => {
                     const img = e.currentTarget;
-                    // Fallback to a known-good public congrats GIF if Tenor/proxy fails.
-                    const fallback = "https://media.giphy.com/media/g9582DNuQppxC/giphy.gif";
+                    // Fallback to a known-good fireworks GIF if CDN/proxy fails.
+                    const fallback = "https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif";
                     if (!img.dataset.fallback) {
                       img.dataset.fallback = "1";
                       img.src = fallback;
