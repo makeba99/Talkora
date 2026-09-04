@@ -62,7 +62,6 @@ export function getDecorationVisualScale(
   density: DecorationDensity = "full",
 ): number {
   const base = DECORATION_LAYOUT[id]?.scale ?? 1.16;
-  // Keep frames around the portrait — never large enough to cover the photo.
   return Math.min(1.28, base * DENSITY_SCALE[density]);
 }
 

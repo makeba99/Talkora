@@ -46,7 +46,7 @@ import {
   type VoicePresetId,
 } from "@/lib/voice-processor";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
-import { LANGUAGES, LEVELS, DEFAULT_LOBBY_PROFILE_STYLE, DEFAULT_LOBBY_PROFILE_SIZE, type LobbyProfileStyle, type LobbyProfileSize } from "@shared/constants";
+import { LANGUAGES, LEVELS, DEFAULT_LOBBY_PROFILE_STYLE, type LobbyProfileStyle } from "@shared/constants";
 import { DmDialog } from "@/components/dm-dialog";
 import { ReportDialog } from "@/components/report-dialog";
 import { RoomOnboardingTour } from "@/components/room-onboarding-tour";
@@ -68,11 +68,13 @@ import { FlairBadgeDisplay } from "@/components/profile-dropdown";
 import { ProfileDecoration, ROOM_THEMES, PRESET_BACKGROUNDS, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
 import { densityFromParticipantCount, getMaxDecorationBleedPx } from "@/components/avatar-shell";
 import { LobbyProfilePicker } from "@/components/lobby-profile-picker";
+import { resolveLobbyProfileStyle, lobbyShapeFromStyle } from "@/lib/lobby-profile";
 import type { DecorationDensity } from "@/components/vip-avatar-frames";
 import { BadgeFireworksOverlay } from "@/components/badge-fireworks";
 import { NeuParticipantSlider } from "@/components/neu-participant-slider";
 import { UserNotePopover } from "@/components/social-panel";
 import { useAiTutor } from "@/hooks/use-ai-tutor";
+import { matchWakePhrase } from "@/lib/ai-tutor/stt";
 import { setYoutubeActive, isYoutubeActive } from "@/lib/perf-bus";
 import { checkGrammarAll, applyAllSuggestions, getWordAlternatives, applyWordAlternative, type GrammarSuggestion, CATEGORY_META, SEVERITY_META } from "@/lib/grammar-check";
 import type { Room, User, Follow } from "@shared/schema";
@@ -684,6 +686,7 @@ function ParticipantCard({
   roomLevel,
   cardPx = 128,
   decoDensity = "full" as DecorationDensity,
+  profileShape = "tile",
   hologramVideoUrl,
   avatarGifUrl,
   onSetAvatarGif,
@@ -700,6 +703,11 @@ function ParticipantCard({
   const showMovieIcon = !!hasActiveMovie;
   const isWatcher = isYoutubeWatcher && !hasActiveYoutube;
   const isMovieWatcherBadge = !!isMovieWatcher && !hasActiveMovie;
+  const isCircle = profileShape === "circle";
+  const radiusClass = isCircle ? "rounded-full" : "rounded-lg";
+  const roleBadgeClass = isCircle
+    ? `absolute bottom-1 left-1 font-bold rounded-full shadow-sm z-20 flex items-center gap-0.5 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`
+    : `absolute bottom-0 left-0 font-bold rounded-tr-md shadow-sm z-20 flex items-center gap-0.5 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`;
 
   const ringClass = getAvatarRingClass(p.avatarRing);
   const hasCustomRing = !!ringClass;
@@ -729,7 +737,7 @@ function ParticipantCard({
     <>
       <button
         type="button"
-        className={`absolute top-1 right-1 z-30 cursor-pointer pointer-events-auto rounded-md bg-black/35 backdrop-blur-[2px] hover:bg-black/55 ${cardPx <= 56 ? "p-px" : "p-0.5"}`}
+        className={`absolute ${isCircle ? "top-2 right-2 rounded-full" : "top-1 right-1 rounded-md"} z-30 cursor-pointer pointer-events-auto bg-black/35 backdrop-blur-[2px] hover:bg-black/55 ${cardPx <= 56 ? "p-px" : "p-0.5"}`}
         onClick={(e) => {
           e.stopPropagation();
           setGearOpen(true);
@@ -1154,7 +1162,7 @@ function ParticipantCard({
   if (isBlocked) {
     return (
       <div className="flex flex-col items-center gap-1">
-        <div className="relative rounded-[22%] overflow-hidden bg-muted/30 border-[3px] border-transparent select-none opacity-70" style={{ width: cardPx, height: cardPx, flexShrink: 0 }}>
+        <div className={`relative ${radiusClass} overflow-hidden bg-muted/30 border-[3px] border-transparent select-none opacity-70`} style={{ width: cardPx, height: cardPx, flexShrink: 0 }}>
           <div className="w-full h-full flex flex-col items-center justify-center bg-muted/60 gap-2">
             <Ban className="w-8 h-8 text-muted-foreground/60" />
             <button
@@ -1220,8 +1228,8 @@ function ParticipantCard({
       />
       <div
         className={`relative overflow-hidden bg-muted/20 group border select-none w-full h-full ${
-          isSpeaking ? "border-[hsl(var(--neu-orange))]/60 shadow-[0_0_14px_hsl(var(--neu-orange)/0.4)]" : "border-white/10 hover:border-white/25"
-        } transition-all duration-300 ${fillMode ? "max-w-full max-h-full rounded-2xl" : "rounded-[22%]"}`}
+          isSpeaking ? "border-[hsl(var(--neu-orange))]/60 shadow-[0_0_10px_hsl(var(--neu-orange)/0.35)]" : "border-white/10 hover:border-white/25"
+        } transition-all duration-300 ${fillMode ? "max-w-full max-h-full" : ""} ${radiusClass}`}
         style={fillMode
           ? { flexShrink: 0, maxWidth: Math.max(cardPx, 96), maxHeight: Math.max(cardPx, 96), aspectRatio: "1 / 1", margin: "0 auto" }
           : { flexShrink: 0 }
@@ -1551,7 +1559,7 @@ function ParticipantCard({
 
         {!(hasActiveYoutube && youtubeVideoId) && (isRoomOwner ? (
           <div
-            className={`absolute bottom-0 left-0 font-bold rounded-tr-md shadow-sm z-20 flex items-center gap-0.5 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`}
+            className={roleBadgeClass}
             style={{
               background: "linear-gradient(145deg, hsl(var(--neu-orange-hi) / 0.95) 0%, hsl(var(--neu-orange-lo) / 0.92) 100%)",
               boxShadow: "0 0 10px hsl(var(--neu-orange) / 0.45), inset 0 1px 0 rgba(220,210,255,0.30)",
@@ -1562,7 +1570,7 @@ function ParticipantCard({
           </div>
         ) : participantRole === "co-owner" ? (
           <div
-            className={`absolute bottom-0 left-0 font-bold rounded-tr-md shadow-sm z-20 flex items-center gap-0.5 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`}
+            className={roleBadgeClass}
             style={{
               background: "linear-gradient(145deg, rgba(56,189,248,0.85) 0%, rgba(14,165,233,0.82) 100%)",
               boxShadow: "0 0 8px rgba(56,189,248,0.35), inset 0 1px 0 rgba(186,230,253,0.25)",
@@ -1573,7 +1581,7 @@ function ParticipantCard({
           </div>
         ) : participantRole === "guest" ? (
           <div
-            className={`absolute bottom-0 left-0 font-bold rounded-tr-md shadow-sm z-20 flex items-center gap-0.5 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`}
+            className={roleBadgeClass}
             style={{
               background: "linear-gradient(145deg, rgba(99,102,241,0.82) 0%, rgba(67,56,202,0.80) 100%)",
               boxShadow: "0 0 8px rgba(99,102,241,0.35), inset 0 1px 0 rgba(199,210,254,0.20)",
@@ -1584,7 +1592,7 @@ function ParticipantCard({
           </div>
         ) : participantRole === "troll" ? (
           <div
-            className={`absolute bottom-0 left-0 font-bold rounded-tr-md shadow-sm z-20 flex items-center gap-0.5 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`}
+            className={roleBadgeClass}
             style={{
               background: "linear-gradient(145deg, rgba(161,124,0,0.88) 0%, rgba(120,90,0,0.85) 100%)",
               boxShadow: "0 0 8px rgba(234,179,8,0.40), inset 0 1px 0 rgba(253,224,71,0.22)",
@@ -1594,7 +1602,9 @@ function ParticipantCard({
             {cardPx <= 56 ? "🧌" : "🧌 Troll"}
           </div>
         ) : isMe ? (
-          <div className={`absolute bottom-0 left-0 bg-white/20 backdrop-blur-sm text-white font-bold rounded-tr-md shadow-sm z-20 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`}>
+          <div className={isCircle
+            ? `absolute bottom-1 left-1 bg-white/20 backdrop-blur-sm text-white font-bold rounded-full shadow-sm z-20 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`
+            : `absolute bottom-0 left-0 bg-white/20 backdrop-blur-sm text-white font-bold rounded-tr-md shadow-sm z-20 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`}>
             You
           </div>
         ) : null)}
@@ -1622,13 +1632,13 @@ function ParticipantCard({
   );
 
   return (
-    <div className="flex flex-col items-center gap-0.5 min-w-0 max-w-full">
+    <div className="flex flex-col items-center gap-0.5 min-w-0 max-w-full overflow-visible">
       <ProfileDecoration
         decorationId={(p as any).profileDecoration}
         size={cardPx}
         density={decoDensity}
         soft={decoDensity !== "full"}
-        shape="rounded"
+        shape={isCircle ? "circle" : "tile"}
       >
         <div
            className={`cursor-pointer w-full h-full ${fillMode ? "flex items-center justify-center" : ""}`}
@@ -2450,6 +2460,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     username: user ? (user.displayName || user.firstName || user.email || "User") : null,
     activeYoutubeId: null,
     showYoutube: false,
+    onWakeOpenPicker: () => setAiPersonaPickerOpen(true),
   });
 
   // Backward-compatible aliases so all existing JSX keeps working unchanged
@@ -2582,9 +2593,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   const [editHologramUploading, setEditHologramUploading] = useState(false);
   const [editLobbyProfileStyle, setEditLobbyProfileStyle] = useState<LobbyProfileStyle>(
     ((roomProp as any).lobbyProfileStyle as LobbyProfileStyle) || DEFAULT_LOBBY_PROFILE_STYLE
-  );
-  const [editLobbyProfileSize, setEditLobbyProfileSize] = useState<LobbyProfileSize>(
-    ((roomProp as any).lobbyProfileSize as LobbyProfileSize) || DEFAULT_LOBBY_PROFILE_SIZE
   );
   const editHologramFileRef = useRef<HTMLInputElement>(null);
   const [youtubeFeatured, setYoutubeFeatured] = useState<any[]>([]);
@@ -9253,6 +9261,23 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     socket.emit("room:typing-stop", { roomId: room.id, userId: user.id });
 
     let textToSend = chatText.trim();
+    if (!aiTutorActive && featAiTutor && roomAiTutorEnabled) {
+      const wake = matchWakePhrase(textToSend);
+      if (wake) {
+        setChatText("");
+        setAutoTranslatePreview(null);
+        setMentionQuery(null);
+        setReplyingTo(null);
+        if (wake.persona === "maya") startWithPersona("Female", "Maya");
+        else if (wake.persona === "miles") startWithPersona("Male", "Miles");
+        else if (wake.afterText) startWithPersona("Female", "Maya");
+        else setAiPersonaPickerOpen(true);
+        if (wake.afterText) {
+          setTimeout(() => sendAiMessage(wake.afterText), 600);
+        }
+        return;
+      }
+    }
     if (autoTranslate) {
       if (autoTranslateTimerRef.current) clearTimeout(autoTranslateTimerRef.current);
       setAutoTranslatePreview(null);
@@ -9326,7 +9351,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       youtubePermission: editYoutubePermission,
       chatPermission: editChatPermission,
       lobbyProfileStyle: editLobbyProfileStyle,
-      lobbyProfileSize: editLobbyProfileSize,
     });
   };
 
@@ -14380,9 +14404,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 <div className="space-y-4">
                   <LobbyProfilePicker
                     style={editLobbyProfileStyle}
-                    size={editLobbyProfileSize}
                     onStyleChange={setEditLobbyProfileStyle}
-                    onSizeChange={setEditLobbyProfileSize}
                     testIdPrefix="edit-lobby-profile"
                   />
                   {/* Card Theme */}
@@ -15081,7 +15103,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       setEditRoomTheme(currentEditTheme);
                       setEditThemeOffset(Math.max(0, Math.floor(Math.max(0, themeIndex) / 4) * 4));
                       setEditLobbyProfileStyle((((room as any).lobbyProfileStyle as LobbyProfileStyle) || DEFAULT_LOBBY_PROFILE_STYLE));
-                      setEditLobbyProfileSize((((room as any).lobbyProfileSize as LobbyProfileSize) || DEFAULT_LOBBY_PROFILE_SIZE));
                       setEditDialogOpen(true);
                     }}
                     data-testid="button-host-settings"
@@ -16440,19 +16461,21 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             const vw = typeof window !== "undefined" ? window.innerWidth : 1280;
             // Avatar-first sizing: slightly larger heroes; decoration scale shrinks first via density
             let cardPx =
-              visibleCount <= 2 ? 168 :
-              visibleCount <= 4 ? 144 :
-              visibleCount <= 6 ? 118 :
-              visibleCount <= 8 ? 102 :
-              visibleCount <= 12 ? 86 :
-              visibleCount <= 18 ? 70 :
-              60;
-            if (vw < 400) cardPx = Math.min(cardPx, visibleCount <= 2 ? 124 : 88);
-            else if (vw < 640) cardPx = Math.min(cardPx, visibleCount <= 2 ? 140 : 100);
+              visibleCount <= 2 ? 128 :
+              visibleCount <= 4 ? 108 :
+              visibleCount <= 6 ? 92 :
+              visibleCount <= 8 ? 80 :
+              visibleCount <= 12 ? 68 :
+              visibleCount <= 18 ? 56 :
+              48;
+            if (vw < 400) cardPx = Math.min(cardPx, visibleCount <= 2 ? 104 : 76);
+            else if (vw < 640) cardPx = Math.min(cardPx, visibleCount <= 2 ? 112 : 86);
             const decoDensity = densityFromParticipantCount(visibleCount);
             const gapPx = cardPx <= 60 ? 4 : 6;
             // Bleed matches max decoration visual extent (config-driven) + mood emoji headroom
             const decoBleed = getMaxDecorationBleedPx(cardPx, decoDensity) + (cardPx <= 60 ? 6 : 10);
+            const profileStyle = resolveLobbyProfileStyle((room as any).lobbyProfileStyle);
+            const profileShape = lobbyShapeFromStyle(profileStyle);
             const isInOverlayMode = (activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || !!(room as any).hologramVideoUrl || (currentTheme && currentTheme !== "none");
             let gridCols =
               visibleCount === 1 ? 1 :
@@ -16465,7 +16488,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             else if (vw < 768) gridCols = Math.min(gridCols, 4);
           return (
           <div
-            className={isInOverlayMode ? "flex items-end justify-center p-2 pb-4 absolute bottom-0 left-0 right-0 z-20 pt-16 overflow-visible" : "flex-1 min-h-0 p-2 pt-14 overflow-y-auto overflow-x-visible"}
+            className={isInOverlayMode ? "flex items-end justify-center p-2 pb-4 absolute bottom-0 left-0 right-0 z-20 pt-16 overflow-visible" : "flex-1 min-h-0 p-2 pt-14 overflow-y-auto overflow-x-auto"}
             style={isInOverlayMode ? {} : {
               display: "grid",
               gridTemplateColumns: `repeat(${gridCols}, minmax(0, ${cardPx + decoBleed * 2}px))`,
@@ -16936,6 +16959,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       } : undefined}
                       cardPx={cardPx}
                       decoDensity={decoDensity}
+                      profileShape={profileShape}
                       fillMode={false}
                       hologramVideoUrl={null}
                       avatarGifUrl={participantAvatarGifs[p.id] || null}
@@ -17310,7 +17334,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   <span className="text-[14px] font-semibold" style={{ color: "rgba(230,235,245,0.95)" }}>Choose Your Tutor</span>
                 </div>
                 <p className="text-[12px] text-center mb-7 mt-3" style={{ color: "rgba(170,180,200,0.65)" }}>
-                  Pick a tutor — your choice is locked for the session.
+                  Pick Maya or Miles — or say their name. “Hey AI” opens this menu.
                 </p>
 
                 {/* Persona cards (dark neumorphic) */}
@@ -18002,7 +18026,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     <div>
                       <span className="text-[11px] font-semibold block" style={{ color: "rgba(255,255,255,0.70)" }}>Hands-Free</span>
                       <span className="text-[9px] leading-tight block mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
-                        {aiTutorSettings.wakeWordEnabled ? `Say "hey AI" to activate` : "Wake word disabled"}
+                        {aiTutorSettings.wakeWordEnabled ? `Say "hey AI", "Maya", or "Miles"` : "Wake word disabled"}
                       </span>
                     </div>
                     <div

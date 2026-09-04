@@ -120,6 +120,13 @@
       "when": 1779260000000,
       "tag": "0018_lobby_profile_display",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1779270000000,
+      "tag": "0019_lobby_profile_default_tile",
+      "breakpoints": true
     }
   ]
 }

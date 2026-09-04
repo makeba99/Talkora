@@ -4991,7 +4991,7 @@ export async function registerRoutes(
         hologramVideoUrl: parsed.data.hologramVideoUrl || null,
         titleColor: (parsed.data as any).titleColor || null,
         titleStyle: (parsed.data as any).titleStyle || null,
-        lobbyProfileStyle: (parsed.data as any).lobbyProfileStyle || "circle",
+        lobbyProfileStyle: (parsed.data as any).lobbyProfileStyle || "tile",
         lobbyProfileSize: (parsed.data as any).lobbyProfileSize || "md",
         ownerId,
       });

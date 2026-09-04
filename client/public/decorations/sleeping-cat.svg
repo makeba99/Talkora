@@ -10,8 +10,8 @@
       <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
-  <!-- Rim hugs the portrait edge so the cat sits around the card, not inside it -->
-  <rect x="14" y="14" width="172" height="172" rx="38" ry="38" stroke="#fbbf24" stroke-width="3" opacity="0.75" filter="url(#soft)">
+  <!-- Rim hugs the portrait edge so the cat sits around the card, not on the photo -->
+  <rect x="14" y="14" width="172" height="172" rx="28" ry="28" stroke="#fbbf24" stroke-width="3" opacity="0.75" filter="url(#soft)">
     <animate attributeName="opacity" values="0.45;0.85;0.45" dur="2.8s" repeatCount="indefinite"/>
   </rect>
   <!-- Sleeping cat perched on the top edge -->

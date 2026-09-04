@@ -22,26 +22,72 @@ import { SPEECH_LANG_MAP } from "./types";
 /** Pure-filler transcript pattern — recognized but carries no real content */
 export const FILLER_ONLY_PATTERN = /^(um+|uh+|hmm+|hm+|err+|erm+|ah+|mm+|mhm+|ugh+)(\s+(um+|uh+|hmm+|hm+|err+|erm+|ah+|mm+|mhm+|ugh+))*\.?$/i;
 
+export type WakePersona = "maya" | "miles" | "ai";
+
+export interface WakeMatch {
+  persona: WakePersona;
+  afterText: string;
+}
+
+const WAKE_GREET = "(?:hey|hi|hello|ok|okay|yo|wake\\s+up|start|listen|activate)";
+const WAKE_MAYA = "(?:maya|maia|mya)";
+const WAKE_MILES = "(?:miles|myles)";
+const WAKE_AI = "(?:ai|a\\.i\\.?|tutor|afi(?:\\s*k)?|eva|dude|agent)";
+
 /**
  * Wake-word pattern. Matches any of:
  *   "hey AI / hey A.I. / hey tutor / hey Afi / hey Afi K / hey Eva / hey Dude / hey agent"
  *   "ok AI / okay AI / yo AI / hi AI / hello AI"
  *   "wake up AI / wake up tutor"
  *   "start AI / listen AI / activate AI"
+ *   "Maya" / "hey Maya" / "Miles" / "hey Miles"
  *
- * Returns a capturing group for any text spoken AFTER the trigger phrase so it
- * can be sent directly as the first user message.
+ * Kept for callers that only need a boolean "is this a wake phrase".
  */
-export const WAKE_PATTERN =
-  /\b(?:hey|hi|hello|ok|okay|yo|wake\s+up|start|listen|activate)\s+(?:ai|a\.i\.?|tutor|afi(?:\s*k)?|eva|dude|agent)\b[,!.]?\s*(.*)/i;
+export const WAKE_PATTERN = new RegExp(
+  `\\b(?:${WAKE_GREET}\\s+${WAKE_AI}|(?:${WAKE_GREET}\\s+)?(?:${WAKE_MAYA}|${WAKE_MILES}))\\b`,
+  "i",
+);
+
+/**
+ * Parse a transcript into a wake persona + leftover question.
+ * Bare "Maya" / "Miles" only match as the whole utterance so chatting about
+ * someone named Maya does not summon the tutor.
+ */
+export function matchWakePhrase(raw: string): WakeMatch | null {
+  const text = raw
+    .trim()
+    .replace(/^[,\s]+/, "")
+    .replace(/[.!?]+$/g, "")
+    .trim();
+  if (!text) return null;
+
+  if (new RegExp(`^${WAKE_MAYA}$`, "i").test(text)) {
+    return { persona: "maya", afterText: "" };
+  }
+  if (new RegExp(`^${WAKE_MILES}$`, "i").test(text)) {
+    return { persona: "miles", afterText: "" };
+  }
+
+  let m = new RegExp(`^${WAKE_GREET}[,\\s]+${WAKE_MAYA}\\b[,!.]?\\s*(.*)$`, "i").exec(text);
+  if (m) return { persona: "maya", afterText: (m[1] || "").trim() };
+
+  m = new RegExp(`^${WAKE_GREET}[,\\s]+${WAKE_MILES}\\b[,!.]?\\s*(.*)$`, "i").exec(text);
+  if (m) return { persona: "miles", afterText: (m[1] || "").trim() };
+
+  m = new RegExp(`^${WAKE_GREET}[,\\s]+${WAKE_AI}\\b[,!.]?\\s*(.*)$`, "i").exec(text);
+  if (m) return { persona: "ai", afterText: (m[1] || "").trim() };
+
+  return null;
+}
 
 /**
  * WakeWordDetector — a lightweight always-on background listener.
  *
  * Runs a separate SpeechRecognition session in continuous mode while the AI is
- * inactive. When the user says a wake phrase ("hey AI", "hey tutor", …) it fires
- * onWake with any additional text spoken after the phrase (e.g. "hey AI what's up"
- * → afterText = "what's up").
+ * inactive. When the user says a wake phrase ("hey AI", "Maya", "Miles", …) it
+ * fires onWake with the matched persona and any extra text after the phrase
+ * (e.g. "hey Maya what's up" → persona maya, afterText = "what's up").
  *
  * Lifecycle:
  *   start()  — begin background listening (idempotent)
@@ -55,11 +101,11 @@ export class WakeWordDetector {
   private lang = "en-US";
   private _active = false;
   private restartTimer: ReturnType<typeof setTimeout> | null = null;
-  private onWake: (afterText: string) => void;
+  private onWake: (match: WakeMatch) => void;
   private onStatusChange: (listening: boolean) => void;
 
   constructor(
-    onWake: (afterText: string) => void,
+    onWake: (match: WakeMatch) => void,
     onStatusChange: (listening: boolean) => void
   ) {
     this.onWake = onWake;
@@ -71,7 +117,7 @@ export class WakeWordDetector {
   }
 
   setLanguage(lang: string) {
-    this.lang = lang;
+    this.lang = SPEECH_LANG_MAP[lang] || lang || "en-US";
   }
 
   start() {
@@ -106,14 +152,16 @@ export class WakeWordDetector {
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const transcript = e.results[i][0].transcript.trim();
         if (!transcript) continue;
-        const match = WAKE_PATTERN.exec(transcript);
-        if (match) {
-          const afterText = (match[1] || "").trim();
-          // Stop before firing so the primary STT can open the mic cleanly
-          this.stop();
-          this.onWake(afterText);
-          return;
-        }
+        const match = matchWakePhrase(transcript);
+        if (!match) continue;
+        // Bare names ("Maya" / "Miles") wait for a final result so mid-sentence
+        // mentions do not summon the tutor. "Hey AI" / "hey Maya" can fire early.
+        const greeted = new RegExp(`^${WAKE_GREET}\\b`, "i").test(transcript);
+        if (!greeted && !e.results[i].isFinal) continue;
+        // Stop before firing so the primary STT can open the mic cleanly
+        this.stop();
+        this.onWake(match);
+        return;
       }
     };
 

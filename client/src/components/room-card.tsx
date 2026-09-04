@@ -10,7 +10,7 @@ import { getAvatarRingClass } from "@/lib/avatar-ring";
 import { ROOM_THEMES } from "@/lib/room-theme-utils";
 import { UserBadgePips } from "@/components/user-badge-pips";
 import { densityFromSize } from "@/components/vip-avatar-frames";
-import { resolveLobbyProfileStyle, resolveLobbyProfileSize, LOBBY_PROFILE_RADIUS, LOBBY_PROFILE_BASE_PX, lobbyShapeFromStyle } from "@/lib/lobby-profile";
+import { resolveLobbyProfileStyle, LOBBY_PROFILE_RADIUS, lobbyShapeFromStyle } from "@/lib/lobby-profile";
 
 // Heavy components — only loaded on user interaction, never on initial paint.
 // profile-decorations.tsx is 1,900 lines of SVG data; keeping it out of the
@@ -790,16 +790,12 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
   /* Base avatar size — density scaling via circleScale keeps rooms compact
      when many participants are present while staying readable with 1–2 users. */
   const lobbyStyle = resolveLobbyProfileStyle((room as any).lobbyProfileStyle);
-  const lobbySize = resolveLobbyProfileSize((room as any).lobbyProfileSize);
   const lobbyRadius = LOBBY_PROFILE_RADIUS[lobbyStyle];
   const lobbyShape = lobbyShapeFromStyle(lobbyStyle);
-  const baseCircleSize = LOBBY_PROFILE_BASE_PX[lobbySize];
+  const baseCircleSize = 52;
   const circleSize = Math.round(baseCircleSize * circleScale);
   const isCircle = lobbyStyle === "circle";
-  const avatarRadiusClass = isCircle ? "rounded-full" : lobbyStyle === "tile" ? "rounded-lg" : "rounded-2xl";
-  const cardBodyHeight = isPremiumAtmosphere
-    ? (lobbySize === "lg" ? 318 : lobbySize === "sm" ? 268 : 292)
-    : (lobbySize === "lg" ? 300 : lobbySize === "sm" ? 252 : 278);
+  const avatarRadiusClass = isCircle ? "rounded-full" : "rounded-lg";
 
   const settingsButton = isOwner ? (
     <button
@@ -957,7 +953,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
       data-testid={`card-room-${room.id}`}
     >
       <div
-        className={`flex flex-col relative overflow-visible ${isPremiumAtmosphere ? "premium-atmosphere-card" : ""}`}
+        className={`flex flex-col relative overflow-hidden ${isPremiumAtmosphere ? "premium-atmosphere-card" : ""}`}
         style={{
           borderRadius: "24px",
           // Lobby cards always use the dark gradient — the room's interior
@@ -965,7 +961,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           background: isPremiumAtmosphere
             ? "linear-gradient(145deg, rgb(3,6,22) 0%, rgb(6,8,28) 38%, rgb(5,3,20) 72%, rgb(8,4,25) 100%)"
             : "linear-gradient(160deg, rgb(16, 20, 50) 0%, rgb(11, 15, 42) 100%)",
-          height: cardBodyHeight,
+          height: isPremiumAtmosphere ? 268 : 252,
           boxShadow: [
             "inset 0 1px 0 rgba(255,255,255,0.09)",
             "inset 0 -1px 0 rgba(0,0,0,0.50)",
@@ -1173,7 +1169,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               keeping the design exactly as-is for sparser rooms. */}
           {(() => {
             const tightSpacing = displayCount === 7 || displayCount === 8 || displayCount === 11 || displayCount === 12;
-            const colGapPx = tightSpacing ? 4 : 10;       // 2px ↔ tailwind gap-1.5 (6px)
+            const colGapPx = tightSpacing ? 2 : 6;       // 2px ↔ tailwind gap-1.5 (6px)
             const rowGapPx = 6;
             // Door is now absolutely positioned at bottom-right; protect the
             // bottom-right slot for any multi-column grid (≥2 cols).
@@ -1218,8 +1214,8 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                         boxShadow: hasRing
                           ? undefined
                           : isPremiumAtmosphere
-                            ? `0 0 6px rgba(145,40,130,0.4), 0 0 14px rgba(145,40,130,0.18)`
-                            : `0 0 8px ${glow.from}, 0 0 16px ${glow.to}`,
+                            ? `0 0 5px rgba(145,40,130,0.35), 0 0 10px rgba(145,40,130,0.15)`
+                            : `0 0 6px ${glow.from}, 0 0 12px ${glow.to}`,
                       }}
                     >
                       <Avatar style={{ width: circleSize, height: circleSize, borderRadius: lobbyRadius }} className={`${avatarRadiusClass} border ${hasRing ? "border-transparent" : isPremiumAtmosphere ? "border-white/20 shadow-[inset_0_0_12px_rgba(255,255,255,0.06)]" : "border-[#0a1228]"}`}>

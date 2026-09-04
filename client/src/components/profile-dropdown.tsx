@@ -1169,11 +1169,11 @@ export function ProfileDropdown({
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Avatar Ring</Label>
                 <div className="flex justify-center mb-3">
-                  <ProfileDecoration decorationId={selectedDecoration} size={72} soft={false} shape="rounded">
-                    <div className={`rounded-[22%] p-0.5 w-full h-full ${getAvatarRingClass(selectedRing)}`}>
-                      <Avatar className="w-full h-full rounded-[22%]">
-                        <AvatarImage src={user?.profileImageUrl || undefined} alt={user?.displayName || user?.firstName || "Your profile"} className="rounded-[22%] object-cover" />
-                        <AvatarFallback className="text-xl bg-primary/10 text-primary rounded-[22%]">
+                  <ProfileDecoration decorationId={selectedDecoration} size={72} soft={false}>
+                    <div className={`rounded-lg p-0.5 w-full h-full ${getAvatarRingClass(selectedRing)}`}>
+                      <Avatar className="w-full h-full rounded-lg">
+                        <AvatarImage src={user?.profileImageUrl || undefined} alt={user?.displayName || user?.firstName || "Your profile"} className="rounded-lg object-cover" />
+                        <AvatarFallback className="text-xl bg-primary/10 text-primary rounded-lg">
                           {getUserInitials(user)}
                         </AvatarFallback>
                       </Avatar>
@@ -1292,13 +1292,13 @@ export function ProfileDropdown({
               {/* ── Profile Card Animation ─────────────────────────────── */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Card animation</Label>
-                <p className="text-xs text-muted-foreground">Animated halo around your voice-room card — sits on the rim, not over your photo</p>
+                <p className="text-xs text-muted-foreground">Halo around your voice-room card — sits on the rim, not over your photo</p>
 
                 {/* Live preview */}
                 <div className="flex justify-center mb-2 py-3">
-                  <div className="relative rounded-[22%] overflow-visible bg-muted/30 border border-border/40" style={{ width: 72, height: 72 }}>
+                  <div className="relative rounded-lg overflow-visible bg-muted/30 border border-border/40" style={{ width: 72, height: 72 }}>
                     <ProfileAnimationOverlay animationId={selectedAnimation} isHost={true} />
-                    <div className="absolute inset-0 flex items-center justify-center z-10 overflow-hidden rounded-[22%]">
+                    <div className="absolute inset-0 flex items-center justify-center z-10 overflow-hidden rounded-lg">
                       <div className="w-10 h-10 rounded-full bg-primary/20 ring-2 ring-primary/40 flex items-center justify-center">
                         <span className="text-lg">{PROFILE_ANIMATIONS.find(a => a.id === selectedAnimation)?.emoji ?? "👤"}</span>
                       </div>

@@ -35,7 +35,7 @@ export const rooms = pgTable("rooms", {
   chatPermission: varchar("chat_permission", { length: 20 }).notNull().default("everyone"),
   titleColor: varchar("title_color", { length: 30 }),
   titleStyle: varchar("title_style", { length: 20 }),
-  lobbyProfileStyle: varchar("lobby_profile_style", { length: 20 }).notNull().default("circle"),
+  lobbyProfileStyle: varchar("lobby_profile_style", { length: 20 }).notNull().default("tile"),
   lobbyProfileSize: varchar("lobby_profile_size", { length: 10 }).notNull().default("md"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({

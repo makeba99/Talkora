@@ -6,12 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Hammer, X, Sparkles, Upload, Loader2 } from "lucide-react";
-import { LANGUAGES, LEVELS } from "@shared/constants";
+import { LANGUAGES, LEVELS, DEFAULT_LOBBY_PROFILE_STYLE, type LobbyProfileStyle } from "@shared/constants";
 import { GifPickerButton } from "@/components/chat-picker";
 import { NeuParticipantSlider } from "@/components/neu-participant-slider";
 import { TitleAppearancePicker } from "@/components/title-appearance-picker";
 import { LobbyProfilePicker } from "@/components/lobby-profile-picker";
-import { DEFAULT_LOBBY_PROFILE_SIZE, DEFAULT_LOBBY_PROFILE_STYLE, type LobbyProfileSize, type LobbyProfileStyle } from "@shared/constants";
 import { useToast } from "@/hooks/use-toast";
 
 interface CreateRoomDialogProps {
@@ -25,7 +24,6 @@ interface CreateRoomDialogProps {
     titleColor?: string | null;
     titleStyle?: string | null;
     lobbyProfileStyle?: LobbyProfileStyle;
-    lobbyProfileSize?: LobbyProfileSize;
   }) => void;
   isPending?: boolean;
   mobileFab?: boolean;
@@ -49,7 +47,6 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab, open: con
   const [maxUsers, setMaxUsers] = useState(8);
   const [isPublic, setIsPublic] = useState(true);
   const [lobbyProfileStyle, setLobbyProfileStyle] = useState<LobbyProfileStyle>(DEFAULT_LOBBY_PROFILE_STYLE);
-  const [lobbyProfileSize, setLobbyProfileSize] = useState<LobbyProfileSize>(DEFAULT_LOBBY_PROFILE_SIZE);
   // mediaUrl is the chosen card hologram. It can come from either the Tenor
   // GIF picker or a direct upload (image / GIF / short video). Whichever the
   // host selects last wins, since the card slot only shows one piece of media.
@@ -65,7 +62,6 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab, open: con
     setMediaUrl(null);
     setMediaKind("gif");
     setLobbyProfileStyle(DEFAULT_LOBBY_PROFILE_STYLE);
-    setLobbyProfileSize(DEFAULT_LOBBY_PROFILE_SIZE);
   };
 
   const handleFilePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,7 +105,6 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab, open: con
       titleColor: titleColor || null,
       titleStyle: titleStyle !== "normal" ? titleStyle : null,
       lobbyProfileStyle,
-      lobbyProfileSize,
     });
     resetForm();
     setOpen(false);
@@ -276,9 +271,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab, open: con
 
           <LobbyProfilePicker
             style={lobbyProfileStyle}
-            size={lobbyProfileSize}
             onStyleChange={setLobbyProfileStyle}
-            onSizeChange={setLobbyProfileSize}
             testIdPrefix="create-lobby-profile"
           />
 

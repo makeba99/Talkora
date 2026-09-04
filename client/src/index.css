@@ -11360,7 +11360,7 @@ html.neomorphic-light .pinned-socials-link {
    ============================================================================ */
 .room-card {
   content-visibility: auto;
-  contain-intrinsic-size: 380px 420px;
+  contain-intrinsic-size: 360px 380px;
 }
 /* When boost mode is on, also defer painting heavy panels offscreen. */
 html.boost-mode .neu-card,
@@ -13868,26 +13868,27 @@ html.boost-mode .glass-panel {
   100% { transform: translateY(1400%) translateX(30px) rotate(360deg); opacity: 0; }
 }
 
-/* Halo animations sit around the portrait — parent must be overflow:visible */
+/* Rim animations sit around the portrait — parent must be overflow:visible */
 .pa-around {
   border-radius: inherit;
 }
 .pa-around-ring {
   position: absolute;
-  inset: 10%;
-  border-radius: inherit;
+  inset: 12%;
+  border-radius: 12px;
   pointer-events: none;
 }
 .avatar-shell[data-shape="circle"] .pa-around-ring,
 .avatar-shell[data-shape="circle"] .pa-around {
   border-radius: 50%;
 }
-.avatar-shell[data-shape="rounded"] .pa-around-ring,
-.avatar-shell[data-shape="rounded"] .pa-around {
-  border-radius: 22%;
+.avatar-shell[data-shape="circle"] .pa-around-fire {
+  left: 14%;
+  right: 14%;
+  border-radius: 0 0 50% 50%;
 }
 .pa-around-aurora {
-  inset: 8%;
+  inset: 10%;
   padding: 3px;
   background: conic-gradient(from 0deg, #6366f1, #a855f7, #22d3ee, #6366f1);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -13923,10 +13924,10 @@ html.boost-mode .glass-panel {
   position: absolute;
   left: 8%;
   right: 8%;
-  bottom: 4%;
-  height: 28%;
-  border-radius: 0 0 50% 50%;
-  background: radial-gradient(ellipse at 50% 100%, rgba(249, 115, 22, 0.7) 0%, rgba(239, 68, 68, 0.35) 45%, transparent 75%);
+  bottom: 2%;
+  height: 22%;
+  border-radius: 0 0 12px 12px;
+  background: radial-gradient(ellipse at 50% 100%, rgba(249, 115, 22, 0.65) 0%, rgba(239, 68, 68, 0.28) 50%, transparent 78%);
   animation: pa-fire-rise 2.2s ease-in-out infinite;
   filter: blur(1px);
 }
@@ -13947,4 +13948,6 @@ html.boost-mode .glass-panel {
     animation: none !important;
   }
 }
+
+
 

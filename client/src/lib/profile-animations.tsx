@@ -1,19 +1,17 @@
 /**
- * Profile Animation system — card-level overlay effects visible to all
- * participants in a voice room. Distinct from avatar-frame ProfileDecorations:
- * these animate around the participant card, not over the portrait.
+ * Profile Animation system — rim effects around the portrait, never over it.
+ * Distinct from avatar-frame ProfileDecorations (character overlays).
  *
- * All animations are pure-CSS (keyframes defined in index.css with the
- * `pa-` prefix) so there are zero JS animation loops and no canvas overhead.
+ * All animations are pure-CSS (keyframes in index.css with the `pa-` prefix).
  */
 
 export const PROFILE_ANIMATIONS = [
   { id: "none", label: "None", description: "No card animation", emoji: null },
-  { id: "aurora", label: "Aurora", description: "Shifting aurora halo", emoji: "🌌" },
+  { id: "aurora", label: "Aurora", description: "Aurora halo around the card", emoji: "🌌" },
   { id: "neon-pulse", label: "Neon Pulse", description: "Pulsing neon rim", emoji: "💫" },
-  { id: "starfield", label: "Starfield", description: "Orbiting sparkles", emoji: "✨" },
+  { id: "starfield", label: "Starfield", description: "Sparkles on the rim", emoji: "✨" },
   { id: "fire-aura", label: "Ember", description: "Warm fire around the card", emoji: "🔥" },
-  { id: "frost", label: "Frost", description: "Icy corner shimmer", emoji: "❄️" },
+  { id: "frost", label: "Frost", description: "Icy rim shimmer", emoji: "❄️" },
   { id: "golden", label: "Golden", description: "VIP gold rim sweep", emoji: "👑" },
   { id: "cherry-blossom", label: "Blossom", description: "Petals around the portrait", emoji: "🌸" },
 ] as const;
@@ -63,12 +61,7 @@ const PETALS = Array.from({ length: 10 }, (_, i) => {
 });
 
 interface OverlayProps {
-  /** The animation id stored on the user record. Null / undefined → no effect. */
   animationId: string | null | undefined;
-  /**
-   * Host / room-owner participants render at full intensity; other participants
-   * render at 70% so the host's card stands out in the grid.
-   */
   isHost?: boolean;
   className?: string;
 }
@@ -87,7 +80,7 @@ export function ProfileAnimationOverlay({
 
   const opacity = isHost ? 1 : 0.78;
   const base = `absolute pointer-events-none overflow-visible pa-around ${className}`;
-  const wrapStyle = { inset: "-14%", zIndex: 6, opacity } as const;
+  const wrapStyle = { inset: "-12%", zIndex: 6, opacity } as const;
 
   switch (resolved) {
 

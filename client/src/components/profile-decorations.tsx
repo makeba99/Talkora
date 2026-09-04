@@ -1675,7 +1675,7 @@ export function ProfileDecoration({
   size = 56,
   density,
   soft,
-  shape = "rounded",
+  shape,
   className,
   children,
 }: ProfileDecorationProps) {

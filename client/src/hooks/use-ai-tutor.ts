@@ -19,7 +19,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { extractSentences } from "@/lib/ai-tutor/tts";
 import { createTts, type TtsLike } from "@/lib/ai-tutor/tts-factory";
-import { SttEngine, WakeWordDetector, FILLER_ONLY_PATTERN } from "@/lib/ai-tutor/stt";
+import { SttEngine, WakeWordDetector, FILLER_ONLY_PATTERN, type WakeMatch } from "@/lib/ai-tutor/stt";
 import type { Viseme } from "@/lib/ai-tutor/lipsync";
 import { streamTokens, fetchBufferedReply } from "@/lib/ai-tutor/stream";
 import {
@@ -44,6 +44,8 @@ export interface AiTutorDeps {
   username: string | null;
   activeYoutubeId: string | null;
   showYoutube: boolean;
+  /** "hey AI" with no name — open the Maya/Miles picker. */
+  onWakeOpenPicker?: () => void;
 }
 
 const FEMALE_INTROS = [
@@ -120,7 +122,7 @@ function loadSavedAiSettings(): AiTutorSettings {
 }
 
 export function useAiTutor(deps: AiTutorDeps) {
-  const { socket, roomId, roomLanguage, userId, username, activeYoutubeId, showYoutube } = deps;
+  const { socket, roomId, roomLanguage, userId, username, activeYoutubeId, showYoutube, onWakeOpenPicker } = deps;
 
   // ── AI State ─────────────────────────────────────────────────────────────
   const [aiActive, setAiActive] = useState(false);
@@ -168,8 +170,10 @@ export function useAiTutor(deps: AiTutorDeps) {
   const queueProcessingRef = useRef(false);
   // ── Wake word detector ref ────────────────────────────────────────────────
   const wakeWordRef = useRef<WakeWordDetector | null>(null);
-  // Stable ref so the wake callback never has a stale closure over toggleAiTutor
+  // Stable refs so the wake callback never has a stale closure
   const toggleAiTutorRef = useRef<(() => void) | null>(null);
+  const startWithPersonaRef = useRef<((voice: VoicePersona, pName: string) => void) | null>(null);
+  const onWakeOpenPickerRef = useRef<(() => void) | undefined>(undefined);
   // Persists the admin-configured ElevenLabs voiceId across renders/persona switches.
   // Set once on mount from /api/ai-tutor/voice-config so startWithPersona can
   // pass it to ElevenLabs for Afik K (Female) without a race against React state.
@@ -799,6 +803,8 @@ export function useAiTutor(deps: AiTutorDeps) {
 
   // Keep the wake callback's ref current every time toggleAiTutor is recreated
   useEffect(() => { toggleAiTutorRef.current = toggleAiTutor; }, [toggleAiTutor]);
+  useEffect(() => { startWithPersonaRef.current = startWithPersona; }, [startWithPersona]);
+  useEffect(() => { onWakeOpenPickerRef.current = onWakeOpenPicker; }, [onWakeOpenPicker]);
 
   // ── Observe AI message from another user in the room ─────────────────────
   // Uses the same factory so observers hear the same voice the active
@@ -816,27 +822,31 @@ export function useAiTutor(deps: AiTutorDeps) {
 
   // ── Wake word detector — lifecycle ───────────────────────────────────────
   // Created once. Starts passively when AI is inactive so users can say
-  // "hey AI" / "hey tutor" / "hey Eva" / etc. to activate hands-free.
+  // "hey AI" / "Maya" / "Miles" to activate hands-free.
   // Stops as soon as AI becomes active (primary STT takes over the mic).
   useEffect(() => {
     const detector = new WakeWordDetector(
-      // onWake — fired when a trigger phrase is detected
-      (afterText: string) => {
-        addDebug("info", `Wake word detected${afterText ? ` — "${afterText}"` : ""}`);
-        // Activate AI using whatever persona the user last selected
-        toggleAiTutorRef.current?.();
-        // If the user already asked something in the same breath, queue it up
-        // after a short delay to let the intro TTS start first
+      (match: WakeMatch) => {
+        const { persona, afterText } = match;
+        addDebug("info", `Wake word detected (${persona})${afterText ? ` — "${afterText}"` : ""}`);
+        if (persona === "maya") {
+          startWithPersonaRef.current?.("Female", "Maya");
+        } else if (persona === "miles") {
+          startWithPersonaRef.current?.("Male", "Miles");
+        } else if (afterText) {
+          // "hey AI what's the weather" — skip the picker and start talking
+          startWithPersonaRef.current?.("Female", "Maya");
+        } else if (onWakeOpenPickerRef.current) {
+          onWakeOpenPickerRef.current();
+        } else {
+          toggleAiTutorRef.current?.();
+        }
         if (afterText) {
-          // 600ms — intro TTS starts at ~50ms; this gives it time to begin
-          // then sendAiMessage naturally interrupts it to answer the user's question.
-          // Reduced from 900ms so the user gets a response faster on wake+query combos.
           setTimeout(() => {
             sendAiMessageRef.current?.(afterText);
           }, 600);
         }
       },
-      // onStatusChange — keeps the UI indicator in sync
       (listening: boolean) => setWakeListening(listening)
     );
     wakeWordRef.current = detector;
@@ -852,14 +862,12 @@ export function useAiTutor(deps: AiTutorDeps) {
 
   // Start / stop the wake word detector based on AI active state and user preference
   useEffect(() => {
-    if (aiActive || !aiSettings.wakeWordEnabled) {
-      // AI is already active, or user disabled the wake word feature — stop detector
+    if (aiActive || !aiSettings.wakeWordEnabled || !aiRoomEnabled) {
       wakeWordRef.current?.stop();
     } else {
-      // AI is inactive and wake word is enabled — start the background listener
       wakeWordRef.current?.start();
     }
-  }, [aiActive, aiSettings.wakeWordEnabled]);
+  }, [aiActive, aiSettings.wakeWordEnabled, aiRoomEnabled]);
 
   // Keep wake detector language in sync with room language changes
   useEffect(() => {

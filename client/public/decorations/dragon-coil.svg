@@ -14,7 +14,7 @@
       <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
-  <rect x="14" y="14" width="172" height="172" rx="38" ry="38" stroke="#34d399" stroke-width="2.6" opacity="0.55" filter="url(#glow)">
+  <rect x="14" y="14" width="172" height="172" rx="28" ry="28" stroke="#34d399" stroke-width="2.6" opacity="0.55" filter="url(#glow)">
     <animate attributeName="opacity" values="0.4;0.8;0.4" dur="2.4s" repeatCount="indefinite"/>
   </rect>
   <!-- Dragon coiling around the outer edge -->

@@ -72,7 +72,7 @@ export interface AvatarShellProps {
 export function AvatarShell({
   size,
   frameId,
-  shape = "rounded",
+  shape,
   density: densityProp,
   soft,
   className,
@@ -116,7 +116,7 @@ export function AvatarShell({
       style={shellStyle}
       data-decoration={id ?? "none"}
       data-density={density}
-      data-shape={shape}
+      {...(shape ? { "data-shape": shape } : {})}
     >
       <div className="avatar-shell__media">{children}</div>
 

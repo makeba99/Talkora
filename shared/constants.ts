@@ -214,7 +214,7 @@ export const LEVELS = ["Beginner", "Intermediate", "Advanced", "Native"] as cons
 /** How participant avatars render on the lobby room card (outside the live room). */
 export const LOBBY_PROFILE_STYLES = ["circle", "squircle", "tile"] as const;
 export type LobbyProfileStyle = typeof LOBBY_PROFILE_STYLES[number];
-export const DEFAULT_LOBBY_PROFILE_STYLE: LobbyProfileStyle = "circle";
+export const DEFAULT_LOBBY_PROFILE_STYLE: LobbyProfileStyle = "tile";
 
 export const LOBBY_PROFILE_SIZES = ["sm", "md", "lg"] as const;
 export type LobbyProfileSize = typeof LOBBY_PROFILE_SIZES[number];
