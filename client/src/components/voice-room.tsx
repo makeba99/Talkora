@@ -10030,12 +10030,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
       <div className="flex-1 flex flex-col m-0 overflow-hidden min-h-0" style={{ display: sidePanelTab === "chat" ? "flex" : "none" }}>
         {/* ── Filter row — All / @Mentions / Welcome / Search ─────────── */}
-        <div className="chat-header-filters">
+        <div className="chat-header-filters" role="toolbar" aria-label="Chat filters">
           <button
             onClick={() => setShowMentionsOnly(false)}
             className="room-filter-pill"
             data-active={!showMentionsOnly}
             data-testid="filter-all-messages"
+            aria-pressed={!showMentionsOnly}
           >
             All
           </button>
@@ -10044,8 +10045,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             className="room-filter-pill"
             data-active={showMentionsOnly}
             data-testid="filter-mentions"
+            aria-pressed={showMentionsOnly}
           >
-            <AtSign className="w-2.5 h-2.5" /> Mentions
+            <AtSign className="w-3 h-3" aria-hidden /> Mentions
           </button>
           {isHost && (
             <button
@@ -10065,9 +10067,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             data-active={showChatSearch}
             data-testid="button-chat-search-toggle"
             title="Search messages"
+            aria-label={showChatSearch ? "Close message search" : "Search messages"}
+            aria-expanded={showChatSearch}
             style={{ marginLeft: isHost ? "0" : "auto" }}
           >
-            <Search className="w-2.5 h-2.5" />
+            <Search className="w-3.5 h-3.5" aria-hidden />
           </button>
         </div>
         {showChatSearch && (
@@ -10191,15 +10195,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 );
               }
               return displayedMessages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-3 py-12 mt-auto">
-                <div className="w-11 h-11 rounded-full bg-muted/30 border border-border/30 flex items-center justify-center">
+              <div className="flex flex-col items-center justify-center gap-3 py-12 mt-auto px-4">
+                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center">
                   {showMentionsOnly
-                    ? <AtSign className="w-5 h-5 text-muted-foreground/40" />
-                    : <MessageSquare className="w-5 h-5 text-muted-foreground/40" />
+                    ? <AtSign className="w-4 h-4 text-muted-foreground/50" />
+                    : <MessageSquare className="w-4 h-4 text-muted-foreground/50" />
                   }
                 </div>
-                <p className="text-[11px] text-muted-foreground/60 text-center leading-relaxed max-w-[140px]">
-                  {showMentionsOnly ? "No mentions yet." : "No messages yet.\nStart the conversation!"}
+                <p className="text-xs text-muted-foreground/70 text-center leading-relaxed max-w-[180px]">
+                  {showMentionsOnly ? "No mentions yet." : chatSearch.trim() ? "No matching messages." : "No messages yet. Say hello!"}
                 </p>
               </div>
             ) : (
@@ -10497,7 +10501,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   (prevMsg as any).type !== "deleted" &&
                   prevMsg.type !== "announcement" &&
                   prevMsg.type !== "badge" &&
+                  prevMsg.type !== "welcome" &&
+                  prevMsg.type !== "vip_shoutout" &&
                   prevMsg.userId === msg.userId &&
+                  !!prevMsg.isPrivate === !!msg.isPrivate &&
                   (msgDate.getTime() - prevMsgDate!.getTime()) < 2 * 60 * 1000;
                 const _today = new Date();
                 const _yesterday = new Date(_today); _yesterday.setDate(_today.getDate() - 1);
@@ -10556,15 +10563,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     {/* Bubble column — avatar lives inside card header */}
                     <div className={`chat-bubble-col ${isOwn ? "items-end" : "items-start"}`}>
 
-                      {/* Private whisper badge — own only, above bubble */}
-                      {isOwn && msg.isPrivate && (
-                        <div className="flex items-center justify-end mb-0.5">
-                          <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-purple-400/40 text-purple-300" data-testid={`badge-private-message-${msg.id}`}>
-                            <LockKeyhole className="w-2 h-2 mr-0.5" />
-                            Whisper
-                          </Badge>
-                        </div>
-                      )}
+                      {/* Private whisper badge above bubble removed — chip lives in header/meta */}
 
                       {/* Reply quote block */}
                       {msg.replyTo && (
@@ -10702,22 +10701,21 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                           data-grouped={isGrouped ? "true" : undefined}
                           data-private={msg.isPrivate ? "true" : undefined}
                           style={msg.cardColor ? {
-                            background: `linear-gradient(158deg, ${msg.cardColor}72 0%, ${msg.cardColor}52 52%, ${msg.cardColor}38 100%)`,
+                            background: `linear-gradient(160deg, ${msg.cardColor}38 0%, ${msg.cardColor}1f 100%)`,
                             borderColor: `${msg.cardColor}55`,
-                            borderTopColor: `${msg.cardColor}88`,
-                            boxShadow: `0 8px 24px rgba(0,0,0,0.68), 0 2px 7px rgba(0,0,0,0.48), inset 0 1px 0 ${msg.cardColor}44, 0 0 28px ${msg.cardColor}22`,
+                            boxShadow: `0 1px 2px rgba(0,0,0,0.28)`,
                           } : undefined}
                         >
 
-                        {/* Card header: avatar + name + roles — others, every message */}
-                        {!isOwn && (
+                        {/* Card header: avatar + name + roles — hide on grouped continuations */}
+                        {!isOwn && !isGrouped && (
                           <div className="chat-card-header">
                             <div className="relative flex-shrink-0 group/avatar">
                               <Avatar
-                                className="w-[26px] h-[26px]"
+                                className="chat-msg-avatar"
                                 style={{
-                                  boxShadow: `0 2px 8px rgba(0,0,0,.70), 0 0 10px ${rc.glow}`,
-                                  border: "1.5px solid rgba(255,255,255,0.10)",
+                                  boxShadow: `0 1px 4px rgba(0,0,0,.55), 0 0 6px ${rc.glow}`,
+                                  border: "1px solid rgba(255,255,255,0.10)",
                                 }}
                               >
                                 <AvatarImage src={msgUser?.profileImageUrl || undefined} alt="" />
@@ -10731,21 +10729,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                               />
                             </div>
                             <div className="flex flex-col min-w-0 flex-1">
-                              <div className="flex items-center gap-1 flex-wrap">
+                              <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                                 <span className="chat-bubble-sender-name">{getUserDisplayName(msgUser)}</span>
-                                {msg.userId !== "system" && (
-                                  <button
-                                    className={`chat-dm-whisper-btn${privateChatToId === msg.userId ? " chat-dm-whisper-btn--active" : ""}`}
-                                    onClick={() => {
-                                      setPrivateChatToId(privateChatToId === msg.userId ? "public" : msg.userId);
-                                      chatInputRef.current?.focus();
-                                    }}
-                                    title={privateChatToId === msg.userId ? "Stop whispering to " + getUserDisplayName(msgUser) : `Whisper to ${getUserDisplayName(msgUser)}`}
-                                    data-testid={`button-dm-name-${msg.id}`}
-                                  >
-                                    <MessageSquare className="w-2.5 h-2.5" />
-                                  </button>
-                                )}
                                 {msg.userId === room.ownerId && (
                                   <span className="chat-role-pill chat-role-pill--owner">Owner</span>
                                 )}
@@ -10756,28 +10741,43 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                   <span className="chat-role-pill chat-role-pill--admin">Admin</span>
                                 )}
                                 {msg.userId !== room.ownerId && participantRoles[msg.userId] === "troll" && (
-                                  <span className="chat-role-pill chat-role-pill--troll">🧌 Troll</span>
+                                  <span className="chat-role-pill chat-role-pill--troll">Troll</span>
                                 )}
                                 {msg.isPrivate && (
-                                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 border-purple-400/40 text-purple-300" data-testid={`badge-private-message-${msg.id}`}>
-                                    <LockKeyhole className="w-2 h-2 mr-0.5" />
+                                  <span className="chat-whisper-chip" data-testid={`badge-private-message-${msg.id}`}>
+                                    <LockKeyhole className="w-2.5 h-2.5" aria-hidden />
                                     Whisper
-                                  </Badge>
+                                  </span>
                                 )}
+                                {msg.userId !== "system" && (
+                                  <button
+                                    className={`chat-dm-whisper-btn${privateChatToId === msg.userId ? " chat-dm-whisper-btn--active" : ""}`}
+                                    onClick={() => {
+                                      setPrivateChatToId(privateChatToId === msg.userId ? "public" : msg.userId);
+                                      chatInputRef.current?.focus();
+                                    }}
+                                    title={privateChatToId === msg.userId ? "Stop whispering to " + getUserDisplayName(msgUser) : `Whisper to ${getUserDisplayName(msgUser)}`}
+                                    aria-label={privateChatToId === msg.userId ? "Stop whispering" : `Whisper to ${getUserDisplayName(msgUser)}`}
+                                    data-testid={`button-dm-name-${msg.id}`}
+                                  >
+                                    <MessageSquare className="w-2.5 h-2.5" />
+                                  </button>
+                                )}
+                                <span className="chat-msg-time chat-msg-time--header">{formatTime(msg.createdAt)}</span>
                               </div>
                             </div>
                           </div>
                         )}
 
-                        {/* Card header — own messages: avatar + name right-aligned */}
-                        {isOwn && (
-                          <div className="chat-card-header" style={{ flexDirection: "row-reverse" }}>
+                        {/* Card header — own messages (first in group only) */}
+                        {isOwn && !isGrouped && (
+                          <div className="chat-card-header chat-card-header--own">
                             <div className="relative flex-shrink-0">
                               <Avatar
-                                className="w-[26px] h-[26px]"
+                                className="chat-msg-avatar"
                                 style={{
-                                  boxShadow: `0 2px 8px rgba(0,0,0,.70), 0 0 10px ${rc.glow}`,
-                                  border: "1.5px solid rgba(255,255,255,0.10)",
+                                  boxShadow: `0 1px 4px rgba(0,0,0,.55), 0 0 6px ${rc.glow}`,
+                                  border: "1px solid rgba(255,255,255,0.10)",
                                 }}
                               >
                                 <AvatarImage src={user?.profileImageUrl || undefined} alt="" />
@@ -10786,8 +10786,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                 </AvatarFallback>
                               </Avatar>
                             </div>
-                            <div className="flex flex-col min-w-0 items-end">
-                              <div className="flex items-center gap-1 flex-row-reverse flex-wrap">
+                            <div className="flex flex-col min-w-0 items-end flex-1">
+                              <div className="flex items-center gap-1.5 flex-row-reverse flex-wrap min-w-0">
                                 <span className="chat-bubble-sender-name">{getUserDisplayName(user)}</span>
                                 {msg.userId === room.ownerId && (
                                   <span className="chat-role-pill chat-role-pill--owner">Owner</span>
@@ -10798,8 +10798,25 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                                 {user?.role === "admin" && (
                                   <span className="chat-role-pill chat-role-pill--admin">Admin</span>
                                 )}
+                                {msg.isPrivate && (
+                                  <span className="chat-whisper-chip" data-testid={`badge-private-message-${msg.id}`}>
+                                    <LockKeyhole className="w-2.5 h-2.5" aria-hidden />
+                                    Whisper
+                                  </span>
+                                )}
+                                <span className="chat-msg-time chat-msg-time--header">{formatTime(msg.createdAt)}</span>
                               </div>
                             </div>
+                          </div>
+                        )}
+
+                        {/* Whisper chip for grouped private continuations */}
+                        {isGrouped && msg.isPrivate && (
+                          <div className={`flex mb-1 ${isOwn ? "justify-end" : "justify-start"}`}>
+                            <span className="chat-whisper-chip" data-testid={`badge-private-message-${msg.id}`}>
+                              <LockKeyhole className="w-2.5 h-2.5" aria-hidden />
+                              Whisper
+                            </span>
                           </div>
                         )}
 
@@ -10859,13 +10876,13 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                           >
                             {renderMessageContent(msg.text, (url) => setLightboxMedia({ url, msgId: msg.id }), (id) => handleSelectYoutubeVideo(id))}
                             {(msg as any).edited && (
-                              <span className="text-[9px] text-white/25 ml-1 italic">(edited)</span>
+                              <span className="chat-msg-edited">(edited)</span>
                             )}
                           </div>
                         )}
-                        {/* Timestamp — at end of card, no action bar here */}
-                        {editingMsgId !== msg.id && (
-                          <div className={`flex mt-1.5 ${isOwn ? "justify-end" : "justify-start"}`}>
+                        {/* Timestamp footer — grouped messages only (header already has time) */}
+                        {editingMsgId !== msg.id && isGrouped && (
+                          <div className={`chat-msg-meta ${isOwn ? "chat-msg-meta--own" : ""}`}>
                             <span className="chat-msg-time">{formatTime(msg.createdAt)}</span>
                           </div>
                         )}
