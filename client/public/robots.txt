@@ -3,5 +3,10 @@ Allow: /
 Disallow: /api/
 Disallow: /admin
 Disallow: /socket.io/
+Disallow: /messages/
+Disallow: /payment-methods
+
+# Prefer HTTPS canonical host
+Host: https://vextorn.com
 
 Sitemap: https://vextorn.com/sitemap.xml

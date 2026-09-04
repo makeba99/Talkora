@@ -464,9 +464,12 @@ function DeferredLobbyOverlays({ onStepChange }: { onStepChange: (id: string) =>
 
 export default function Lobby() {
   useDocumentMeta({
-    title: "Live voice rooms by language",
+    title: "Live voice rooms for language practice",
     description:
-      "Join live audio rooms by language and level. Practice English, Spanish, French, Korean, Japanese and more with real people on Vextorn.",
+      "Practice English, Spanish, French, Korean, Japanese and more in live voice rooms. Join by language and level — free on Vextorn.",
+    ogTitle: "Vextorn — Live voice rooms for language practice",
+    ogDescription:
+      "Join real-time audio rooms by language and level. Talk with people worldwide on Vextorn.",
   });
   const { user } = useAuth();
   const { socket } = useSocket();
@@ -1608,10 +1611,8 @@ export default function Lobby() {
                 <VextornMark size={22} />
               </div>
             </div>
-            {/* sr-only h1 ensures screen readers and Lighthouse accessibility
-                audits always find a page-level heading even on viewports
-                where the visible brand text is inside a display:none container. */}
-            <h1 className="sr-only">Vextorn — Talk. Share. Belong.</h1>
+            {/* sr-only h1: brand first + language-practice keywords for SEO/a11y */}
+            <h1 className="sr-only">Vextorn — live voice rooms for language practice. Talk. Share. Belong.</h1>
             <div className="min-w-0 hidden sm:flex flex-col justify-center leading-none" aria-hidden="true">
               <span
                 className="text-[17px] leading-none tracking-tight"
@@ -2463,12 +2464,12 @@ export default function Lobby() {
               <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
                 <Mic className="w-8 h-8 text-muted-foreground" />
               </div>
-              <div className="text-center space-y-1">
-                <h3 className="font-semibold" data-testid="text-no-rooms">No rooms found</h3>
-                <p className="text-sm text-muted-foreground">
+              <div className="text-center space-y-1.5 max-w-sm px-4">
+                <h3 className="font-semibold text-base" data-testid="text-no-rooms">No live rooms yet</h3>
+                <p className="text-sm text-muted-foreground leading-snug">
                   {searchQuery || selectedLanguage !== "All"
-                    ? "Try adjusting your filters"
-                    : "Be the first to create a voice room!"}
+                    ? "Try another language or clear search to see more rooms."
+                    : "Start a voice room and invite others to practice speaking together."}
                 </p>
               </div>
               {user ? (

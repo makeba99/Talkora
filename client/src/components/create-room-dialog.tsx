@@ -7,9 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Hammer, X, Sparkles, Upload, Loader2 } from "lucide-react";
 import { LANGUAGES, LEVELS } from "@shared/constants";
-import { TITLE_COLOR_PALETTE } from "@shared/entitlements";
 import { GifPickerButton } from "@/components/chat-picker";
 import { NeuParticipantSlider } from "@/components/neu-participant-slider";
+import { TitleAppearancePicker } from "@/components/title-appearance-picker";
 import { useToast } from "@/hooks/use-toast";
 
 interface CreateRoomDialogProps {
@@ -212,71 +212,14 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab, open: con
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Title Color</Label>
-            <div className="flex flex-wrap gap-1.5">
-              {TITLE_COLOR_PALETTE.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setTitleColor(c.value)}
-                  className={`w-7 h-7 rounded-full border-2 transition-all ${titleColor === c.value ? "border-white scale-110 shadow-lg" : "border-transparent hover:border-white/40"}`}
-                  style={{ background: c.value || "linear-gradient(135deg, #888, #ccc)" }}
-                  title={c.label}
-                  data-testid={`create-room-title-color-${c.id}`}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Title Style</Label>
-            <div className="flex flex-wrap gap-1.5">
-              {([
-                { id: "normal", label: "Normal" },
-                { id: "bold", label: "Bold" },
-                { id: "italic", label: "Italic" },
-                { id: "gradient", label: "Gradient" },
-                { id: "glow", label: "Glow" },
-                { id: "neon", label: "Neon" },
-              ] as const).map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => setTitleStyle(s.id)}
-                  className={`px-3 py-1 text-xs rounded-md border transition-all ${titleStyle === s.id ? "border-primary bg-primary/20 text-primary font-semibold" : "border-border/50 text-muted-foreground hover:bg-muted/40"}`}
-                  data-testid={`create-room-title-style-${s.id}`}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-            {(titleColor || titleStyle !== "normal") && (
-              <div className="rounded-md bg-muted/30 border border-border/40 px-3 py-2 flex items-center gap-2">
-                <span className="text-[10px] text-muted-foreground">Preview:</span>
-                <span
-                  className="text-sm font-extrabold truncate"
-                  style={{
-                    color: titleStyle === "gradient" ? undefined : (titleColor || undefined),
-                    fontStyle: titleStyle === "italic" ? "italic" : undefined,
-                    fontWeight: titleStyle === "bold" ? 900 : undefined,
-                    textShadow: titleStyle === "glow"
-                      ? `0 0 8px ${titleColor || "#8B5CF6"}, 0 0 16px ${titleColor || "#8B5CF6"}55`
-                      : titleStyle === "neon"
-                      ? `0 0 4px #fff, 0 0 10px ${titleColor || "#00e5ff"}, 0 0 20px ${titleColor || "#00e5ff"}`
-                      : undefined,
-                    ...(titleStyle === "gradient" ? {
-                      background: `linear-gradient(90deg, ${titleColor || "#8B5CF6"}, #38bdf8)`,
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                    } : {}),
-                  }}
-                >
-                  {title.trim() || "Room Title"}
-                </span>
-              </div>
-            )}
-          </div>
+          <TitleAppearancePicker
+            color={titleColor}
+            style={titleStyle}
+            previewText={title}
+            onColorChange={setTitleColor}
+            onStyleChange={setTitleStyle}
+            testIdPrefix="create-room-title"
+          />
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">

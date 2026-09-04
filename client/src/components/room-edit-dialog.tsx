@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LANGUAGES, LEVELS } from "@shared/constants";
-import { TITLE_COLOR_PALETTE } from "@shared/entitlements";
+import { TitleAppearancePicker } from "@/components/title-appearance-picker";
 
 const GifPickerButton = lazy(() =>
   import("@/components/chat-picker").then((m) => ({ default: m.GifPickerButton }))
@@ -240,64 +240,15 @@ export function RoomEditDialog({ room, onClose }: RoomEditDialogProps) {
                 maxLength={50}
               />
             </div>
-            {/* ── Title Color & Style ─────────────────────────── */}
-            <div className="space-y-2">
-              <Label>Title Color</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {TITLE_COLOR_PALETTE.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => setEditTitleColor(c.value)}
-                    className={`w-7 h-7 rounded-full border-2 transition-all ${editTitleColor === c.value ? "border-white scale-110 shadow-lg" : "border-transparent hover:border-white/40"}`}
-                    style={{ background: c.value || "linear-gradient(135deg, #888, #ccc)" }}
-                    title={c.label}
-                    data-testid={`room-title-color-${c.id}`}
-                  />
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Title Style</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {([
-                  { id: "normal", label: "Normal" },
-                  { id: "bold", label: "Bold" },
-                  { id: "italic", label: "Italic" },
-                  { id: "gradient", label: "Gradient" },
-                  { id: "glow", label: "Glow" },
-                  { id: "neon", label: "Neon" },
-                ] as const).map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => setEditTitleStyle(s.id)}
-                    className={`px-3 py-1 text-xs rounded-md border transition-all ${editTitleStyle === s.id ? "border-primary bg-primary/20 text-primary font-semibold" : "border-border/50 text-muted-foreground hover:bg-muted/40"}`}
-                    data-testid={`room-title-style-${s.id}`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-              {/* Preview */}
-              {(editTitleColor || editTitleStyle !== "normal") && (
-                <div className="rounded-md bg-muted/30 border border-border/40 px-3 py-2 flex items-center gap-2">
-                  <span className="text-[10px] text-muted-foreground">Preview:</span>
-                  <span
-                    className="text-sm font-extrabold truncate"
-                    style={{
-                      color: editTitleStyle === "gradient" ? undefined : (editTitleColor || undefined),
-                      fontStyle: editTitleStyle === "italic" ? "italic" : undefined,
-                      fontWeight: editTitleStyle === "bold" ? 900 : undefined,
-                      textShadow: editTitleStyle === "glow" ? `0 0 8px ${editTitleColor || "#8B5CF6"}, 0 0 16px ${editTitleColor || "#8B5CF6"}55` : editTitleStyle === "neon" ? `0 0 4px #fff, 0 0 10px ${editTitleColor || "#00e5ff"}, 0 0 20px ${editTitleColor || "#00e5ff"}` : undefined,
-                      ...(editTitleStyle === "gradient" ? { background: `linear-gradient(90deg, ${editTitleColor || "#8B5CF6"}, #38bdf8)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" } : {}),
-                    }}
-                  >
-                    {editTitle || "Room Title"}
-                  </span>
-                </div>
-              )}
-            </div>
+            {/* ── Title Color & Style (compact) ───────────────── */}
+            <TitleAppearancePicker
+              color={editTitleColor}
+              style={editTitleStyle}
+              previewText={editTitle}
+              onColorChange={setEditTitleColor}
+              onStyleChange={setEditTitleStyle}
+              testIdPrefix="room-title"
+            />
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">

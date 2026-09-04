@@ -1133,7 +1133,7 @@ export function ProfileDropdown({
                 <p className="text-xs text-muted-foreground">
                   Choose a display-name color. Saved to your profile.
                 </p>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
                   {TITLE_COLOR_PALETTE.map((swatch) => {
                     const locked = !canUseFeature(user, "title_color") && !!swatch.value;
                     const active = (selectedTitleColor || "") === (swatch.value || "");
@@ -1149,21 +1149,18 @@ export function ProfileDropdown({
                           }
                           setSelectedTitleColor(swatch.value);
                         }}
-                        className={`neu-deco-tile ${active ? "is-active" : ""} ${locked ? "opacity-50" : ""}`}
+                        className={`h-5 w-5 shrink-0 rounded-full border transition-transform ${
+                          active
+                            ? "scale-110 border-white ring-2 ring-primary/50"
+                            : "border-white/15 hover:border-white/45"
+                        } ${locked ? "opacity-40 cursor-not-allowed" : ""}`}
+                        style={{
+                          background: swatch.value || "linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.06))",
+                        }}
                         data-testid={`title-color-${swatch.id}`}
                         title={locked ? `${swatch.label} (VIP)` : swatch.label}
-                      >
-                        <span
-                          className="neu-deco-tile-preview"
-                          style={{
-                            background: swatch.value || "linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05))",
-                          }}
-                        />
-                        <span className="neu-deco-tile-label">{swatch.label}</span>
-                        {active && (
-                          <span className="neu-deco-tile-check"><Check /></span>
-                        )}
-                      </button>
+                        aria-label={swatch.label}
+                      />
                     );
                   })}
                 </div>
