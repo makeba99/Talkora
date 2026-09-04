@@ -63,10 +63,9 @@ const CenterC4Overlay = lazy(() =>
   import("@/components/center-c4-overlay").then((m) => ({ default: m.CenterC4Overlay }))
 );
 import { getAvatarRingClass } from "@/lib/avatar-ring";
-import { ProfileAnimationOverlay } from "@/lib/profile-animations";
 import { FlairBadgeDisplay } from "@/components/profile-dropdown";
 import { ROOM_THEMES, PRESET_BACKGROUNDS, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
-import { densityFromParticipantCount, getMaxDecorationBleedPx } from "@/components/avatar-shell";
+import { densityFromParticipantCount } from "@/components/avatar-shell";
 import { LobbyProfilePicker } from "@/components/lobby-profile-picker";
 import type { DecorationDensity } from "@/components/vip-avatar-frames";
 import { BadgeFireworksOverlay } from "@/components/badge-fireworks";
@@ -732,7 +731,11 @@ function ParticipantCard({
     <>
       <button
         type="button"
-        className={`absolute top-1 right-1 z-30 cursor-pointer pointer-events-auto rounded-md bg-black/35 backdrop-blur-[2px] hover:bg-black/55 ${cardPx <= 56 ? "p-px" : "p-0.5"}`}
+        className={`absolute top-1 right-1 z-30 cursor-pointer pointer-events-auto rounded-full bg-black/55 hover:bg-black/75 border border-white/15 transition-opacity ${
+          isMobileViewport || gearOpen
+            ? "opacity-100"
+            : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+        } p-0.5`}
         onClick={(e) => {
           e.stopPropagation();
           setGearOpen(true);
@@ -740,7 +743,7 @@ function ParticipantCard({
         data-testid={`button-settings-${p.id}`}
         aria-label="Open participant settings"
       >
-        <Settings className={`${cardPx <= 56 ? "w-3 h-3" : "w-4 h-4"} text-white/90 drop-shadow-md`} />
+        <Settings className="w-3 h-3 text-white/90" />
       </button>
       <Sheet open={gearOpen} onOpenChange={setGearOpen}>
         <SheetContent
@@ -1179,7 +1182,7 @@ function ParticipantCard({
   }
 
   const avatarContent = (
-    <div className="relative w-full h-full overflow-visible">
+    <div className="relative w-full h-full overflow-visible group">
       {/* Mood emoji "sticker" — fires when this participant picks an emoji
           from the mood picker. Animation: pop in with a playful bounce, then
           settles above the avatar and gently bobs forever (until cleared).
@@ -1217,12 +1220,8 @@ function ParticipantCard({
           )}
         </div>
       )}
-      <ProfileAnimationOverlay
-        animationId={(p as any).profileAnimation}
-        isHost={isRoomOwner}
-      />
       <div
-        className={`relative overflow-hidden bg-muted/20 group border select-none w-full h-full ${
+        className={`relative overflow-hidden bg-muted/20 group/card border select-none w-full h-full ${
           isSpeaking ? "border-[hsl(var(--neu-orange))]/60 shadow-[0_0_10px_hsl(var(--neu-orange)/0.35)]" : "border-white/10 hover:border-white/25"
         } transition-all duration-300 ${fillMode ? "max-w-full max-h-full" : ""} ${radiusClass}`}
         style={fillMode
@@ -16459,8 +16458,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             else if (vw < 640) cardPx = Math.min(cardPx, visibleCount <= 2 ? 112 : 86);
             const decoDensity = densityFromParticipantCount(visibleCount);
             const gapPx = cardPx <= 60 ? 4 : 6;
-            // Bleed matches max decoration visual extent (config-driven) + mood emoji headroom
-            const decoBleed = getMaxDecorationBleedPx(cardPx, decoDensity) + (cardPx <= 60 ? 6 : 10);
+            const decoBleed = cardPx <= 60 ? 4 : 6;
             const isInOverlayMode = (activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || !!(room as any).hologramVideoUrl || (currentTheme && currentTheme !== "none");
             let gridCols =
               visibleCount === 1 ? 1 :

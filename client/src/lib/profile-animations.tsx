@@ -68,23 +68,27 @@ interface OverlayProps {
   animationId: string | null | undefined;
   isHost?: boolean;
   className?: string;
+  /** Match the portrait clip so rings stay circular on Round lobby cards. */
+  shape?: "circle" | "tile";
 }
 
 /**
- * Renders around the portrait (negative inset, overflow visible) so the photo
- * stays readable. Parent must allow overflow.
+ * Renders around the portrait (negative inset) so the photo stays readable.
+ * Keep inset small so the rim cannot spill out of a room card.
  */
 export function ProfileAnimationOverlay({
   animationId,
   isHost = false,
   className = "",
+  shape = "tile",
 }: OverlayProps) {
   const resolved = resolveProfileAnimationId(animationId);
   if (!resolved || resolved === "none") return null;
 
-  const opacity = isHost ? 1 : 0.92;
-  const base = `absolute pointer-events-none overflow-visible pa-around ${className}`;
-  const wrapStyle = { inset: "-22%", zIndex: 6, opacity } as const;
+  const opacity = isHost ? 1 : 0.85;
+  const circle = shape === "circle";
+  const base = `absolute pointer-events-none overflow-visible pa-around ${circle ? "pa-around--circle" : "pa-around--tile"} ${className}`;
+  const wrapStyle = { inset: circle ? "4%" : "5%", zIndex: 6, opacity } as const;
 
   switch (resolved) {
 

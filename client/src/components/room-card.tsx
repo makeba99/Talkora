@@ -80,17 +80,17 @@ function computeCircleScale(displayCount: number): number {
   const w = _vpWidth;
   // Scale by both viewport and participant density for efficient lobby packing
   const density =
-    displayCount >= 12 ? 0.78 :
-    displayCount >= 8 ? 0.86 :
-    displayCount >= 5 ? 0.93 :
-    displayCount >= 3 ? 0.97 :
+    displayCount >= 12 ? 0.72 :
+    displayCount >= 8 ? 0.8 :
+    displayCount >= 5 ? 0.88 :
+    displayCount >= 3 ? 0.94 :
     1;
   let base = 1;
-  if (w >= 1536) base = 1.18;
-  else if (w >= 1280) base = 1.1;
-  else if (w >= 1024) base = 1.02;
-  else if (w >= 768) base = 0.96;
-  else base = 0.9;
+  if (w >= 1536) base = 1.02;
+  else if (w >= 1280) base = 0.98;
+  else if (w >= 1024) base = 0.94;
+  else if (w >= 768) base = 0.9;
+  else base = 0.86;
   return Math.round(base * density * 100) / 100;
 }
 
@@ -791,7 +791,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
      when many participants are present while staying readable with 1–2 users. */
   const lobbyStyle = resolveLobbyProfileStyle((room as any).lobbyProfileStyle);
   const lobbyShape = lobbyShapeFromStyle(lobbyStyle);
-  const baseCircleSize = 78;
+  const baseCircleSize = 56;
   const circleSize = Math.round(baseCircleSize * circleScale);
   const isCircle = lobbyStyle === "circle";
   const avatarClip = isCircle ? "50%" : "14px";
@@ -806,7 +806,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
       data-testid={`button-room-settings-${room.id}`}
       aria-label={`Edit settings for room ${room.title}`}
     >
-      <Settings className="w-3.5 h-3.5" aria-hidden="true" />
+      <Settings className="w-3 h-3" aria-hidden="true" />
     </button>
   ) : (() => {
     const ownerUser = participants.find(p => p.id === room.ownerId);
@@ -825,7 +825,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             data-testid={`button-room-info-${room.id}`}
             aria-label={`Show details for room ${room.title}`}
           >
-            <Settings className="w-3.5 h-3.5" aria-hidden="true" />
+            <Settings className="w-3 h-3" aria-hidden="true" />
           </button>
         </PopoverTrigger>
         <PopoverContent
@@ -1168,13 +1168,13 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               keeping the design exactly as-is for sparser rooms. */}
           {(() => {
             const tightSpacing = displayCount === 7 || displayCount === 8 || displayCount === 11 || displayCount === 12;
-            const colGapPx = tightSpacing ? 4 : 10;
-            const rowGapPx = 10;
+            const colGapPx = tightSpacing ? 6 : 8;
+            const rowGapPx = 8;
             // Door is now absolutely positioned at bottom-right; protect the
             // bottom-right slot for any multi-column grid (≥2 cols).
             const gridRightPad = gridCols >= 2 ? 42 : 0;
             return (
-          <div className="flex-1 flex flex-col justify-center px-3 pt-5 pb-2 min-h-0 overflow-visible">
+          <div className="flex-1 flex flex-col justify-center px-3 pt-4 pb-2 min-h-0 overflow-hidden">
             <div
               className="grid"
               style={{
@@ -1203,11 +1203,11 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
 
                   const avatarEl = (
                     <div
-                      className={`relative flex-shrink-0 flex items-center justify-center ${hasRing ? ringClass : ""}`}
+                      className={`relative flex-shrink-0 flex items-center justify-center ${isCircle ? "rounded-full" : "rounded-[14px]"} ${hasRing ? ringClass : ""}`}
                       style={{
-                        width: circleSize + 6,
-                        height: circleSize + 6,
-                        padding: 3,
+                        width: circleSize,
+                        height: circleSize,
+                        padding: hasRing ? 2 : 0,
                         borderRadius: avatarClip,
                         overflow: "hidden",
                         background: hasRing ? undefined : `linear-gradient(135deg, ${glow.from}, ${glow.to})`,
@@ -1268,7 +1268,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                   const decorated = (p as any).profileDecoration
                     ? (
                       <Suspense fallback={avatarEl}>
-                        <ProfileDecoration decorationId={(p as any).profileDecoration} size={circleSize + 6} density="full" soft={false} shape={lobbyShape}>
+                        <ProfileDecoration decorationId={(p as any).profileDecoration} size={circleSize} density="lite" soft shape={lobbyShape}>
                           {avatarEl}
                         </ProfileDecoration>
                       </Suspense>
@@ -1277,11 +1277,16 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
 
                   const portrait = (
                     <div
-                      className="relative overflow-visible"
-                      style={{ width: circleSize + 6, height: circleSize + 6 }}
+                      className="relative"
+                      style={{
+                        width: circleSize,
+                        height: circleSize,
+                        borderRadius: avatarClip,
+                        overflow: "hidden",
+                      }}
                     >
                       {decorated}
-                      <ProfileAnimationOverlay animationId={(p as any).profileAnimation} />
+                      <ProfileAnimationOverlay animationId={(p as any).profileAnimation} shape={lobbyShape} />
                     </div>
                   );
 
@@ -1316,7 +1321,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                       badges={badges}
                     >
                       <button
-                        className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
+                        className="flex flex-col items-center cursor-pointer hover:scale-[1.03] transition-transform"
                         data-testid={`button-card-participant-${p.id}`}
                         aria-label={`View ${getUserDisplayName(p)}'s profile`}
                         onClick={(e) => e.stopPropagation()}
@@ -1334,8 +1339,8 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                     <div
                       className="flex items-center justify-center flex-shrink-0"
                       style={{
-                        width: circleSize + 6,
-                        height: circleSize + 6,
+                        width: circleSize,
+                        height: circleSize,
                         borderRadius: avatarClip,
                         background: "linear-gradient(155deg, hsl(228 18% 13%) 0%, hsl(228 16% 8%) 60%, hsl(228 14% 6%) 100%)",
                         border: "1px solid rgba(255,255,255,0.07)",

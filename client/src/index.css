@@ -9767,8 +9767,8 @@ html.neomorphic-light .scroll-jump-btn {
    PinnedSocialsButton: radial-gradient crown, top specular gloss, ambient
    glow corona, and a satisfying gear spin on hover. */
 .lobby-card-settings-btn {
-  width: 34px;
-  height: 34px;
+  width: 26px;
+  height: 26px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
@@ -11204,14 +11204,14 @@ html.neomorphic-light .pinned-socials-link {
 }
 .avatar-shell__deco {
   position: absolute;
-  /* Extend past the photo so cats / petals / flames sit on the rim */
-  inset: -30%;
+  /* Hug the rim without inflating the portrait into a square box */
+  inset: -12%;
   z-index: 20;
   pointer-events: none;
   overflow: visible;
   /* Punch a hole over the portrait — decoration never covers the face */
-  -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 62%, #000 67%);
-  mask-image: radial-gradient(circle at 50% 50%, transparent 62%, #000 67%);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 68%, #000 73%);
+  mask-image: radial-gradient(circle at 50% 50%, transparent 68%, #000 73%);
 }
 .avatar-shell[data-shape="tile"] .avatar-shell__deco,
 .avatar-shell[data-shape="rounded"] .avatar-shell__deco {
@@ -13897,17 +13897,24 @@ html.boost-mode .glass-panel {
 }
 .pa-around-ring {
   position: absolute;
-  inset: 12%;
-  border-radius: 12px;
+  inset: 10%;
+  border-radius: inherit;
   pointer-events: none;
 }
+.pa-around--tile,
+.pa-around--tile .pa-around-ring {
+  border-radius: 14px;
+}
+.pa-around--circle,
+.pa-around--circle .pa-around-ring,
 .avatar-shell[data-shape="circle"] .pa-around-ring,
 .avatar-shell[data-shape="circle"] .pa-around {
   border-radius: 50%;
 }
+.pa-around--circle .pa-around-fire,
 .avatar-shell[data-shape="circle"] .pa-around-fire {
-  left: 14%;
-  right: 14%;
+  left: 18%;
+  right: 18%;
   border-radius: 0 0 50% 50%;
 }
 .pa-around-aurora {
