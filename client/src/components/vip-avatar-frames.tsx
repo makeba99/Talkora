@@ -37,18 +37,18 @@ export type DecorationLayoutConfig = {
  * slightly higher scale; ring-only assets stay tighter so the avatar stays hero.
  */
 export const DECORATION_LAYOUT: Record<VipOverlayId, DecorationLayoutConfig> = {
-  "sleeping-cat": { scale: 1.24, offsetX: 0, offsetY: -0.05 },
-  "dragon-coil": { scale: 1.22, offsetX: 0.02, offsetY: 0 },
-  "fox-spirit": { scale: 1.22, offsetX: 0, offsetY: -0.04 },
-  "sakura-orbit": { scale: 1.2, offsetX: 0, offsetY: 0 },
-  "ember-flame": { scale: 1.2, offsetX: 0, offsetY: 0.02 },
-  "luna-butterflies": { scale: 1.22, offsetX: 0, offsetY: 0 },
+  "sleeping-cat": { scale: 1.46, offsetX: 0, offsetY: -0.08 },
+  "dragon-coil": { scale: 1.44, offsetX: 0.02, offsetY: 0 },
+  "fox-spirit": { scale: 1.44, offsetX: 0, offsetY: -0.06 },
+  "sakura-orbit": { scale: 1.42, offsetX: 0, offsetY: 0 },
+  "ember-flame": { scale: 1.44, offsetX: 0, offsetY: 0.06 },
+  "luna-butterflies": { scale: 1.44, offsetX: 0, offsetY: 0 },
 };
 
 const DENSITY_SCALE: Record<DecorationDensity, number> = {
   full: 1,
-  reduced: 0.9,
-  lite: 0.82,
+  reduced: 0.96,
+  lite: 0.92,
 };
 
 export function densityFromSize(size: number): DecorationDensity {
@@ -61,8 +61,8 @@ export function getDecorationVisualScale(
   id: VipOverlayId,
   density: DecorationDensity = "full",
 ): number {
-  const base = DECORATION_LAYOUT[id]?.scale ?? 1.16;
-  return Math.min(1.28, base * DENSITY_SCALE[density]);
+  const base = DECORATION_LAYOUT[id]?.scale ?? 1.4;
+  return Math.min(1.5, base * DENSITY_SCALE[density]);
 }
 
 /** Half of the extra visual size — use for grid bleed / gap. */
@@ -84,7 +84,7 @@ export function getMaxDecorationBleedPx(
   avatarSize: number,
   density: DecorationDensity = densityFromSize(avatarSize),
 ): number {
-  let maxScale = 1.12;
+  let maxScale = 1.4;
   for (const id of Object.keys(DECORATION_LAYOUT) as VipOverlayId[]) {
     maxScale = Math.max(maxScale, getDecorationVisualScale(id, density));
   }

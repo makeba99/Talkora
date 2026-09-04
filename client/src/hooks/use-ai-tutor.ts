@@ -829,21 +829,15 @@ export function useAiTutor(deps: AiTutorDeps) {
       (match: WakeMatch) => {
         const { persona, afterText } = match;
         addDebug("info", `Wake word detected (${persona})${afterText ? ` — "${afterText}"` : ""}`);
-        if (persona === "maya") {
-          startWithPersonaRef.current?.("Female", "Maya");
-        } else if (persona === "miles") {
+        if (persona === "miles") {
           startWithPersonaRef.current?.("Male", "Miles");
-        } else if (afterText) {
-          // "hey AI what's the weather" — skip the picker and start talking
-          startWithPersonaRef.current?.("Female", "Maya");
-        } else if (onWakeOpenPickerRef.current) {
-          onWakeOpenPickerRef.current();
         } else {
-          toggleAiTutorRef.current?.();
+          startWithPersonaRef.current?.("Female", "Maya");
         }
-        if (afterText) {
+        const leftover = afterText && !/^(i|aye|eye|ai|a\.i\.?)$/i.test(afterText) ? afterText : "";
+        if (leftover) {
           setTimeout(() => {
-            sendAiMessageRef.current?.(afterText);
+            sendAiMessageRef.current?.(leftover);
           }, 600);
         }
       },
@@ -864,9 +858,19 @@ export function useAiTutor(deps: AiTutorDeps) {
   useEffect(() => {
     if (aiActive || !aiSettings.wakeWordEnabled || !aiRoomEnabled) {
       wakeWordRef.current?.stop();
-    } else {
-      wakeWordRef.current?.start();
+      return;
     }
+    wakeWordRef.current?.start();
+    const onInteract = () => {
+      wakeWordRef.current?.restart();
+    };
+    window.addEventListener("pointerdown", onInteract);
+    return () => window.removeEventListener("pointerdown", onInteract);
+  }, [aiActive, aiSettings.wakeWordEnabled, aiRoomEnabled]);
+
+  const primeWakeWord = useCallback(() => {
+    if (aiActive || !aiSettings.wakeWordEnabled || !aiRoomEnabled) return;
+    wakeWordRef.current?.restart();
   }, [aiActive, aiSettings.wakeWordEnabled, aiRoomEnabled]);
 
   // Keep wake detector language in sync with room language changes
@@ -1029,5 +1033,6 @@ export function useAiTutor(deps: AiTutorDeps) {
     welcomeUser,
     addDebug,
     enqueueAiRequest,
+    primeWakeWord,
   };
 }

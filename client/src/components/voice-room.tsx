@@ -65,7 +65,7 @@ const CenterC4Overlay = lazy(() =>
 import { getAvatarRingClass } from "@/lib/avatar-ring";
 import { ProfileAnimationOverlay } from "@/lib/profile-animations";
 import { FlairBadgeDisplay } from "@/components/profile-dropdown";
-import { ProfileDecoration, ROOM_THEMES, PRESET_BACKGROUNDS, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
+import { ROOM_THEMES, PRESET_BACKGROUNDS, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
 import { densityFromParticipantCount, getMaxDecorationBleedPx } from "@/components/avatar-shell";
 import { LobbyProfilePicker } from "@/components/lobby-profile-picker";
 import type { DecorationDensity } from "@/components/vip-avatar-frames";
@@ -1626,21 +1626,14 @@ function ParticipantCard({
 
   return (
     <div className="flex flex-col items-center gap-0.5 min-w-0 max-w-full overflow-visible">
-      <ProfileDecoration
-        decorationId={(p as any).profileDecoration}
-        size={cardPx}
-        density={decoDensity}
-        soft={decoDensity !== "full"}
-        shape="tile"
+      <div
+         className={`cursor-pointer w-full h-full ${fillMode ? "flex items-center justify-center" : ""}`}
+         onClick={onProfileClick}
+         data-testid={`card-wrapper-${p.id}`}
+         style={{ width: cardPx, height: cardPx, flexShrink: 0 }}
       >
-        <div
-           className={`cursor-pointer w-full h-full ${fillMode ? "flex items-center justify-center" : ""}`}
-           onClick={onProfileClick}
-           data-testid={`card-wrapper-${p.id}`}
-        >
-          {avatarContent}
-        </div>
-      </ProfileDecoration>
+        {avatarContent}
+      </div>
       {!(hasActiveYoutube && youtubeVideoId) && !fillMode && (
         <span
           className="text-muted-foreground/80 font-medium text-center truncate leading-tight"
@@ -2445,6 +2438,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     welcomeUser,
     addDebug: addAiDebugEntry,
     enqueueAiRequest,
+    primeWakeWord,
   } = useAiTutor({
     socket,
     roomId: room.id,
@@ -4081,6 +4075,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         }
         await applyLocalAudioStream(stream);
         await refreshAudioInputDevices();
+        primeWakeWord();
       } catch (err) {
         console.error("Failed to get microphone:", err);
         setMicError(true);
@@ -6337,6 +6332,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       socket?.emit("room:mute", { roomId: room.id, userId: user?.id, isMuted: true });
       await updateMicPermissionStatus();
       await refreshAudioInputDevices();
+      primeWakeWord();
       toast({ title: "Microphone enabled", description: "You can now unmute to speak." });
     } catch (err: any) {
       setMicError(true);
@@ -7141,7 +7137,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0"
                 style={{ background: "rgba(255,200,80,0.70)", boxShadow: "0 0 4px rgba(255,200,80,0.55)", animation: "pulse 1.6s ease-in-out infinite" }}
               />
-              say "hey AI"
+              say "hey"
             </span>
           )}
         </div>}
@@ -9261,10 +9257,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         setAutoTranslatePreview(null);
         setMentionQuery(null);
         setReplyingTo(null);
-        if (wake.persona === "maya") startWithPersona("Female", "Maya");
-        else if (wake.persona === "miles") startWithPersona("Male", "Miles");
-        else if (wake.afterText) startWithPersona("Female", "Maya");
-        else setAiPersonaPickerOpen(true);
+        if (wake.persona === "miles") startWithPersona("Male", "Miles");
+        else startWithPersona("Female", "Maya");
         if (wake.afterText) {
           setTimeout(() => sendAiMessage(wake.afterText), 600);
         }
@@ -17324,7 +17318,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   <span className="text-[14px] font-semibold" style={{ color: "rgba(230,235,245,0.95)" }}>Choose Your Tutor</span>
                 </div>
                 <p className="text-[12px] text-center mb-7 mt-3" style={{ color: "rgba(170,180,200,0.65)" }}>
-                  Pick Maya or Miles — or say their name. “Hey AI” opens this menu.
+                  Pick Maya or Miles — or just say “hey”.
                 </p>
 
                 {/* Persona cards (dark neumorphic) */}
@@ -18016,7 +18010,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     <div>
                       <span className="text-[11px] font-semibold block" style={{ color: "rgba(255,255,255,0.70)" }}>Hands-Free</span>
                       <span className="text-[9px] leading-tight block mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
-                        {aiTutorSettings.wakeWordEnabled ? `Say "hey AI", "Maya", or "Miles"` : "Wake word disabled"}
+                        {aiTutorSettings.wakeWordEnabled ? `Say "hey", "Maya", or "Miles"` : "Wake word disabled"}
                       </span>
                     </div>
                     <div

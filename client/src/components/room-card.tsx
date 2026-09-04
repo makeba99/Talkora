@@ -9,8 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { getAvatarRingClass } from "@/lib/avatar-ring";
 import { ROOM_THEMES } from "@/lib/room-theme-utils";
 import { UserBadgePips } from "@/components/user-badge-pips";
-import { densityFromSize } from "@/components/vip-avatar-frames";
-import { resolveLobbyProfileStyle, LOBBY_PROFILE_RADIUS, lobbyShapeFromStyle } from "@/lib/lobby-profile";
+import { ProfileAnimationOverlay } from "@/lib/profile-animations";
+import { resolveLobbyProfileStyle, lobbyShapeFromStyle } from "@/lib/lobby-profile";
 
 // Heavy components — only loaded on user interaction, never on initial paint.
 // profile-decorations.tsx is 1,900 lines of SVG data; keeping it out of the
@@ -80,17 +80,17 @@ function computeCircleScale(displayCount: number): number {
   const w = _vpWidth;
   // Scale by both viewport and participant density for efficient lobby packing
   const density =
-    displayCount >= 12 ? 0.72 :
-    displayCount >= 8 ? 0.8 :
-    displayCount >= 5 ? 0.88 :
-    displayCount >= 3 ? 0.94 :
+    displayCount >= 12 ? 0.78 :
+    displayCount >= 8 ? 0.86 :
+    displayCount >= 5 ? 0.93 :
+    displayCount >= 3 ? 0.97 :
     1;
   let base = 1;
-  if (w >= 1536) base = 1.12;
-  else if (w >= 1280) base = 1.02;
-  else if (w >= 1024) base = 0.94;
-  else if (w >= 768) base = 0.88;
-  else base = 0.82;
+  if (w >= 1536) base = 1.18;
+  else if (w >= 1280) base = 1.1;
+  else if (w >= 1024) base = 1.02;
+  else if (w >= 768) base = 0.96;
+  else base = 0.9;
   return Math.round(base * density * 100) / 100;
 }
 
@@ -790,12 +790,11 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
   /* Base avatar size — density scaling via circleScale keeps rooms compact
      when many participants are present while staying readable with 1–2 users. */
   const lobbyStyle = resolveLobbyProfileStyle((room as any).lobbyProfileStyle);
-  const lobbyRadius = LOBBY_PROFILE_RADIUS[lobbyStyle];
   const lobbyShape = lobbyShapeFromStyle(lobbyStyle);
-  const baseCircleSize = 64;
+  const baseCircleSize = 78;
   const circleSize = Math.round(baseCircleSize * circleScale);
   const isCircle = lobbyStyle === "circle";
-  const avatarRadiusClass = isCircle ? "rounded-full" : "rounded-lg";
+  const avatarClip = isCircle ? "50%" : "14px";
 
   const settingsButton = isOwner ? (
     <button
@@ -1169,8 +1168,8 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               keeping the design exactly as-is for sparser rooms. */}
           {(() => {
             const tightSpacing = displayCount === 7 || displayCount === 8 || displayCount === 11 || displayCount === 12;
-            const colGapPx = tightSpacing ? 2 : 6;       // 2px ↔ tailwind gap-1.5 (6px)
-            const rowGapPx = 6;
+            const colGapPx = tightSpacing ? 4 : 10;
+            const rowGapPx = 10;
             // Door is now absolutely positioned at bottom-right; protect the
             // bottom-right slot for any multi-column grid (≥2 cols).
             const gridRightPad = gridCols >= 2 ? 42 : 0;
@@ -1206,10 +1205,11 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                     <div
                       className={`relative flex-shrink-0 flex items-center justify-center ${hasRing ? ringClass : ""}`}
                       style={{
-                        width: circleSize + 4,
-                        height: circleSize + 4,
-                        padding: 2,
-                        borderRadius: lobbyRadius,
+                        width: circleSize + 6,
+                        height: circleSize + 6,
+                        padding: 3,
+                        borderRadius: avatarClip,
+                        overflow: "hidden",
                         background: hasRing ? undefined : `linear-gradient(135deg, ${glow.from}, ${glow.to})`,
                         boxShadow: hasRing
                           ? undefined
@@ -1218,27 +1218,34 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                             : `0 0 6px ${glow.from}, 0 0 12px ${glow.to}`,
                       }}
                     >
-                      <Avatar
-                        style={{ width: circleSize, height: circleSize, borderRadius: lobbyRadius }}
-                        className={`${avatarRadiusClass} overflow-hidden border ${hasRing ? "border-transparent" : isPremiumAtmosphere ? "border-white/20 shadow-[inset_0_0_12px_rgba(255,255,255,0.06)]" : "border-[#0a1228]"}`}
+                      <div
+                        className="relative w-full h-full overflow-hidden"
+                        style={{ borderRadius: avatarClip }}
                       >
                         {(() => {
                           const a = buildAvatarSources(p.profileImageUrl);
-                          return <AvatarImage
-                            src={a.src}
-                            srcSet={a.srcSet}
-                            alt={getUserDisplayName(p)}
-                            width={circleSize}
-                            height={circleSize}
-                            loading="lazy"
-                            decoding="async"
-                            className={`${avatarRadiusClass} object-cover w-full h-full`}
-                          />;
+                          return a.src ? (
+                            <img
+                              src={a.src}
+                              srcSet={a.srcSet}
+                              alt={getUserDisplayName(p)}
+                              width={circleSize}
+                              height={circleSize}
+                              loading="lazy"
+                              decoding="async"
+                              className="w-full h-full object-cover"
+                              style={{ borderRadius: avatarClip }}
+                            />
+                          ) : (
+                            <div
+                              className="w-full h-full flex items-center justify-center text-sm font-bold bg-[#1a1520] text-white/70"
+                              style={{ borderRadius: avatarClip }}
+                            >
+                              {getUserInitials(p)}
+                            </div>
+                          );
                         })()}
-                        <AvatarFallback className={`${avatarRadiusClass} text-sm font-bold bg-[#1a1520] text-white/70`}>
-                          {getUserInitials(p)}
-                        </AvatarFallback>
-                      </Avatar>
+                      </div>
                       {(p as any).vipTier ? (
                         <div className="absolute -top-1 -right-1 z-[3] text-[10px] leading-none drop-shadow" title="VIP">
                           👑
@@ -1261,12 +1268,22 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                   const decorated = (p as any).profileDecoration
                     ? (
                       <Suspense fallback={avatarEl}>
-                        <ProfileDecoration decorationId={(p as any).profileDecoration} size={circleSize + 4} density={densityFromSize(circleSize)} soft={circleSize <= 48} shape={lobbyShape}>
+                        <ProfileDecoration decorationId={(p as any).profileDecoration} size={circleSize + 6} density="full" soft={false} shape={lobbyShape}>
                           {avatarEl}
                         </ProfileDecoration>
                       </Suspense>
                     )
                     : avatarEl;
+
+                  const portrait = (
+                    <div
+                      className="relative overflow-visible"
+                      style={{ width: circleSize + 6, height: circleSize + 6 }}
+                    >
+                      {decorated}
+                      <ProfileAnimationOverlay animationId={(p as any).profileAnimation} />
+                    </div>
+                  );
 
                   /* Heart/follower count is only useful in small, uncluttered
                      rooms — in crowded rooms (5+ slots) it eats vertical space
@@ -1284,7 +1301,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                   if (!isLoggedIn) {
                     return (
                       <div key={i} className="flex flex-col items-center">
-                        {decorated}
+                        {portrait}
                         {heartRow}
                       </div>
                     );
@@ -1304,7 +1321,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                         aria-label={`View ${getUserDisplayName(p)}'s profile`}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {decorated}
+                        {portrait}
                         {heartRow}
                       </button>
                     </ParticipantPopoverShell>
@@ -1317,9 +1334,9 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                     <div
                       className="flex items-center justify-center flex-shrink-0"
                       style={{
-                        width: circleSize + 4,
-                        height: circleSize + 4,
-                        borderRadius: lobbyRadius,
+                        width: circleSize + 6,
+                        height: circleSize + 6,
+                        borderRadius: avatarClip,
                         background: "linear-gradient(155deg, hsl(228 18% 13%) 0%, hsl(228 16% 8%) 60%, hsl(228 14% 6%) 100%)",
                         border: "1px solid rgba(255,255,255,0.07)",
                         boxShadow: [

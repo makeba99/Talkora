@@ -1,8 +1,10 @@
 /**
  * Profile Animation system — rim effects around the portrait, never over it.
- * Distinct from avatar-frame ProfileDecorations (character overlays).
+ * Motion style is inspired by LottieFiles aura / particle-ring loops
+ * (https://lottiefiles.com/free-animations/aura) but implemented as CSS so
+ * every lobby card can run them without a Lottie runtime.
  *
- * All animations are pure-CSS (keyframes in index.css with the `pa-` prefix).
+ * Distinct from avatar-frame ProfileDecorations (character overlays on the rim).
  */
 
 export const PROFILE_ANIMATIONS = [
@@ -36,27 +38,29 @@ export function resolveProfileAnimationId(id: string | null | undefined): Profil
   return LEGACY_ANIMATION_MAP[id] || "none";
 }
 
-const RING = Array.from({ length: 12 }, (_, i) => {
-  const a = (i / 12) * Math.PI * 2 - Math.PI / 2;
+const RING = Array.from({ length: 18 }, (_, i) => {
+  const a = (i / 18) * Math.PI * 2 - Math.PI / 2;
+  const orbit = 62 + (i % 3);
   return {
-    left: `${50 + Math.cos(a) * 54}%`,
-    top: `${50 + Math.sin(a) * 54}%`,
-    delay: `${(i * 0.22) % 2.4}s`,
-    duration: `${1.6 + (i % 4) * 0.28}s`,
-    size: 2 + (i % 3),
-    color: i % 3 === 0 ? "#c4b5fd" : i % 3 === 1 ? "#67e8f9" : "#ffffff",
+    left: `${50 + Math.cos(a) * orbit}%`,
+    top: `${50 + Math.sin(a) * orbit}%`,
+    delay: `${(i * 0.16) % 2.2}s`,
+    duration: `${1.8 + (i % 5) * 0.22}s`,
+    size: 2 + (i % 4),
+    color: i % 3 === 0 ? "#e9d5ff" : i % 3 === 1 ? "#67e8f9" : "#fff7ed",
   };
 });
 
-const PETALS = Array.from({ length: 10 }, (_, i) => {
-  const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+const PETALS = Array.from({ length: 14 }, (_, i) => {
+  const a = (i / 14) * Math.PI * 2 - Math.PI / 2;
+  const orbit = 64 + (i % 2) * 4;
   return {
-    left: `${50 + Math.cos(a) * 56}%`,
-    top: `${50 + Math.sin(a) * 56}%`,
-    size: 5 + (i % 3) * 2,
-    delay: `${(i * 0.41) % 3.2}s`,
-    duration: `${3.2 + (i * 0.27) % 1.8}s`,
-    color: i % 3 === 0 ? "rgba(255,183,197,0.85)" : i % 3 === 1 ? "rgba(255,150,170,0.75)" : "rgba(255,200,210,0.8)",
+    left: `${50 + Math.cos(a) * orbit}%`,
+    top: `${50 + Math.sin(a) * orbit}%`,
+    size: 6 + (i % 3) * 2,
+    delay: `${(i * 0.28) % 2.8}s`,
+    duration: `${3.4 + (i * 0.19) % 1.6}s`,
+    color: i % 3 === 0 ? "rgba(255,183,197,0.95)" : i % 3 === 1 ? "rgba(251,113,133,0.8)" : "rgba(255,228,230,0.9)",
   };
 });
 
@@ -78,9 +82,9 @@ export function ProfileAnimationOverlay({
   const resolved = resolveProfileAnimationId(animationId);
   if (!resolved || resolved === "none") return null;
 
-  const opacity = isHost ? 1 : 0.78;
+  const opacity = isHost ? 1 : 0.92;
   const base = `absolute pointer-events-none overflow-visible pa-around ${className}`;
-  const wrapStyle = { inset: "-12%", zIndex: 6, opacity } as const;
+  const wrapStyle = { inset: "-22%", zIndex: 6, opacity } as const;
 
   switch (resolved) {
 
@@ -88,6 +92,7 @@ export function ProfileAnimationOverlay({
       return (
         <div className={base} style={wrapStyle}>
           <div className="pa-around-ring pa-around-aurora" />
+          <div className="pa-around-ring pa-around-aurora pa-around-aurora--rev" />
         </div>
       );
 
@@ -95,6 +100,7 @@ export function ProfileAnimationOverlay({
       return (
         <div className={base} style={wrapStyle}>
           <div className="pa-around-ring pa-around-neon" />
+          <div className="pa-around-ring pa-around-neon pa-around-neon--soft" />
         </div>
       );
 
@@ -112,7 +118,7 @@ export function ProfileAnimationOverlay({
               marginTop: -star.size / 2,
               borderRadius: "50%",
               background: star.color,
-              boxShadow: `0 0 6px ${star.color}`,
+              boxShadow: `0 0 8px ${star.color}`,
               animation: `pa-star-twinkle ${star.duration} ease-in-out infinite ${star.delay}`,
             }} />
           ))}
@@ -123,6 +129,8 @@ export function ProfileAnimationOverlay({
       return (
         <div className={base} style={wrapStyle}>
           <div className="pa-around-fire" />
+          <div className="pa-around-fire pa-around-fire--l" />
+          <div className="pa-around-fire pa-around-fire--r" />
         </div>
       );
 
@@ -130,6 +138,7 @@ export function ProfileAnimationOverlay({
       return (
         <div className={base} style={wrapStyle}>
           <div className="pa-around-ring pa-around-frost" />
+          <div className="pa-around-ring pa-around-frost pa-around-frost--spark" />
         </div>
       );
 
@@ -137,6 +146,7 @@ export function ProfileAnimationOverlay({
       return (
         <div className={base} style={wrapStyle}>
           <div className="pa-around-ring pa-around-gold" />
+          <div className="pa-around-ring pa-around-gold pa-around-gold--slow" />
         </div>
       );
 
