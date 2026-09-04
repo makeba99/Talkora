@@ -5,6 +5,7 @@ import { X, Volume2, VolumeX } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { proxyMediaUrl } from "@/lib/media-proxy";
 import { BADGE_CELEBRATION_GIF } from "@shared/constants";
+import { BadgeFireworksOverlay } from "@/components/badge-fireworks";
 
 interface BadgeDef {
   id: string;
@@ -86,6 +87,31 @@ function playCelebrationSound(muted: boolean) {
     applauseSource.stop(ctx.currentTime + 3.3);
 
     setTimeout(() => ctx.close(), 4000);
+  } catch (_) {}
+}
+
+/** Spoken nomination announcement — plays site-wide (lobby + rooms), not only in chat. */
+function speakNomination(userName: string, badgeLabel: string, muted: boolean) {
+  if (muted) return;
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  try {
+    window.speechSynthesis.cancel();
+    const line = new SpeechSynthesisUtterance(
+      `Nomination! ${userName} has been awarded the ${badgeLabel} badge. Congratulations!`
+    );
+    line.rate = 0.94;
+    line.pitch = 1.08;
+    line.volume = 0.9;
+    const voices = window.speechSynthesis.getVoices();
+    const preferred =
+      voices.find((v) => /en(-|_)?(US|GB)/i.test(v.lang) && /female|samantha|google uk english female|zira|jenny/i.test(v.name)) ||
+      voices.find((v) => /^en/i.test(v.lang)) ||
+      null;
+    if (preferred) line.voice = preferred;
+    // Slight delay so fanfare starts first
+    setTimeout(() => {
+      try { window.speechSynthesis.speak(line); } catch (_) {}
+    }, 700);
   } catch (_) {}
 }
 
@@ -280,6 +306,7 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
       hasPlayedRef.current = eventKey;
       setConfettiActive(true);
       playCelebrationSound(muted);
+      speakNomination(safeEvent.userName, safeEvent.badgeDef.label, muted);
     }
 
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -298,7 +325,10 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
   return (
     <AnimatePresence>
       {safeEvent && (
-        <motion.div
+        <>
+          {/* Full-viewport fireworks outside chat — lobby + every page */}
+          <BadgeFireworksOverlay active={confettiActive} durationMs={9000} />
+          <motion.div
           key={safeEvent.badge.id}
           initial={{ opacity: 0, y: -100, scale: 0.85 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -498,6 +528,7 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
             />
           </div>
         </motion.div>
+        </>
       )}
     </AnimatePresence>
   );

@@ -5357,8 +5357,9 @@ export async function registerRoutes(
 
       const updated = await storage.updateMessageRequestStatus(req.params.id, status);
 
-      // Notify sender via socket (all their tabs via personal room)
+      // Notify both parties so DMs unlock / refresh on every open tab.
       io.to(`user:${request.fromId}`).emit("message_request:updated", updated);
+      io.to(`user:${me}`).emit("message_request:updated", updated);
 
       res.json(updated);
     } catch (err: any) {
@@ -5385,18 +5386,24 @@ export async function registerRoutes(
       const isMutual = senderFollowsRecipient && recipientFollowsSender;
 
       if (!isMutual) {
-        // Check if an accepted message request exists
-        if (senderFollowsRecipient) {
-          const req2 = await storage.getMessageRequest(senderId, recipientId);
-          if (!req2 || req2.status !== "accepted") {
+        // Accepted message request unlocks DMs for BOTH sides (requester and accepter),
+        // even when the accepter has not followed back yet.
+        const [forwardReq, reverseReq] = await Promise.all([
+          storage.getMessageRequest(senderId, recipientId),
+          storage.getMessageRequest(recipientId, senderId),
+        ]);
+        const acceptedEitherWay =
+          forwardReq?.status === "accepted" || reverseReq?.status === "accepted";
+
+        if (!acceptedEitherWay) {
+          if (senderFollowsRecipient) {
             return res.status(403).json({
               message: "Send a message request first. The user must accept before you can message them.",
               code: "REQUEST_REQUIRED",
             });
           }
-        } else {
           return res.status(403).json({
-            message: "You can only message users who mutually follow you.",
+            message: "You can only message users who mutually follow you, or who accepted your message request.",
             code: "NO_RELATIONSHIP",
           });
         }

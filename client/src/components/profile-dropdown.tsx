@@ -1225,7 +1225,7 @@ export function ProfileDropdown({
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Avatar decoration</Label>
                 <p className="text-xs text-muted-foreground">
-                  Free rings for everyone · VIP art frames like Free4Talk / Discord Nitro
+                  Premium Discord-style animated overlays (VIP). Basic glow rings were removed.
                 </p>
 
                 {(() => {
@@ -1266,7 +1266,6 @@ export function ProfileDropdown({
                   };
 
                   const coreItems = PROFILE_DECORATIONS.filter(d => d.category === "core");
-                  const ringItems = PROFILE_DECORATIONS.filter(d => d.category === "rings");
                   const vipItems = PROFILE_DECORATIONS.filter(d => d.category === "vip");
 
                   return (
@@ -1276,24 +1275,15 @@ export function ProfileDropdown({
                       </div>
 
                       <div className="pt-2">
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80 mb-2">
-                          Rings
-                        </p>
-                        <div className="grid grid-cols-4 gap-2">
-                          {ringItems.map((d, i) => renderTile(d, i + coreItems.length))}
-                        </div>
-                      </div>
-
-                      <div className="pt-2">
                         <p
                           className="text-[11px] font-semibold uppercase tracking-wider mb-2"
                           style={{ color: "rgba(251,191,36,0.95)" }}
                           data-testid="decoration-section-vip"
                         >
-                          VIP art frames
+                          VIP overlays · Discord / DecoProfile style
                         </p>
-                        <div className="grid grid-cols-4 gap-2">
-                          {vipItems.map((d, i) => renderTile(d, i + coreItems.length + ringItems.length))}
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                          {vipItems.map((d, i) => renderTile(d, i + coreItems.length))}
                         </div>
                       </div>
                     </>

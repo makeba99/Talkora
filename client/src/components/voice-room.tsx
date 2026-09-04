@@ -16934,14 +16934,19 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     </div>
                   </div>
 
-                  {/* Settings gear on hover */}
+                  {/* Settings gear — always visible (not hover-only) for easier access */}
                   <button
                     onClick={() => setAiTutorControlOpen(!aiTutorControlOpen)}
                     data-testid="button-ai-tutor-gear"
-                    className="absolute -top-2 right-0 w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                    style={{ background: "rgba(15,23,42,0.92)", border: "1px solid rgba(255,255,255,0.18)", color: "rgba(255,255,255,0.75)" }}
+                    className="absolute -top-2 right-0 w-7 h-7 rounded-full flex items-center justify-center transition-opacity shadow-lg"
+                    style={{
+                      background: aiTutorControlOpen ? "rgba(0,180,255,0.25)" : "rgba(15,23,42,0.92)",
+                      border: `1px solid ${aiTutorControlOpen ? "rgba(0,225,255,0.55)" : "rgba(255,255,255,0.18)"}`,
+                      color: aiTutorControlOpen ? "rgba(0,225,255,0.95)" : "rgba(255,255,255,0.75)",
+                    }}
+                    title="AI Tutor settings"
                   >
-                    <Settings className="w-3 h-3" />
+                    <Settings className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
@@ -16949,6 +16954,67 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             </div>
           </div>
           );})()}
+
+          {/* Quick AI actions — always outside the settings panel so owners don't dig for End / Chat */}
+          {aiTutorActive && isAiTutorOwner && (
+            <div
+              className="fixed left-1/2 -translate-x-1/2 z-[61] flex items-center gap-1.5 px-2 py-1.5 rounded-full"
+              style={{
+                bottom: "max(5.5rem, calc(env(safe-area-inset-bottom) + 4.5rem))",
+                background: "rgba(10,14,35,0.88)",
+                border: "1px solid rgba(0,225,255,0.22)",
+                backdropFilter: "blur(16px)",
+                boxShadow: "0 8px 28px rgba(0,0,0,0.45)",
+              }}
+              data-testid="ai-tutor-quick-bar"
+            >
+              <button
+                type="button"
+                onClick={() => setAiChatPanelOpen((v) => !v)}
+                className="h-8 px-3 rounded-full text-[11px] font-semibold flex items-center gap-1.5 transition-colors"
+                style={{
+                  background: aiChatPanelOpen ? "rgba(0,180,255,0.22)" : "rgba(255,255,255,0.06)",
+                  border: `1px solid ${aiChatPanelOpen ? "rgba(0,225,255,0.45)" : "rgba(255,255,255,0.12)"}`,
+                  color: "rgba(255,255,255,0.9)",
+                }}
+                data-testid="button-ai-quick-chat"
+                title="Toggle AI chat"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                Chat
+              </button>
+              <button
+                type="button"
+                onClick={() => setAiTutorControlOpen((v) => !v)}
+                className="h-8 px-3 rounded-full text-[11px] font-semibold flex items-center gap-1.5 transition-colors"
+                style={{
+                  background: aiTutorControlOpen ? "rgba(0,180,255,0.22)" : "rgba(255,255,255,0.06)",
+                  border: `1px solid ${aiTutorControlOpen ? "rgba(0,225,255,0.45)" : "rgba(255,255,255,0.12)"}`,
+                  color: "rgba(255,255,255,0.9)",
+                }}
+                data-testid="button-ai-quick-settings"
+                title="AI settings"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                Settings
+              </button>
+              <button
+                type="button"
+                onClick={() => { try { toggleAiTutor(); } catch (_) {} }}
+                className="h-8 px-3 rounded-full text-[11px] font-semibold flex items-center gap-1.5 transition-colors"
+                style={{
+                  background: "rgba(239,68,68,0.18)",
+                  border: "1px solid rgba(248,113,113,0.4)",
+                  color: "rgba(254,202,202,0.95)",
+                }}
+                data-testid="button-ai-quick-end"
+                title="End AI Tutor"
+              >
+                <PhoneOff className="w-3.5 h-3.5" />
+                End
+              </button>
+            </div>
+          )}
 
           {/* ── Unified floating watch-party reactions overlay ──
                Rendered at the content-area level so emojis float freely
@@ -17641,7 +17707,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   </button>
                 </div>
 
-                <div className="p-4 flex flex-col gap-4">
+                <div className="p-4 flex flex-col gap-4" data-testid="ai-tutor-settings-body">
+                  <p className="text-[10px] leading-snug" style={{ color: "rgba(255,255,255,0.45)" }}>
+                    Tip: Chat / Settings / End stay on the floating bar under the tutor — this panel is for teaching options only.
+                  </p>
                   {/* Correction Mode */}
                   <div>
                     <div className="flex items-center justify-between mb-2">

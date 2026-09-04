@@ -93,16 +93,17 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
   });
 
   // Only block when we have a CONFIRMED successful response showing no relationship.
-  // While loading or errored → optimistically allow chat (server-side gate still enforces real security).
+  // Fail closed while loading so we don't flash the composer then 403 on send.
   const statusConfirmed = !dmStatusLoading && !dmStatusError && dmStatus !== undefined;
   const isMutual = statusConfirmed ? (dmStatus!.canDm === true) : false;
   const iFollowThem = statusConfirmed ? (dmStatus!.iFollowThem === true) : false;
   const theyFollowMe = statusConfirmed ? (dmStatus!.theyFollowMe === true) : false;
   const sentRequest = statusConfirmed ? dmStatus!.sentRequest : null;
+  const receivedRequest = statusConfirmed ? dmStatus!.receivedRequest : null;
 
-  const canDmFreely = !statusConfirmed || isMutual;
-  const acceptedRequest = iFollowThem && sentRequest?.status === "accepted";
-  const canChat = canDmFreely || acceptedRequest;
+  const acceptedRequest =
+    sentRequest?.status === "accepted" || receivedRequest?.status === "accepted";
+  const canChat = statusConfirmed && (isMutual || !!acceptedRequest);
 
   const { data: messages = [], isLoading } = useQuery<Message[]>({
     queryKey: ["/api/messages", user?.id, otherUserId],
@@ -136,6 +137,13 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["/api/messages", user?.id, otherUserId],
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Message not sent",
+        description: err?.message || "You may need an accepted message request first.",
+        variant: "destructive",
       });
     },
   });
@@ -294,6 +302,14 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
   const renderAccessState = () => {
     const name = getUserDisplayName(otherUser);
 
+    if (!statusConfirmed) {
+      return (
+        <div className="flex flex-col items-center justify-center flex-1 gap-3 px-6 py-12 text-center">
+          <p className="text-xs text-muted-foreground">Checking messaging permissions…</p>
+        </div>
+      );
+    }
+
     /* Completely blocked — confirmed no relationship */
     if (!iFollowThem && !theyFollowMe) {
       return (
@@ -360,8 +376,23 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
       );
     }
 
-    /* They follow me but I don't follow them — tell user to follow back */
+    /* They follow me but I don't — follow back, or wait if they already requested */
     if (!iFollowThem && theyFollowMe) {
+      if (receivedRequest?.status === "pending") {
+        return (
+          <div className="flex flex-col items-center justify-center flex-1 gap-4 px-6 py-12 text-center">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(251,146,60,0.10)", border: "1px solid rgba(251,146,60,0.2)" }}>
+              <Clock className="w-5 h-5 text-orange-400/70" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-foreground/80">Incoming request</p>
+              <p className="text-xs text-muted-foreground leading-snug max-w-[220px]">
+                <span className="text-foreground/70">{name}</span> wants to message you. Accept it from Messages → Requests.
+              </p>
+            </div>
+          </div>
+        );
+      }
       return (
         <div className="flex flex-col items-center justify-center flex-1 gap-4 px-6 py-12 text-center">
           <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(100,85,210,0.10)", border: "1px solid rgba(120,100,255,0.18)" }}>

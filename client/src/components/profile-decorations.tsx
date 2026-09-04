@@ -4,59 +4,58 @@ import {
   VioletRosesFrame,
   EmberFlameFrame,
   CrystalHaloFrame,
+  SakuraOrbitFrame,
+  NeonArcadeFrame,
 } from "@/components/vip-avatar-frames";
 
 /**
- * Curated avatar decorations — Free4Talk / Discord Nitro style.
- * VIP frames use transparent animated overlay assets (same compositing model
- * as Free4Talk: frame image layered over a circular avatar, hollow center).
- * Free rings stay subtle CSS/SVG.
- * Legacy ids map to the nearest modern frame so old saves keep working.
+ * Premium avatar decorations only — Discord / Free4Talk / DecoProfile overlay model.
+ * Basic free glow rings were removed (low visual quality). Legacy ring ids remap to VIP.
  */
 export const PROFILE_DECORATIONS = [
   { id: "none", label: "None", description: "No decoration", category: "core", vip: false },
 
-  // ── Free rings ────────────────────────────────────────────────────────
-  { id: "aurora", label: "Aurora", description: "Indigo–violet glow ring", category: "rings", vip: false },
-  { id: "pulse", label: "Pulse", description: "Soft teal breathing ring", category: "rings", vip: false },
-  { id: "executive", label: "Executive", description: "Platinum highlight sweep", category: "rings", vip: false },
-  { id: "hologram", label: "Hologram", description: "Cyan HUD ring", category: "rings", vip: false },
-
-  // ── VIP premium overlays (Free4Talk / Discord technique) ───────────────
-  { id: "luna-butterflies", label: "Luna Butterflies", description: "Animated butterfly frame overlay", category: "vip", vip: true },
+  // ── VIP premium overlays (Discord Nitro / DecoProfile technique) ───────
+  { id: "luna-butterflies", label: "Luna Butterflies", description: "Neon butterflies orbiting your avatar", category: "vip", vip: true },
   { id: "violet-roses", label: "Violet Roses", description: "Animated rose crown overlay", category: "vip", vip: true },
   { id: "ember-flame", label: "Ember Flame", description: "Animated fire rim overlay", category: "vip", vip: true },
-  { id: "crystal-halo", label: "Crystal Halo", description: "Animated crystal shard overlay", category: "vip", vip: true },
+  { id: "crystal-halo", label: "Crystal Halo", description: "Crystal shard halo overlay", category: "vip", vip: true },
+  { id: "sakura-orbit", label: "Sakura Orbit", description: "Cherry blossoms circling your avatar", category: "vip", vip: true },
+  { id: "neon-arcade", label: "Neon Arcade", description: "Cyber neon chase ring", category: "vip", vip: true },
 ] as const;
 
 export type DecorationId = typeof PROFILE_DECORATIONS[number]["id"];
 export type DecorationCategory = typeof PROFILE_DECORATIONS[number]["category"];
 
-/** Map retired / basic decoration ids → modern equivalents. */
+/** Map retired / basic decoration ids → modern VIP overlays (or none). */
 export const LEGACY_DECORATION_MAP: Record<string, DecorationId> = {
-  quantum: "aurora",
-  helix: "pulse",
-  sentinel: "executive",
-  tactical: "hologram",
+  quantum: "neon-arcade",
+  helix: "crystal-halo",
+  sentinel: "neon-arcade",
+  tactical: "neon-arcade",
+  aurora: "luna-butterflies",
+  pulse: "crystal-halo",
+  executive: "neon-arcade",
+  hologram: "neon-arcade",
   crimson: "ember-flame",
-  circuit: "hologram",
-  cosmic: "hologram",
-  rainbow: "aurora",
-  stars: "aurora",
-  sparkles: "aurora",
+  circuit: "neon-arcade",
+  cosmic: "crystal-halo",
+  rainbow: "sakura-orbit",
+  stars: "crystal-halo",
+  sparkles: "sakura-orbit",
   fire: "ember-flame",
   lightning: "ember-flame",
-  snow: "pulse",
+  snow: "crystal-halo",
   hearts: "violet-roses",
-  bubbles: "pulse",
+  bubbles: "sakura-orbit",
   flowers: "violet-roses",
   catears: "luna-butterflies",
   crystals: "crystal-halo",
   "crystals-aqua": "crystal-halo",
-  "neon-chaos": "luna-butterflies",
+  "neon-chaos": "neon-arcade",
   "neon-chaos-purple": "luna-butterflies",
   dragon: "violet-roses",
-  "dragon-ruby": "violet-roses",
+  "dragon-ruby": "ember-flame",
   "solar-eclipse": "ember-flame",
   "inferno-skull": "ember-flame",
 };
@@ -1669,16 +1668,15 @@ export function ProfileDecoration({ decorationId, size = 56, children }: Profile
       style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
       className="deco-wrap"
     >
-      {/* Free rings */}
-      {id === "aurora" && <AuroraRing size={size} />}
-      {id === "executive" && <ExecutiveRing size={size} />}
-      {id === "pulse" && <PulseRing size={size} />}
-      {id === "hologram" && <HologramRing size={size} />}
-      {/* VIP Free4Talk/Discord overlay frames (transparent asset over avatar) */}
+      {/* Free rings removed — VIP Discord/DecoProfile-style overlays only */}
       {id === "luna-butterflies" && <LunaButterfliesFrame size={size} />}
       {id === "violet-roses" && <VioletRosesFrame size={size} />}
       {id === "ember-flame" && <EmberFlameFrame size={size} />}
       {id === "crystal-halo" && <CrystalHaloFrame size={size} />}
+      {id === "sakura-orbit" && <SakuraOrbitFrame size={size} />}
+      {id === "neon-arcade" && <NeonArcadeFrame size={size} />}
+      {/* Legacy free-ring ids remapped via resolveDecorationId — keep no-ops for safety */}
+      {(id === "aurora" || id === "executive" || id === "pulse" || id === "hologram") && null}
       {children}
     </div>
   );
