@@ -29,6 +29,19 @@ const AdminPage = lazy(() => import("@/pages/admin"));
 const TeachersPage = lazy(() => import("@/pages/teachers"));
 const PaymentMethodsPage = lazy(() => import("@/pages/payment-methods"));
 const RoomThemesPage = lazy(() => import("@/pages/room-themes"));
+const AboutPage = lazy(() => import("@/pages/seo/about"));
+const FaqPage = lazy(() => import("@/pages/seo/faq"));
+const ContactPage = lazy(() => import("@/pages/seo/contact"));
+const PrivacyPage = lazy(() => import("@/pages/seo/privacy"));
+const TermsPage = lazy(() => import("@/pages/seo/terms"));
+const LanguageExchangePage = lazy(() => import("@/pages/seo/language-exchange"));
+const EnglishExchangePage = lazy(() => import("@/pages/seo/english-exchange"));
+const SpeakingPracticePage = lazy(() => import("@/pages/seo/speaking-practice"));
+const MeetPeoplePage = lazy(() => import("@/pages/seo/meet-people"));
+const AltOmeglePage = lazy(() => import("@/pages/seo/alt-omegle"));
+const AltFree4TalkPage = lazy(() => import("@/pages/seo/alt-free4talk"));
+const AltHelloTalkPage = lazy(() => import("@/pages/seo/alt-hellotalk"));
+const NotFound = lazy(() => import("@/pages/not-found"));
 const AnimatedBackground = lazy(() =>
   import("@/components/animated-background").then((m) => ({ default: m.AnimatedBackground }))
 );
@@ -253,6 +266,18 @@ function AppContent() {
       <Suspense fallback={<LobbyShell />}>
         <Switch>
           <Route path="/" component={Lobby} />
+          <Route path="/about" component={AboutPage} />
+          <Route path="/faq" component={FaqPage} />
+          <Route path="/contact" component={ContactPage} />
+          <Route path="/privacy" component={PrivacyPage} />
+          <Route path="/terms" component={TermsPage} />
+          <Route path="/language-exchange/english" component={EnglishExchangePage} />
+          <Route path="/language-exchange" component={LanguageExchangePage} />
+          <Route path="/speaking-practice" component={SpeakingPracticePage} />
+          <Route path="/meet-people-online" component={MeetPeoplePage} />
+          <Route path="/alternatives/omegle" component={AltOmeglePage} />
+          <Route path="/alternatives/free4talk" component={AltFree4TalkPage} />
+          <Route path="/alternatives/hellotalk" component={AltHelloTalkPage} />
           <Route path="/admin" component={AdminPage} />
           <Route path="/teachers" component={TeachersPage} />
           <Route path="/teachers/:teacherId" component={TeachersPage} />
@@ -260,9 +285,7 @@ function AppContent() {
           <Route path="/room/:id" component={RoomPage} />
           <Route path="/messages/:userId" component={DmPage} />
           <Route path="/room-themes" component={RoomThemesPage} />
-          <Route>
-            <Lobby />
-          </Route>
+          <Route component={NotFound} />
         </Switch>
       </Suspense>
     </div>

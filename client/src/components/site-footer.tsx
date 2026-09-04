@@ -21,13 +21,6 @@ import { FaLinkedin } from "react-icons/fa6";
 import { VextornMark } from "@/components/vextorn-logo";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -91,10 +84,8 @@ export function SiteFooter() {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [privacyOpen, setPrivacyOpen] = useState(false);
-  const [termsOpen, setTermsOpen] = useState(false);
 
-  const shareUrl = typeof window !== "undefined" ? window.location.origin : "https://vextorn.app";
+  const shareUrl = typeof window !== "undefined" ? window.location.origin : "https://vextorn.com";
   const shareText = "Join Vextorn to practice languages with real people in voice rooms.";
 
   const handleCopy = async () => {
@@ -149,7 +140,7 @@ export function SiteFooter() {
             </div>
           </div>
           <p className="footer-desc">
-            Real-time voice rooms for language learners worldwide.
+            Free live voice rooms for language exchange, speaking practice, and meeting people worldwide.
           </p>
           <a
             href="mailto:hello@vextorn.app"
@@ -170,25 +161,18 @@ export function SiteFooter() {
         {/* Center: nav pill — policies + share (Contact lives on the
             brand block above and is intentionally NOT in this group). */}
         <nav className="footer-links" aria-label="Footer navigation">
-          <button
-            type="button"
-            onClick={() => setPrivacyOpen(true)}
-            className="footer-link footer-link-btn"
-            data-testid="button-footer-privacy"
-          >
+          <a href="/about" className="footer-link" data-testid="link-footer-about">About</a>
+          <a href="/faq" className="footer-link" data-testid="link-footer-faq">FAQ</a>
+          <a href="/language-exchange" className="footer-link" data-testid="link-footer-language-exchange">Language exchange</a>
+          <a href="/contact" className="footer-link" data-testid="link-footer-contact-page">Contact</a>
+          <a href="/privacy" className="footer-link" data-testid="link-footer-privacy">
             <Shield className="w-3.5 h-3.5" />
             <span>Privacy</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setTermsOpen(true)}
-            className="footer-link footer-link-btn"
-            data-testid="button-footer-terms"
-          >
+          </a>
+          <a href="/terms" className="footer-link" data-testid="link-footer-terms">
             <FileText className="w-3.5 h-3.5" />
             <span>Terms</span>
-          </button>
+          </a>
 
           {/* Share with destination popover */}
           <Popover open={shareOpen} onOpenChange={setShareOpen}>
@@ -295,131 +279,6 @@ export function SiteFooter() {
           Made with <span className="footer-heart">♥</span> for language learners
         </span>
       </div>
-
-      {/* ── Privacy Dialog ──────────────────────────────── */}
-      <Dialog open={privacyOpen} onOpenChange={setPrivacyOpen}>
-        <DialogContent className="footer-policy-dialog" data-testid="dialog-privacy">
-          <DialogHeader>
-            <div className="footer-policy-icon">
-              <Shield className="w-5 h-5" />
-            </div>
-            <DialogTitle className="footer-policy-title">Privacy Policy</DialogTitle>
-            <DialogDescription className="footer-policy-sub">
-              How Vextorn handles your data — short and human.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="footer-policy-body">
-            <section>
-              <h4>What we collect</h4>
-              <p>
-                Just what's needed to run voice rooms: your account profile (name, avatar,
-                language preferences), the rooms you create or join, and chat messages you
-                send inside rooms. No IP addresses are stored. No third-party trackers.
-              </p>
-            </section>
-            <section>
-              <h4>What we never do</h4>
-              <ul>
-                <li>We don't sell your data — ever.</li>
-                <li>We don't show ads on Vextorn.</li>
-                <li>We don't record voice rooms.</li>
-                <li>We don't share your messages with anyone outside Vextorn.</li>
-              </ul>
-            </section>
-            <section>
-              <h4>Retention</h4>
-              <p>
-                Direct messages are kept 7 days, room messages 7 days, notifications 14
-                days, and abuse reports 30 days. You can delete your account at any time
-                from your profile, which removes all associated data.
-              </p>
-            </section>
-            <section>
-              <h4>Cookies</h4>
-              <p>
-                We use a single session cookie to keep you signed in. That's it.
-              </p>
-            </section>
-            <section>
-              <h4>Contact</h4>
-              <p>
-                Questions about privacy? Reach us at{" "}
-                <a href="mailto:hello@vextorn.app" className="footer-policy-link">
-                  hello@vextorn.app
-                </a>.
-              </p>
-            </section>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Terms Dialog ────────────────────────────────── */}
-      <Dialog open={termsOpen} onOpenChange={setTermsOpen}>
-        <DialogContent className="footer-policy-dialog" data-testid="dialog-terms">
-          <DialogHeader>
-            <div className="footer-policy-icon">
-              <FileText className="w-5 h-5" />
-            </div>
-            <DialogTitle className="footer-policy-title">Terms of Service</DialogTitle>
-            <DialogDescription className="footer-policy-sub">
-              The basic ground rules for using Vextorn.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="footer-policy-body">
-            <section>
-              <h4>Be kind</h4>
-              <p>
-                Vextorn is a community for language learners. Harassment, hate speech,
-                threats, sexual content involving minors, and spam are not tolerated and
-                will result in account termination.
-              </p>
-            </section>
-            <section>
-              <h4>Your account</h4>
-              <p>
-                You're responsible for your account and the content you share. Don't
-                impersonate others, and don't share your login. Accounts must be 13+ to
-                use Vextorn.
-              </p>
-            </section>
-            <section>
-              <h4>Voice rooms</h4>
-              <p>
-                Conversations are live and not recorded by Vextorn. Treat other
-                participants with respect. Hosts can mute, kick, or ban from their own
-                rooms. Repeated violations across rooms can lead to a platform-wide
-                restriction.
-              </p>
-            </section>
-            <section>
-              <h4>Service</h4>
-              <p>
-                Vextorn is provided "as is". We do our best to keep the service running
-                reliably, but we don't guarantee uninterrupted availability. Major changes
-                to these terms will be announced in-app.
-              </p>
-            </section>
-            <section>
-              <h4>Termination</h4>
-              <p>
-                You can delete your account at any time. We may suspend or terminate
-                accounts that violate these terms or harm the community.
-              </p>
-            </section>
-            <section>
-              <h4>Contact</h4>
-              <p>
-                Questions about these terms? Reach us at{" "}
-                <a href="mailto:hello@vextorn.app" className="footer-policy-link">
-                  hello@vextorn.app
-                </a>.
-              </p>
-            </section>
-          </div>
-        </DialogContent>
-      </Dialog>
     </footer>
   );
 }

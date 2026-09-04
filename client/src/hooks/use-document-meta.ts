@@ -53,7 +53,11 @@ export function useDocumentMeta(meta: DocumentMeta) {
   useEffect(() => {
     if (typeof document === "undefined") return;
 
-    const finalTitle = title ? `${title} | Vextorn` : DEFAULT_TITLE;
+    const finalTitle = !title
+      ? DEFAULT_TITLE
+      : /vextorn/i.test(title)
+        ? title
+        : `${title} | Vextorn`;
     const finalDesc = description || DEFAULT_DESC;
     const finalCanonical =
       canonical ||
@@ -74,14 +78,17 @@ export function useDocumentMeta(meta: DocumentMeta) {
     setMeta("og:url", finalCanonical, "property");
     if (ogImage) {
       setMeta("og:image", ogImage, "property");
+      setMeta("twitter:image", ogImage);
     }
 
     setMeta("twitter:title", ogTitle || finalTitle);
     setMeta("twitter:description", ogDescription || finalDesc);
-    if (ogImage) {
-      setMeta("twitter:image", ogImage);
-    }
 
-    setMeta("robots", noIndex ? "noindex, nofollow" : "index, follow");
+    setMeta(
+      "robots",
+      noIndex
+        ? "noindex, follow"
+        : "index, follow, max-image-preview:large, max-snippet:-1"
+    );
   }, [title, description, canonical, lang, ogTitle, ogDescription, ogImage, noIndex]);
 }

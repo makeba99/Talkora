@@ -5,6 +5,7 @@ Disallow: /admin
 Disallow: /socket.io/
 Disallow: /messages/
 Disallow: /payment-methods
+Disallow: /uploads/
 
 # Prefer HTTPS canonical host
 Host: https://vextorn.com

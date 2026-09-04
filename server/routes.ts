@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { isAuthenticated } from "./replit_integrations/auth";
 import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema, insertUserCommentSchema, insertBadgeApplicationSchema, insertAnnouncementSchema, BADGE_TYPES, VIP_PLANS, vipPlanFromAmount, vipRank, BADGE_CELEBRATION_GIF, BADGE_CELEBRATION_MOOD, BADGE_CELEBRATION_DURATION_MS, VIP_SHOUTOUT_GIF, VIP_SHOUTOUT_DAILY_LIMIT } from "@shared/schema";
 import type { User } from "@shared/schema";
+import { SEO_STATIC_PAGES } from "@shared/seo-pages";
 import { z } from "zod";
 import multer, { type StorageEngine } from "multer";
 import path from "path";
@@ -985,9 +986,9 @@ export async function registerRoutes(
       // injections) as the base so the lobby loads correctly in production.
       // Falls back to the raw on-disk template if precomputed isn't ready yet.
       const html = renderIndexHtml(origin, {
-        title: `${countPrefix}Vextorn — Talk. Share. Belong.`,
+        title: `${countPrefix}Vextorn — Language exchange & live voice rooms`,
         description:
-          "Join live voice rooms to practice languages with speakers worldwide. Beginner to advanced levels in English, Spanish, French, Japanese and more.",
+          "Free language exchange in live voice rooms. Practice speaking, meet people worldwide, and find conversation partners by language and level.",
         canonical: `${origin}/`,
         breadcrumbs: [{ name: "Home", url: "/" }],
       }, getPrecomputedHtml());
@@ -1001,6 +1002,45 @@ export async function registerRoutes(
       next();
     }
   });
+
+  // Marketing / entity SEO pages — per-route meta for crawlers (prod only).
+  for (const page of SEO_STATIC_PAGES) {
+    app.get(page.path, (req, res, next) => {
+      if (process.env.NODE_ENV !== "production") return next();
+      const accept = req.headers.accept || "";
+      if (!accept.includes("text/html")) return next();
+      try {
+        const origin = getOrigin(req);
+        const crumbs = page.path
+          .split("/")
+          .filter(Boolean)
+          .map((seg, i, arr) => {
+            const href = "/" + arr.slice(0, i + 1).join("/");
+            const name = seg
+              .split("-")
+              .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+              .join(" ");
+            return { name, url: href };
+          });
+        const html = renderIndexHtml(
+          origin,
+          {
+            title: `${page.title} | Vextorn`,
+            description: page.description,
+            canonical: `${origin}${page.path}`,
+            breadcrumbs: [{ name: "Home", url: "/" }, ...crumbs],
+          },
+          getPrecomputedHtml(),
+        );
+        if (!html) return next();
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.setHeader("Cache-Control", "public, max-age=300, s-maxage=600");
+        res.send(html);
+      } catch {
+        next();
+      }
+    });
+  }
 
   // Dynamic sitemap — listed in robots.txt and pinged from Google Search
   // Console. Lists every public room (using its short ID URL) and every
@@ -1276,6 +1316,19 @@ export async function registerRoutes(
       urls.push(
         `<url><loc>${origin}/teachers</loc><changefreq>daily</changefreq><priority>0.9</priority></url>`
       );
+      urls.push(
+        `<url><loc>${origin}/room-themes</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>`
+      );
+
+      for (const page of SEO_STATIC_PAGES) {
+        urls.push(
+          `<url>` +
+            `<loc>${origin}${page.path}</loc>` +
+            `<changefreq>${page.changefreq}</changefreq>` +
+            `<priority>${page.priority}</priority>` +
+            `</url>`
+        );
+      }
 
       for (const room of allRooms) {
         if (!room.isPublic) continue;
@@ -1352,7 +1405,10 @@ export async function registerRoutes(
         `Disallow: /api/\n` +
         `Disallow: /uploads/\n` +
         `Disallow: /admin\n` +
-        `Disallow: /messages/\n\n` +
+        `Disallow: /messages/\n` +
+        `Disallow: /payment-methods\n` +
+        `Disallow: /socket.io/\n` +
+        `Host: ${origin}\n` +
         `Sitemap: ${origin}/sitemap.xml\n`;
       robotsCache.set(origin, { body, expiresAt: now + ROBOTS_TTL_MS });
       cacheStatus = "MISS";

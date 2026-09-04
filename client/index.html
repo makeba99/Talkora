@@ -15,9 +15,9 @@
     <link rel="preload" href="/api/announcements" as="fetch" crossorigin="use-credentials" fetchpriority="high" />
 
     <!-- Primary meta -->
-    <title>Vextorn — Talk. Share. Belong.</title>
-    <meta name="description" content="Vextorn is a real-time, voice-first community where you join live audio rooms by language and level to talk, share, and belong." />
-    <meta name="keywords" content="vextorn, live voice chat, language practice, speak English online, conversation practice, language exchange, voice rooms, speaking practice, learn languages free" />
+    <title>Vextorn — Language exchange &amp; live voice rooms</title>
+    <meta name="description" content="Vextorn is a free language exchange community with live voice rooms. Practice speaking, meet people worldwide, and find conversation partners by language and level." />
+    <meta name="keywords" content="vextorn, language exchange, speaking practice, conversation practice, practice English online, meet people online, talk to native speakers, language learning community, random chat alternative, free language exchange" />
     <meta name="author" content="Vextorn" />
 
     <!-- PWA / Theme — adaptive: matches the system color scheme so the
@@ -76,8 +76,8 @@
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Vextorn — Talk. Share. Belong." />
-    <meta property="og:description" content="Join live audio rooms to practice any language with real people around the world." />
+    <meta property="og:title" content="Vextorn — Language exchange &amp; live voice rooms" />
+    <meta property="og:description" content="Practice languages with real people in free live voice rooms. Meet international friends and conversation partners worldwide." />
     <meta property="og:image" content="https://vextorn.com/vextorn-og.png" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="512" />
@@ -89,8 +89,8 @@
 
     <!-- Twitter Card: large image gives us the big preview, not the small thumbnail -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Vextorn — Talk. Share. Belong." />
-    <meta name="twitter:description" content="Real-time voice rooms for language practice and community." />
+    <meta name="twitter:title" content="Vextorn — Language exchange &amp; live voice rooms" />
+    <meta name="twitter:description" content="Free live voice rooms for language exchange, speaking practice, and meeting people worldwide." />
     <meta name="twitter:image" content="https://vextorn.com/vextorn-og.png" />
     <meta name="twitter:image:alt" content="Vextorn — live voice rooms for language practice" />
 
@@ -125,18 +125,17 @@
           },
           "image": { "@id": "https://vextorn.com/#logo" },
           "sameAs": [
-            "https://twitter.com/vextorn",
-            "https://x.com/vextorn",
-            "https://instagram.com/vextorn",
-            "https://facebook.com/vextorn",
-            "https://tiktok.com/@vextorn",
-            "https://discord.gg/vextorn",
-            "https://youtube.com/@vextorn"
+            "https://www.instagram.com/joinvextorn/",
+            "https://www.linkedin.com/company/vextorn/",
+            "https://www.tiktok.com/@joinvextorn",
+            "https://www.youtube.com/@vextorn"
           ],
           "foundingDate": "2024",
           "contactPoint": {
             "@type": "ContactPoint",
             "contactType": "customer support",
+            "email": "hello@vextorn.app",
+            "url": "https://vextorn.com/contact",
             "availableLanguage": ["English", "Spanish", "French", "Japanese", "Korean", "Armenian"]
           }
         },
@@ -198,7 +197,8 @@
         },
         {
           "@type": "FAQPage",
-          "@id": "https://vextorn.com/#faq",
+          "@id": "https://vextorn.com/faq#faq",
+          "url": "https://vextorn.com/faq",
           "mainEntity": [
             {
               "@type": "Question",
@@ -210,18 +210,10 @@
             },
             {
               "@type": "Question",
-              "name": "How do I join a voice room on Vextorn?",
+              "name": "How does Vextorn work?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Go to vextorn.com, browse the lobby to find a room in your target language and skill level (Beginner, Intermediate, or Advanced), then click Enter. You can join as a guest to listen or sign in to speak and chat. Rooms are live and real-time — no scheduling needed."
-              }
-            },
-            {
-              "@type": "Question",
-              "name": "What languages are available on Vextorn?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Vextorn hosts live rooms for dozens of languages including English, Spanish, French, Japanese, Korean, German, Portuguese, Arabic, Armenian, Mandarin Chinese, Italian, Hindi, and more. New language rooms are created by the community every day."
+                "text": "Browse the lobby, pick a room for your language and level, then enter. You can listen as a guest or sign in to speak, send chat messages, follow friends, and use room features like an AI tutor."
               }
             },
             {
@@ -229,15 +221,23 @@
               "name": "Is Vextorn free to use?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Yes — Vextorn is completely free. You can browse rooms, join as a listener, and use the platform without creating an account. Sign up (also free) to speak in rooms, send messages, follow other users, and book 1-on-1 sessions with language teachers."
+                "text": "Yes — Vextorn is free to join and use for live rooms. Sign up (also free) to speak in rooms, send messages, follow other users, and optionally book 1-on-1 sessions with language teachers."
               }
             },
             {
               "@type": "Question",
-              "name": "Can I book a language teacher on Vextorn?",
+              "name": "Is Vextorn useful for language exchange?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Yes. Vextorn has a dedicated Teachers section where you can browse verified language tutors, read their reviews, and book a private 1-on-1 conversation session. Teachers specialize in languages like English, Spanish, French, Korean, Japanese, and more."
+                "text": "Yes. Many users join to practice a target language with others who want to speak. Rooms are tagged by language and level so you can find a comfortable conversation partner group."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Is Vextorn an alternative to random chat platforms?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Vextorn can suit people looking for safer, purpose-driven conversation than classic random stranger video chat. Rooms are organized by language and level, and hosts have moderation tools. Vextorn is not affiliated with Omegle or similar products."
               }
             },
             {
@@ -245,7 +245,7 @@
               "name": "Does Vextorn have an AI language tutor?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Yes. Vextorn includes an AI language tutor available inside every voice room. The AI tutor responds in your target language, corrects mistakes, explains grammar, and adapts to your level — from total beginner to advanced speaker."
+                "text": "Yes. Vextorn includes an AI language tutor available inside voice rooms. The AI tutor responds in your target language, corrects mistakes, explains grammar, and adapts to your level."
               }
             }
           ]

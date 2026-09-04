@@ -464,12 +464,12 @@ function DeferredLobbyOverlays({ onStepChange }: { onStepChange: (id: string) =>
 
 export default function Lobby() {
   useDocumentMeta({
-    title: "Live voice rooms for language practice",
+    title: "Language exchange & live voice rooms",
     description:
-      "Practice English, Spanish, French, Korean, Japanese and more in live voice rooms. Join by language and level — free on Vextorn.",
-    ogTitle: "Vextorn — Live voice rooms for language practice",
+      "Free language exchange in live voice rooms. Practice English, Spanish, French, Korean, Japanese and more — meet conversation partners worldwide on Vextorn.",
+    ogTitle: "Vextorn — Language exchange & live voice rooms",
     ogDescription:
-      "Join real-time audio rooms by language and level. Talk with people worldwide on Vextorn.",
+      "Join real-time audio rooms by language and level. Practice speaking and meet people worldwide.",
   });
   const { user } = useAuth();
   const { socket } = useSocket();
@@ -1612,7 +1612,7 @@ export default function Lobby() {
               </div>
             </div>
             {/* sr-only h1: brand first + language-practice keywords for SEO/a11y */}
-            <h1 className="sr-only">Vextorn — live voice rooms for language practice. Talk. Share. Belong.</h1>
+            <h1 className="sr-only">Vextorn — language exchange and live voice rooms for speaking practice. Talk. Share. Belong.</h1>
             <div className="min-w-0 hidden sm:flex flex-col justify-center leading-none" aria-hidden="true">
               <span
                 className="text-[17px] leading-none tracking-tight"
