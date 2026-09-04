@@ -1,4 +1,4 @@
-import { useEffect, useState, Suspense, lazy } from "react";
+import { useEffect, useState, Suspense, lazy, Component } from "react";
 import { SocketProvider } from "@/lib/socket";
 import { useSocket } from "@/lib/socket-context";
 import { useAuth } from "@/hooks/use-auth";
@@ -94,9 +94,43 @@ function GlobalSocketEvents() {
 
   useEffect(() => {
     if (!socket) return;
-    const handleBadgeAwarded = (event: any) => {
-      if (!event?.badge?.id || !event?.badgeDef) {
-        console.warn("[badge] Ignoring incomplete badge:awarded payload", event);
+
+    const normalizeBadgeEvent = (raw: any) => {
+      if (!raw || typeof raw !== "object") return null;
+      // Nested shape from admin:notification
+      const event = raw.badge?.badgeDef ? raw.badge : raw;
+      const badgeType = String(event?.badge?.badgeType || event?.badgeDef?.id || "").trim();
+      const badgeDefRaw = event?.badgeDef;
+      if (!badgeDefRaw?.label && !badgeDefRaw?.id) return null;
+      const badgeId =
+        String(event?.badge?.id || "").trim() ||
+        `badge-${event?.userId || "user"}-${badgeType || "award"}-${Date.now()}`;
+      return {
+        badge: {
+          id: badgeId,
+          userId: String(event?.badge?.userId || event?.userId || ""),
+          badgeType: badgeType || String(badgeDefRaw?.id || "badge"),
+          createdAt: event?.badge?.createdAt || new Date().toISOString(),
+        },
+        badgeDef: {
+          id: String(badgeDefRaw?.id || badgeType || "badge"),
+          label: String(badgeDefRaw?.label || "Badge"),
+          emoji: String(badgeDefRaw?.emoji || "🏅"),
+          color: String(badgeDefRaw?.color || "#8B5CF6"),
+          quote: String(badgeDefRaw?.quote || event?.quote || ""),
+        },
+        userName: String(event?.userName || "A user"),
+        userAvatar: event?.userAvatar ?? null,
+        userId: String(event?.userId || event?.badge?.userId || ""),
+        quote: String(event?.quote || badgeDefRaw?.quote || ""),
+        badgeGifUrl: event?.badgeGifUrl || null,
+      };
+    };
+
+    const showBadgeCelebration = (raw: any) => {
+      const event = normalizeBadgeEvent(raw);
+      if (!event) {
+        console.warn("[badge] Ignoring incomplete badge:awarded payload", raw);
         return;
       }
       setBadgeEvent(event);
@@ -106,6 +140,15 @@ function GlobalSocketEvents() {
         queryClient.invalidateQueries({ queryKey: ["/api/users/badges"] });
       }
     };
+
+    const handleBadgeAwarded = (event: any) => showBadgeCelebration(event);
+    const handleAdminBadgeNotification = (event: any) => {
+      if (event?.type === "badge_awarded") showBadgeCelebration(event);
+    };
+    const handleLocalBadgeAwarded = (e: Event) => {
+      showBadgeCelebration((e as CustomEvent).detail);
+    };
+
     const handleAnnouncement = (_event: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
     };
@@ -156,6 +199,8 @@ function GlobalSocketEvents() {
     };
 
     socket.on("badge:awarded", handleBadgeAwarded);
+    socket.on("admin:notification", handleAdminBadgeNotification);
+    window.addEventListener("vextorn:badge-awarded", handleLocalBadgeAwarded);
     socket.on("admin:announcement", handleAnnouncement);
     socket.on("admin:restricted", handleRestricted);
     socket.on("admin:restriction-lifted", handleRestrictionLifted);
@@ -172,6 +217,8 @@ function GlobalSocketEvents() {
     socket.on("vip:shoutout", handleVipShoutout);
     return () => {
       socket.off("badge:awarded", handleBadgeAwarded);
+      socket.off("admin:notification", handleAdminBadgeNotification);
+      window.removeEventListener("vextorn:badge-awarded", handleLocalBadgeAwarded);
       socket.off("admin:announcement", handleAnnouncement);
       socket.off("admin:restricted", handleRestricted);
       socket.off("admin:restriction-lifted", handleRestrictionLifted);
@@ -184,9 +231,36 @@ function GlobalSocketEvents() {
   if (!badgeEvent) return null;
   return (
     <Suspense fallback={null}>
-      <BadgeAnnouncement event={badgeEvent} onDismiss={() => setBadgeEvent(null)} />
+      <BadgeCelebrationSafe event={badgeEvent} onDismiss={() => setBadgeEvent(null)} />
     </Suspense>
   );
+}
+
+/** Isolate celebration crashes so a bad payload never blanks the whole app. */
+class BadgeCelebrationSafe extends Component<
+  { event: any; onDismiss: () => void },
+  { failed: boolean }
+> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error("[badge] celebration overlay crashed:", error);
+  }
+
+  componentDidUpdate(prevProps: { event: any }) {
+    if (prevProps.event?.badge?.id !== this.props.event?.badge?.id && this.state.failed) {
+      this.setState({ failed: false });
+    }
+  }
+
+  render() {
+    if (this.state.failed) return null;
+    return <BadgeAnnouncement event={this.props.event} onDismiss={this.props.onDismiss} />;
+  }
 }
 
 export function SocketLayer({ userId, children }: { userId: string; children: React.ReactNode }) {

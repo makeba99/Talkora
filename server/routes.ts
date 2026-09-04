@@ -767,27 +767,38 @@ export async function registerRoutes(
     target: User;
   }) => {
     const badgeDef = {
-      id: opts.badgeDef.id,
-      label: opts.badgeDef.label,
-      emoji: opts.badgeDef.emoji || "🏅",
-      color: opts.badgeDef.color || "#8B5CF6",
-      quote: opts.badgeDef.quote || "",
+      id: String(opts.badgeDef.id || opts.badge?.badgeType || "badge"),
+      label: String(opts.badgeDef.label || "Badge"),
+      emoji: String(opts.badgeDef.emoji || "🏅"),
+      color: String(opts.badgeDef.color || "#8B5CF6"),
+      quote: String(opts.badgeDef.quote || ""),
     };
     const targetName =
       opts.target.displayName ||
       [opts.target.firstName, opts.target.lastName].filter(Boolean).join(" ") ||
       opts.target.email ||
       "A user";
+    const badgeId =
+      String(opts.badge?.id || "").trim() ||
+      `badge-${opts.target.id}-${badgeDef.id}-${Date.now()}`;
     const badgeAwardPayload = {
-      badge: opts.badge,
+      badge: {
+        id: badgeId,
+        userId: String(opts.badge?.userId || opts.target.id),
+        badgeType: String(opts.badge?.badgeType || badgeDef.id),
+        createdAt: opts.badge?.createdAt
+          ? new Date(opts.badge.createdAt).toISOString()
+          : new Date().toISOString(),
+      },
       badgeDef,
       userName: targetName,
-      userAvatar: opts.target.profileImageUrl,
+      userAvatar: opts.target.profileImageUrl || null,
       userId: opts.target.id,
       quote: badgeDef.quote,
       badgeGifUrl: BADGE_CELEBRATION_GIF,
     };
     try {
+      // Broadcast to every connected client (lobby, rooms, admin).
       io.emit("badge:awarded", badgeAwardPayload);
       // Slight delay so the overlay can pop first, then rooms get the chat+GIF card.
       setTimeout(() => {
@@ -2514,7 +2525,9 @@ export async function registerRoutes(
   // GIPHY GIF search (server-side only). The key must be set on Railway.
   // When configured, search uses api.giphy.com exclusively — never Tenor/Wikimedia.
   const RETIRED_GIPHY_PUBLIC_BETA_KEY = "dc6zaTOxFJmzC";
-  const GIF_PAGE_SIZE = 24;
+  const GIF_PAGE_SIZE = 36;
+  /** Short TTL so reopen/refresh shows new GIFs instead of the same 5‑min cache. */
+  const GIF_CACHE_TTL_MS = 12_000;
 
   function getGiphyApiKey(): string | null {
     const raw = (process.env.GIPHY_API_KEY || process.env.GIPHY_KEY || "").trim();
@@ -2528,20 +2541,50 @@ export async function registerRoutes(
   const giphyReady = !!getGiphyApiKey();
   console.log(`[gifs] provider=${giphyReady ? "giphy" : "unavailable"} keyConfigured=${giphyReady}`);
 
+  function shuffleInPlace<T>(arr: T[]): T[] {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  /** Loosen typos / punctuation so "helllo!!!" still finds hellos. */
+  function normalizeGifQuery(raw: string): string {
+    return String(raw || "")
+      .normalize("NFKC")
+      .replace(/[^\p{L}\p{N}\s_-]+/gu, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 80);
+  }
+
   function mapGiphyResults(items: any[]): any[] {
     return items
       .map((gif) => {
         const images = gif.images || {};
-        const preview = images.fixed_width_small || images.preview_gif || images.fixed_width;
-        const original = images.original || images.downsized_large || images.fixed_width;
-        if (!preview?.url || !original?.url) return null;
+        // Prefer tiny/webp previews for snappy grid paint; full GIF on send.
+        const preview =
+          images.fixed_height_small ||
+          images.fixed_width_small ||
+          images.preview_gif ||
+          images.fixed_width ||
+          images.downsized_small;
+        const original =
+          images.downsized_medium ||
+          images.downsized ||
+          images.original ||
+          images.fixed_width;
+        const previewUrl = preview?.webp || preview?.url;
+        const fullUrl = original?.url || original?.webp;
+        if (!previewUrl || !fullUrl) return null;
         return {
           id: String(gif.id),
-          url: original.url,
-          preview: preview.url,
+          url: fullUrl,
+          preview: previewUrl,
           title: gif.title || gif.alt_text || "",
-          width: Number(preview.width || original.width || 320),
-          height: Number(preview.height || original.height || 200),
+          width: Number(preview?.width || original?.width || 320),
+          height: Number(preview?.height || original?.height || 200),
         };
       })
       .filter(Boolean);
@@ -2560,9 +2603,13 @@ export async function registerRoutes(
       limit: String(GIF_PAGE_SIZE),
       rating: "pg-13",
       lang: "en",
+      bundle: "messaging_non_clips",
       ...params,
     });
-    const response = await fetch(`https://api.giphy.com/v1/gifs/${path}?${searchParams.toString()}`);
+    const response = await fetch(`https://api.giphy.com/v1/gifs/${path}?${searchParams.toString()}`, {
+      // Prefer fresh network path; short server cache still covers bursts.
+      cache: "no-store",
+    });
     if (!response.ok) {
       let giphyMsg = "";
       try {
@@ -2585,7 +2632,7 @@ export async function registerRoutes(
       );
     }
     const data = await response.json();
-    const results = mapGiphyResults(data.data || []);
+    const results = shuffleInPlace(mapGiphyResults(data.data || []));
     const offset = Number(params.offset || "0");
     const total = Number(data.pagination?.total_count || 0);
     const next = offset + results.length < total && results.length > 0 ? String(offset + results.length) : "";
@@ -2601,17 +2648,28 @@ export async function registerRoutes(
 
   app.get("/api/gifs/search", isAuthenticated, async (req: any, res) => {
     try {
-      const query = req.query.q as string;
+      const query = normalizeGifQuery(String(req.query.q || ""));
       const pos = req.query.pos as string | undefined;
-      if (!query || query.trim().length === 0) {
+      const refresh = String(req.query.refresh || "") === "1";
+      if (!query) {
         return res.json({ results: [], next: "", provider: "giphy" });
       }
       const offset = pos ? Math.max(0, parseInt(pos, 10) || 0) : 0;
-      const cacheKey = `gif:search:giphy:v2:${query.toLowerCase().trim()}:${offset}`;
-      const cached = externalCache.get(cacheKey);
-      if (cached) return res.json(cached);
-      const result = await fetchGiphy("search", { q: query.trim(), offset: String(offset) });
-      externalCache.set(cacheKey, result);
+      const cacheKey = `gif:search:giphy:v3:${query.toLowerCase()}:${offset}`;
+      if (!refresh && !pos) {
+        const cached = externalCache.get(cacheKey);
+        if (cached) return res.json(cached);
+      }
+      let result = await fetchGiphy("search", { q: query, offset: String(offset) });
+      // Flexible fallback: if full phrase is empty, try the first meaningful token.
+      if (!result.results.length && query.includes(" ")) {
+        const first = query.split(" ").find((w) => w.length >= 2);
+        if (first && first !== query) {
+          result = await fetchGiphy("search", { q: first, offset: "0" });
+        }
+      }
+      externalCache.set(cacheKey, result, GIF_CACHE_TTL_MS);
+      res.setHeader("Cache-Control", "no-store");
       res.json(result);
     } catch (err: any) {
       console.error("GIF search error:", err?.message || err);
@@ -2622,12 +2680,24 @@ export async function registerRoutes(
   app.get("/api/gifs/trending", isAuthenticated, async (req: any, res) => {
     try {
       const pos = req.query.pos as string | undefined;
-      const offset = pos ? Math.max(0, parseInt(pos, 10) || 0) : 0;
-      const cacheKey = `gif:trending:giphy:v2:${offset}`;
-      const cached = externalCache.get(cacheKey);
-      if (cached) return res.json(cached);
+      const refresh = String(req.query.refresh || "") === "1";
+      // On fresh open/refresh, jump to a random page so users don't always see the same top 36.
+      const offset = pos
+        ? Math.max(0, parseInt(pos, 10) || 0)
+        : Math.floor(Math.random() * 120);
+      const cacheKey = `gif:trending:giphy:v3:${offset}`;
+      if (!refresh && pos) {
+        const cached = externalCache.get(cacheKey);
+        if (cached) return res.json(cached);
+      }
+      if (!refresh && !pos) {
+        // Still allow a very short burst cache keyed by the random offset bucket.
+        const cached = externalCache.get(cacheKey);
+        if (cached) return res.json(cached);
+      }
       const result = await fetchGiphy("trending", { offset: String(offset) });
-      externalCache.set(cacheKey, result);
+      externalCache.set(cacheKey, result, GIF_CACHE_TTL_MS);
+      res.setHeader("Cache-Control", "no-store");
       res.json(result);
     } catch (err: any) {
       console.error("GIF trending error:", err?.message || err);
@@ -6398,6 +6468,9 @@ export async function registerRoutes(
         badgeType,
         awardedById: (req.user as any).id,
       });
+      if (!badge) {
+        return res.status(500).json({ message: "Badge save failed — nothing was awarded" });
+      }
 
       const badgeAwardPayload = announceBadgeAward({
         badge,
@@ -6413,7 +6486,9 @@ export async function registerRoutes(
         }
       } catch (_) {}
 
-      res.json(badge);
+      // Include announcement so the awarding admin can show the celebration
+      // even if their socket briefly missed the broadcast.
+      res.json({ ...badge, announcement: badgeAwardPayload });
     } catch (err: any) {
       console.error("[badges] award failed:", err?.message || err);
       res.status(500).json({ message: err?.message || "Failed to award badge" });
@@ -6561,6 +6636,7 @@ export async function registerRoutes(
               io.to(userSocketId).emit("admin:notification", { type: "badge_awarded", badge: appBadgePayload });
             }
           } catch (_) {}
+          return res.json({ ...application, announcement: appBadgePayload });
         }
       }
       res.json(application);

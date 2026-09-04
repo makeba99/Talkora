@@ -3,7 +3,7 @@ import EmojiPicker, { Theme, EmojiClickData } from "emoji-picker-react";
 import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Smile, ImagePlus, Search, Loader2, X } from "lucide-react";
+import { Smile, ImagePlus, Search, Loader2, X, RefreshCw } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -92,15 +92,17 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const currentQueryRef = useRef<string>("");
   const searchAbortRef = useRef<AbortController | null>(null);
+  const searchRequestIdRef = useRef(0);
 
-  const searchGifs = useCallback(async (query: string) => {
-    if (!query.trim()) {
+  const searchGifs = useCallback(async (query: string, opts?: { refresh?: boolean }) => {
+    const q = query.trim();
+    if (!q) {
       setGifs([]);
       setGifError(null);
       setNextPos("");
       return;
     }
-    currentQueryRef.current = query;
+    currentQueryRef.current = q;
     searchAbortRef.current?.abort();
     const controller = new AbortController();
     searchAbortRef.current = controller;
@@ -109,8 +111,10 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
     setGifError(null);
     setNextPos("");
     try {
-      const res = await fetch(`/api/gifs/search?q=${encodeURIComponent(query)}`, {
+      const refreshQ = opts?.refresh ? "&refresh=1" : "";
+      const res = await fetch(`/api/gifs/search?q=${encodeURIComponent(q)}${refreshQ}`, {
         signal: controller.signal,
+        cache: "no-store",
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -125,29 +129,39 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
       setGifError(err.message || "Failed to search GIFs");
       setGifs([]);
     } finally {
-      setGifLoading(false);
+      if (requestId === searchRequestIdRef.current) setGifLoading(false);
     }
   }, []);
 
-  const loadTrending = useCallback(async () => {
+  const loadTrending = useCallback(async (opts?: { refresh?: boolean }) => {
     currentQueryRef.current = "";
+    searchAbortRef.current?.abort();
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
+    const requestId = ++searchRequestIdRef.current;
     setGifLoading(true);
     setGifError(null);
     setNextPos("");
     try {
-      const res = await fetch("/api/gifs/trending");
+      const refreshQ = opts?.refresh !== false ? "?refresh=1" : "";
+      const res = await fetch(`/api/gifs/trending${refreshQ}`, {
+        signal: controller.signal,
+        cache: "no-store",
+      });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.message || `Failed to load trending GIFs (${res.status})`);
       }
       const data = await res.json();
+      if (requestId !== searchRequestIdRef.current) return;
       setGifs(data.results || []);
       setNextPos(data.next || "");
     } catch (err: any) {
+      if (err?.name === "AbortError") return;
       setGifError(err.message || "GIF search unavailable");
       setGifs([]);
     } finally {
-      setGifLoading(false);
+      if (requestId === searchRequestIdRef.current) setGifLoading(false);
     }
   }, []);
 
@@ -158,7 +172,7 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
       const url = query.trim()
         ? `/api/gifs/search?q=${encodeURIComponent(query)}&pos=${encodeURIComponent(pos)}`
         : `/api/gifs/trending?pos=${encodeURIComponent(pos)}`;
-      const res = await fetch(url);
+      const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) return;
       const data = await res.json();
       const newGifs: GifResult[] = data.results || [];
@@ -175,10 +189,12 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
     }
   }, [loadingMore]);
 
+  // Always fetch a fresh batch when the picker opens (not the same cached set).
   useEffect(() => {
-    if (open && gifs.length === 0 && !gifSearch) {
-      loadTrending();
-    }
+    if (!open) return;
+    setGifSearch("");
+    currentQueryRef.current = "";
+    loadTrending({ refresh: true });
   }, [open, loadTrending]);
 
   useEffect(() => {
@@ -193,7 +209,7 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
           loadMore(nextPos, currentQueryRef.current);
         }
       },
-      { root: scroller, rootMargin: "200px", threshold: 0 }
+      { root: scroller, rootMargin: "280px", threshold: 0 }
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
@@ -202,13 +218,19 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
   const handleGifSearchChange = (value: string) => {
     setGifSearch(value);
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    // Snappy typing — Discord-like instant feel
     searchTimeout.current = setTimeout(() => {
       if (value.trim()) {
         searchGifs(value);
       } else {
-        loadTrending();
+        loadTrending({ refresh: true });
       }
-    }, 250);
+    }, 120);
+  };
+
+  const refreshNow = () => {
+    if (gifSearch.trim()) searchGifs(gifSearch, { refresh: true });
+    else loadTrending({ refresh: true });
   };
 
   const handleGifClick = (gif: GifResult) => {
@@ -246,32 +268,55 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
       >
         {/* Pinned search bar — always visible, never scrolls */}
         <div className="flex-shrink-0 px-2 pt-2 pb-1.5 border-b border-border/60">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-            <Input
-              value={gifSearch}
-              onChange={(e) => handleGifSearchChange(e.target.value)}
-              placeholder="Search GIFs..."
-              className="pl-8 pr-8 text-sm h-9"
-              aria-label="Search GIFs"
-              data-testid="input-gif-search"
-              autoComplete="off"
-            />
-            {gifSearch && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
-                aria-label="Clear GIF search"
-                onClick={() => {
-                  setGifSearch("");
-                  loadTrending();
+          <div className="flex items-center gap-1.5">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+              <Input
+                value={gifSearch}
+                onChange={(e) => handleGifSearchChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+                    if (gifSearch.trim()) searchGifs(gifSearch, { refresh: true });
+                    else loadTrending({ refresh: true });
+                  }
                 }}
-              >
-                <X className="w-3 h-3" aria-hidden="true" />
-              </Button>
-            )}
+                placeholder="Search GIFs…"
+                className="pl-8 pr-8 text-sm h-9"
+                aria-label="Search GIFs"
+                data-testid="input-gif-search"
+                autoComplete="off"
+              />
+              {gifSearch && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+                  aria-label="Clear GIF search"
+                  onClick={() => {
+                    setGifSearch("");
+                    loadTrending({ refresh: true });
+                  }}
+                >
+                  <X className="w-3 h-3" aria-hidden="true" />
+                </Button>
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 flex-shrink-0"
+              aria-label="Refresh GIFs"
+              title="Show new GIFs"
+              data-testid="button-gif-refresh"
+              disabled={gifLoading}
+              onClick={refreshNow}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${gifLoading ? "animate-spin" : ""}`} aria-hidden="true" />
+            </Button>
           </div>
         </div>
         {/* Scrollable GIF grid — fills remaining space */}
@@ -282,11 +327,11 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
           onWheel={(e) => e.stopPropagation()}
         >
           <div className="p-2">
-            {gifLoading ? (
+            {gifLoading && gifs.length === 0 ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
               </div>
-            ) : gifError ? (
+            ) : gifError && gifs.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-xs text-muted-foreground">{gifError}</p>
               </div>
@@ -298,7 +343,7 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className={`grid grid-cols-2 gap-1.5 ${gifLoading ? "opacity-70" : ""}`}>
                   {gifs.map((gif) => (
                     <button
                       key={gif.id}
@@ -311,7 +356,7 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
                         src={proxyMediaUrl(gif.preview)}
                         alt=""
                         className="w-full h-24 object-cover"
-                        loading="lazy"
+                        loading="eager"
                         decoding="async"
                         onError={(e) => {
                           const img = e.currentTarget;

@@ -1,60 +1,69 @@
 import { useState, useEffect, useRef } from "react";
+import {
+  LunaButterfliesFrame,
+  VioletRosesFrame,
+  EmberFlameFrame,
+  CrystalHaloFrame,
+} from "@/components/vip-avatar-frames";
 
-// Profile decorations come in three tiers:
-//   • "professional" — restrained, premium-feeling animations suitable for
-//     work-like contexts (verified accounts, teachers, executives). Subtle
-//     palettes (indigo / violet / cyan / platinum / teal), slow motion,
-//     never gimmicky.
-//   • "tactical"     — Discord-inspired sci-fi / HUD frames. Detailed,
-//     visually rich rings with tick marks, corner brackets, sword-blade
-//     crescents, and traveling circuit pulses. The "premium loot drop" tier.
-//   • "expressive"   — the original playful set (fire, hearts, sparkles…)
-//     for users who want personality on their profile.
-// The "category" field lets the picker UI group them into separate sections
-// instead of one undifferentiated grid.
+/**
+ * Curated avatar decorations — Free4Talk / Discord Nitro style.
+ * VIP frames are high-quality art; free rings stay subtle.
+ * Legacy ids map to the nearest modern frame so old saves keep working.
+ */
 export const PROFILE_DECORATIONS = [
-  { id: "none", label: "None", description: "No decoration", category: "core" },
+  { id: "none", label: "None", description: "No decoration", category: "core", vip: false },
 
-  // ── Professional ──────────────────────────────────────────────────────
-  { id: "aurora", label: "Aurora", description: "Soft indigo-violet aurora ring", category: "professional" },
-  { id: "executive", label: "Executive", description: "Brushed platinum highlight sweep", category: "professional" },
-  { id: "pulse", label: "Pulse", description: "Gentle teal breathing ring", category: "professional" },
-  { id: "quantum", label: "Quantum", description: "Three precise orbiting nodes", category: "professional" },
-  { id: "helix", label: "Helix", description: "Counter-rotating energy arcs", category: "professional" },
-  { id: "sentinel", label: "Sentinel", description: "Expanding security ring", category: "professional" },
+  // ── Free rings ────────────────────────────────────────────────────────
+  { id: "aurora", label: "Aurora", description: "Indigo–violet glow ring", category: "rings", vip: false },
+  { id: "pulse", label: "Pulse", description: "Soft teal breathing ring", category: "rings", vip: false },
+  { id: "executive", label: "Executive", description: "Platinum highlight sweep", category: "rings", vip: false },
+  { id: "hologram", label: "Hologram", description: "Cyan HUD ring", category: "rings", vip: false },
 
-  // ── Tactical (Discord-inspired premium frames) ────────────────────────
-  { id: "hologram", label: "Hologram", description: "Cyan HUD ring with tick markers", category: "tactical" },
-  { id: "tactical", label: "Tactical", description: "HUD targeting bracket reticle", category: "tactical" },
-  { id: "crimson", label: "Crimson Blade", description: "Sweeping crimson sword crescent", category: "tactical" },
-  { id: "circuit", label: "Circuit Core", description: "Segmented ring with traveling pulse", category: "tactical" },
-
-  // ── Expressive ────────────────────────────────────────────────────────
-  { id: "cosmic", label: "🌀 Cosmic Ring", description: "Holographic orbiting ring", category: "expressive" },
-  { id: "fire", label: "🔥 Fire Aura", description: "Blazing flame aura", category: "expressive" },
-  { id: "lightning", label: "⚡ Lightning", description: "Electric energy arc", category: "expressive" },
-  { id: "sparkles", label: "✨ Sparkles", description: "Shimmering sparkles halo", category: "expressive" },
-  { id: "rainbow", label: "🌈 Rainbow", description: "Chromatic glow ring", category: "expressive" },
-  { id: "snow", label: "❄️ Frost", description: "Icy frost aura", category: "expressive" },
-  { id: "hearts", label: "💕 Hearts", description: "Floating heart aura", category: "expressive" },
-  { id: "stars", label: "⭐ Stars", description: "Orbiting star ring", category: "expressive" },
-  { id: "bubbles", label: "🫧 Bubbles", description: "Rising bubble aura", category: "expressive" },
-  { id: "flowers", label: "🌸 Flowers", description: "Petal shower", category: "expressive" },
-  { id: "catears", label: "🐱 Cat Ears", description: "Cute cat ears", category: "expressive" },
-
-  // ── Legendary (Free4Talk-inspired premium frames) ─────────────────────
-  { id: "crystals", label: "💎 Crystals", description: "Floating crystal shards with sparkle", category: "legendary" },
-  { id: "crystals-aqua", label: "💎 Crystals Aquamarine", description: "Aquamarine crystal formation", category: "legendary" },
-  { id: "neon-chaos", label: "🎆 Neon Chaos", description: "Wild neon butterfly frame", category: "legendary" },
-  { id: "neon-chaos-purple", label: "🎆 Neon Chaos Purple", description: "Purple neon butterfly frame", category: "legendary" },
-  { id: "dragon", label: "🐉 Dragon", description: "Ornate dragon frame with fire", category: "legendary" },
-  { id: "dragon-ruby", label: "🐉 Dragon Ruby", description: "Ruby dragon frame with embers", category: "legendary" },
-  { id: "solar-eclipse", label: "🌑 Solar Eclipse", description: "Solar eclipse corona frame", category: "legendary" },
-  { id: "inferno-skull", label: "💀 Inferno Skull", description: "Burning skull dark frame", category: "legendary" },
+  // ── VIP premium art (Free4Talk-style) ──────────────────────────────────
+  { id: "luna-butterflies", label: "Luna Butterflies", description: "Neon ring + luminous butterflies", category: "vip", vip: true },
+  { id: "violet-roses", label: "Violet Roses", description: "Purple rose crown + neon rim", category: "vip", vip: true },
+  { id: "ember-flame", label: "Ember Flame", description: "Warm realistic fire rim", category: "vip", vip: true },
+  { id: "crystal-halo", label: "Crystal Halo", description: "Crystal shard halo", category: "vip", vip: true },
 ] as const;
 
 export type DecorationId = typeof PROFILE_DECORATIONS[number]["id"];
 export type DecorationCategory = typeof PROFILE_DECORATIONS[number]["category"];
+
+/** Map retired / basic decoration ids → modern equivalents. */
+export const LEGACY_DECORATION_MAP: Record<string, DecorationId> = {
+  quantum: "aurora",
+  helix: "pulse",
+  sentinel: "executive",
+  tactical: "hologram",
+  crimson: "ember-flame",
+  circuit: "hologram",
+  cosmic: "hologram",
+  rainbow: "aurora",
+  stars: "aurora",
+  sparkles: "aurora",
+  fire: "ember-flame",
+  lightning: "ember-flame",
+  snow: "pulse",
+  hearts: "violet-roses",
+  bubbles: "pulse",
+  flowers: "violet-roses",
+  catears: "luna-butterflies",
+  crystals: "crystal-halo",
+  "crystals-aqua": "crystal-halo",
+  "neon-chaos": "luna-butterflies",
+  "neon-chaos-purple": "luna-butterflies",
+  dragon: "violet-roses",
+  "dragon-ruby": "violet-roses",
+  "solar-eclipse": "ember-flame",
+  "inferno-skull": "ember-flame",
+};
+
+export function resolveDecorationId(id: string | null | undefined): DecorationId | "none" {
+  if (!id || id === "none") return "none";
+  if (PROFILE_DECORATIONS.some((d) => d.id === id)) return id as DecorationId;
+  return LEGACY_DECORATION_MAP[id] || "none";
+}
 
 
 function uid(prefix: string, i: number) { return `${prefix}-${i}`; }
@@ -197,50 +206,45 @@ function CosmicRing({ size }: { size: number }) {
 }
 
 function FireAura({ size }: { size: number }) {
-  const pad = Math.round(size * 0.3);
+  const pad = Math.round(size * 0.22);
   const w = size + pad * 2;
-  const h = size + pad * 2.4;
+  const h = size + pad * 2;
   const cx = w / 2;
-  const count = 14;
+  const count = 5;
 
   return (
-    <div style={{ position: "absolute", top: -pad * 1.4, left: -pad, width: w, height: h + pad, pointerEvents: "none", zIndex: 20 }}>
-      <svg width={w} height={h + pad} style={{ overflow: "visible" }}>
+    <div style={{ position: "absolute", top: -pad, left: -pad, width: w, height: h, pointerEvents: "none", zIndex: 20, opacity: 0.55 }}>
+      <svg width={w} height={h} style={{ overflow: "visible" }}>
         <defs>
           {Array.from({ length: count }).map((_, i) => {
-            const hue = 15 + (i / count) * 35;
+            const hue = 18 + (i / count) * 28;
             return (
               <radialGradient key={i} id={`fg${size}${i}`} cx="50%" cy="80%" r="60%">
-                <stop offset="0%" stopColor={`hsl(${hue},100%,60%)`} stopOpacity="0.9" />
-                <stop offset="60%" stopColor={`hsl(${hue + 20},100%,45%)`} stopOpacity="0.5" />
-                <stop offset="100%" stopColor={`hsl(${hue + 30},100%,35%)`} stopOpacity="0" />
+                <stop offset="0%" stopColor={`hsl(${hue},95%,58%)`} stopOpacity="0.7" />
+                <stop offset="70%" stopColor={`hsl(${hue + 16},90%,42%)`} stopOpacity="0.28" />
+                <stop offset="100%" stopColor={`hsl(${hue + 24},90%,35%)`} stopOpacity="0" />
               </radialGradient>
             );
           })}
-          <filter id={`ff${size}`} x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="4" result="b" />
-            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
         </defs>
         {Array.from({ length: count }).map((_, i) => {
-          const angle = ((i / count) * 2 - 1) * 0.9;
-          const bx = cx + Math.sin(angle) * (size * 0.48);
-          const fw = 18 + Math.random() * 22;
-          const fh = 40 + (Math.random() * 50);
-          const delay = (i / count) * 1.8;
-          const dur = 1.0 + Math.random() * 0.8;
+          const angle = ((i / count) * 2 - 1) * 0.7;
+          const bx = cx + Math.sin(angle) * (size * 0.42);
+          const fw = 10 + i * 2;
+          const fh = 22 + i * 4;
+          const delay = (i / count) * 1.2;
+          const dur = 1.6 + (i % 3) * 0.25;
           return (
             <ellipse
               key={i}
               cx={bx}
-              cy={h + pad * 0.3}
+              cy={h - pad * 0.15}
               rx={fw / 2}
               ry={fh / 2}
               fill={`url(#fg${size}${i})`}
-              filter={`url(#ff${size})`}
               style={{
                 animation: `dec-float-up ${dur}s ease-out ${delay}s infinite`,
-                transformOrigin: `${bx}px ${h + pad * 0.3}px`,
+                transformOrigin: `${bx}px ${h - pad * 0.15}px`,
               }}
             />
           );
@@ -1655,52 +1659,24 @@ interface ProfileDecorationProps {
 }
 
 export function ProfileDecoration({ decorationId, size = 56, children }: ProfileDecorationProps) {
-  if (!decorationId || decorationId === "none") return <>{children}</>;
-
-  const wrapStyle: React.CSSProperties = {
-    position: "relative",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-  };
+  const id = resolveDecorationId(decorationId);
+  if (!id || id === "none") return <>{children}</>;
 
   return (
-    // The "deco-wrap" class is what the prefers-reduced-motion media query
-    // hooks into to disable all animations inside this subtree.
-    <div style={wrapStyle} className="deco-wrap">
-      {/* Professional set */}
-      {decorationId === "aurora" && <AuroraRing size={size} />}
-      {decorationId === "executive" && <ExecutiveRing size={size} />}
-      {decorationId === "pulse" && <PulseRing size={size} />}
-      {decorationId === "quantum" && <QuantumRing size={size} />}
-      {decorationId === "helix" && <HelixRing size={size} />}
-      {decorationId === "sentinel" && <SentinelRing size={size} />}
-      {/* Tactical set (Discord-inspired premium frames) */}
-      {decorationId === "hologram" && <HologramRing size={size} />}
-      {decorationId === "tactical" && <TacticalRing size={size} />}
-      {decorationId === "crimson" && <CrimsonBladeRing size={size} />}
-      {decorationId === "circuit" && <CircuitCoreRing size={size} />}
-      {/* Expressive set */}
-      {decorationId === "cosmic" && <CosmicRing size={size} />}
-      {decorationId === "fire" && <FireAura size={size} />}
-      {decorationId === "lightning" && <LightningAura size={size} />}
-      {decorationId === "sparkles" && <SparklesAura size={size} />}
-      {decorationId === "rainbow" && <RainbowRing size={size} />}
-      {decorationId === "snow" && <FrostAura size={size} />}
-      {decorationId === "hearts" && <HeartsAura size={size} />}
-      {decorationId === "stars" && <StarsRing size={size} />}
-      {decorationId === "bubbles" && <BubblesAura size={size} />}
-      {decorationId === "flowers" && <PetalsAura size={size} />}
-      {decorationId === "catears" && <CatEarsDecoration size={size} />}
-      {/* Legendary set (Free4Talk-inspired premium frames) */}
-      {decorationId === "crystals" && <CrystalsFrame size={size} />}
-      {decorationId === "crystals-aqua" && <CrystalsAquaFrame size={size} />}
-      {decorationId === "neon-chaos" && <NeonChaosFrame size={size} />}
-      {decorationId === "neon-chaos-purple" && <NeonChaosPurpleFrame size={size} />}
-      {decorationId === "dragon" && <DragonFrame size={size} />}
-      {decorationId === "dragon-ruby" && <DragonRubyFrame size={size} />}
-      {decorationId === "solar-eclipse" && <SolarEclipseFrame size={size} />}
-      {decorationId === "inferno-skull" && <InfernoSkullFrame size={size} />}
+    <div
+      style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+      className="deco-wrap"
+    >
+      {/* Free rings */}
+      {id === "aurora" && <AuroraRing size={size} />}
+      {id === "executive" && <ExecutiveRing size={size} />}
+      {id === "pulse" && <PulseRing size={size} />}
+      {id === "hologram" && <HologramRing size={size} />}
+      {/* VIP Free4Talk-style art */}
+      {id === "luna-butterflies" && <LunaButterfliesFrame size={size} />}
+      {id === "violet-roses" && <VioletRosesFrame size={size} />}
+      {id === "ember-flame" && <EmberFlameFrame size={size} />}
+      {id === "crystal-halo" && <CrystalHaloFrame size={size} />}
       {children}
     </div>
   );

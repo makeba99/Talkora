@@ -4719,9 +4719,20 @@ export default function AdminPage() {
       const res = await apiRequest("POST", "/api/admin/badges/award", { userId, badgeType });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/badges"] });
-      toast({ title: "Badge awarded!", description: "The badge announcement has been sent to all users." });
+      if (data?.alreadyHad) {
+        toast({
+          title: "Already awarded",
+          description: "This user already has that badge — no new celebration was sent.",
+        });
+      } else {
+        toast({ title: "Badge awarded!", description: "Celebration sent to all online users." });
+        // Ensure the awarding admin sees the overlay even if the socket broadcast is missed.
+        if (data?.announcement) {
+          window.dispatchEvent(new CustomEvent("vextorn:badge-awarded", { detail: data.announcement }));
+        }
+      }
       setBadgeUserId("");
       setBadgeType("");
     },
@@ -4745,10 +4756,13 @@ export default function AdminPage() {
       const res = await apiRequest("PATCH", `/api/admin/badge-applications/${id}`, { status });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any, vars) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/badge-applications"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/badges"] });
       toast({ title: "Badge application updated" });
+      if (vars.status === "approved" && data?.announcement) {
+        window.dispatchEvent(new CustomEvent("vextorn:badge-awarded", { detail: data.announcement }));
+      }
     },
     onError: (err: any) => toast({ title: "Failed to review application", description: err.message, variant: "destructive" }),
   });

@@ -11447,6 +11447,12 @@ html.boost-mode .glass-panel {
 @keyframes dec-arc-flash { 0%{opacity:0;stroke-dashoffset:200;} 20%{opacity:1;stroke-dashoffset:100;} 50%{opacity:0.8;stroke-dashoffset:0;} 80%{opacity:0.4;} 100%{opacity:0;stroke-dashoffset:-100;} }
 @keyframes dec-particle-orbit { from{transform:rotate(var(--a)) translateX(var(--r)) rotate(calc(-1 * var(--a)));} to{transform:rotate(calc(var(--a) + 360deg)) translateX(var(--r)) rotate(calc(-1 * (var(--a) + 360deg)));} }
 @keyframes dec-breath { 0%,100% { opacity:0.55; } 50% { opacity:1; } }
+
+/* Discord-like: soften busy particle/legendary frames so the avatar stays readable */
+.deco-wrap--soft > *:not(:last-child) {
+  opacity: 0.58;
+  filter: saturate(0.8) contrast(0.95);
+}
 @keyframes dec-sentinel-expand {
   0% { transform: scale(1); opacity: 0.9; }
   100% { transform: scale(1.32); opacity: 0; }

@@ -282,9 +282,11 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
       playCelebrationSound(muted);
     }
 
+    if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(handleDismiss, AUTO_DISMISS_MS);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [safeEvent, handleDismiss, muted]);
+    // Depend on stable badge id — not the whole safeEvent object (new every render).
+  }, [safeEvent?.badge.id, handleDismiss, muted]);
 
   const initials = safeEvent?.userName
     ? safeEvent.userName.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)
@@ -386,6 +388,17 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
                   alt="Celebration"
                   className="w-full h-36 object-cover"
                   data-testid="badge-celebration-gif"
+                  onError={(e) => {
+                    const img = e.currentTarget;
+                    // Fallback to a known-good public congrats GIF if Tenor/proxy fails.
+                    const fallback = "https://media.giphy.com/media/g9582DNuQppxC/giphy.gif";
+                    if (!img.dataset.fallback) {
+                      img.dataset.fallback = "1";
+                      img.src = fallback;
+                    } else {
+                      img.style.display = "none";
+                    }
+                  }}
                 />
               </motion.div>
 

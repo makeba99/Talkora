@@ -32,8 +32,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { PROFILE_DECORATIONS, ProfileDecoration } from "@/components/profile-decorations";
-import { PROFILE_ANIMATIONS, ProfileAnimationOverlay } from "@/lib/profile-animations";
+import { PROFILE_DECORATIONS, ProfileDecoration, resolveDecorationId } from "@/components/profile-decorations";
+import { PROFILE_ANIMATIONS, ProfileAnimationOverlay, resolveProfileAnimationId } from "@/lib/profile-animations";
 import { BADGE_TYPES } from "@shared/constants";
 import { isVipUser, vipNameClass, titleColorStyle } from "@/lib/vip";
 import { TITLE_COLOR_PALETTE, canUseFeature } from "@shared/entitlements";
@@ -440,8 +440,8 @@ export function ProfileDropdown({
   const handleOpenSettings = () => {
     setSelectedRing(user?.avatarRing || "none");
     setSelectedFlair(user?.flairBadge || "none");
-    setSelectedDecoration((user as any)?.profileDecoration || "none");
-    setSelectedAnimation((user as any)?.profileAnimation || "none");
+    setSelectedDecoration(resolveDecorationId((user as any)?.profileDecoration));
+    setSelectedAnimation(resolveProfileAnimationId((user as any)?.profileAnimation));
     setSelectedTitleColor((user as any)?.titleColor || "");
     setShowBadge((user as any)?.showBadge !== false);
     setShowStatusBio((user as any)?.showStatusBio !== false);
@@ -1223,26 +1223,28 @@ export function ProfileDropdown({
               </div>
 
               <div className="space-y-3">
-                <Label className="text-sm font-medium">Animated Decoration</Label>
-                <p className="text-xs text-muted-foreground">Animated effects around your avatar in rooms</p>
+                <Label className="text-sm font-medium">Avatar decoration</Label>
+                <p className="text-xs text-muted-foreground">
+                  Free rings for everyone · VIP art frames like Free4Talk / Discord Nitro
+                </p>
 
                 {(() => {
-                  // Render decorations grouped by category. "core" (None) sits
-                  // up top; "professional" comes next with a section header so
-                  // serious users can find polished options without wading
-                  // through emoji-heavy ones; "expressive" follows.
                   const renderTile = (deco: typeof PROFILE_DECORATIONS[number], idx: number) => {
-                    const labelText = deco.label.replace(/^[\p{Emoji}\s]+/u, "").trim() || deco.label;
-                    const emojiMatch = deco.label.match(/^(\p{Emoji}+)/u);
-                    const emoji = emojiMatch ? emojiMatch[1] : null;
+                    const locked = deco.vip && !isVipUser(user);
                     return (
                       <button
                         key={deco.id}
-                        onClick={() => setSelectedDecoration(deco.id)}
-                        className={`neu-deco-tile ${selectedDecoration === deco.id ? "is-active" : ""}`}
+                        onClick={() => {
+                          if (locked) {
+                            toast({ title: "VIP only", description: "Buy Me a Coffee to unlock premium avatar frames." });
+                            return;
+                          }
+                          setSelectedDecoration(deco.id);
+                        }}
+                        className={`neu-deco-tile ${selectedDecoration === deco.id ? "is-active" : ""} ${locked ? "opacity-50" : ""}`}
                         style={{ ["--neu-deco-delay" as any]: `${idx * 35}ms` }}
                         data-testid={`decoration-option-${deco.id}`}
-                        title={labelText}
+                        title={locked ? `${deco.label} (VIP)` : deco.description}
                       >
                         {deco.id === "none" ? (
                           <span className="neu-deco-tile-none" />
@@ -1254,7 +1256,7 @@ export function ProfileDropdown({
                           </span>
                         )}
                         <span className="neu-deco-tile-label">
-                          {emoji ? `${emoji} ${labelText}` : labelText}
+                          {locked ? `🔒 ${deco.label}` : deco.label}
                         </span>
                         {selectedDecoration === deco.id && (
                           <span className="neu-deco-tile-check"><Check /></span>
@@ -1264,70 +1266,36 @@ export function ProfileDropdown({
                   };
 
                   const coreItems = PROFILE_DECORATIONS.filter(d => d.category === "core");
-                  const professionalItems = PROFILE_DECORATIONS.filter(d => d.category === "professional");
-                  const tacticalItems = PROFILE_DECORATIONS.filter(d => d.category === "tactical");
-                  const expressiveItems = PROFILE_DECORATIONS.filter(d => d.category === "expressive");
-                  const legendaryItems = PROFILE_DECORATIONS.filter(d => d.category === "legendary");
+                  const ringItems = PROFILE_DECORATIONS.filter(d => d.category === "rings");
+                  const vipItems = PROFILE_DECORATIONS.filter(d => d.category === "vip");
 
                   return (
                     <>
-                      {/* None tile */}
                       <div className="grid grid-cols-4 gap-2">
                         {coreItems.map((d, i) => renderTile(d, i))}
                       </div>
 
-                      {/* Professional section */}
                       <div className="pt-2">
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80 mb-2" data-testid="decoration-section-professional">
-                          Professional
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80 mb-2">
+                          Rings
                         </p>
                         <div className="grid grid-cols-4 gap-2">
-                          {professionalItems.map((d, i) => renderTile(d, i + coreItems.length))}
+                          {ringItems.map((d, i) => renderTile(d, i + coreItems.length))}
                         </div>
                       </div>
 
-                      {/* Tactical section — Discord-inspired premium frames.
-                          A bright cyan accent label so users notice the new
-                          tier alongside the older Professional / Expressive
-                          ones. */}
                       <div className="pt-2">
                         <p
                           className="text-[11px] font-semibold uppercase tracking-wider mb-2"
-                          style={{ color: "rgba(0,229,255,0.85)", textShadow: "0 0 8px rgba(0,229,255,0.35)" }}
-                          data-testid="decoration-section-tactical"
+                          style={{ color: "rgba(251,191,36,0.95)" }}
+                          data-testid="decoration-section-vip"
                         >
-                          Tactical
+                          VIP art frames
                         </p>
                         <div className="grid grid-cols-4 gap-2">
-                          {tacticalItems.map((d, i) => renderTile(d, i + coreItems.length + professionalItems.length))}
+                          {vipItems.map((d, i) => renderTile(d, i + coreItems.length + ringItems.length))}
                         </div>
                       </div>
-
-                      {/* Expressive section */}
-                      <div className="pt-2">
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80 mb-2" data-testid="decoration-section-expressive">
-                          Expressive
-                        </p>
-                        <div className="grid grid-cols-4 gap-2">
-                          {expressiveItems.map((d, i) => renderTile(d, i + coreItems.length + professionalItems.length + tacticalItems.length))}
-                        </div>
-                      </div>
-
-                      {/* Legendary section — Free4Talk-inspired premium frames */}
-                      {legendaryItems.length > 0 && (
-                        <div className="pt-2">
-                          <p
-                            className="text-[11px] font-semibold uppercase tracking-wider mb-2"
-                            style={{ color: "rgba(251,191,36,0.95)", textShadow: "0 0 10px rgba(251,191,36,0.4)" }}
-                            data-testid="decoration-section-legendary"
-                          >
-                            ✦ Legendary
-                          </p>
-                          <div className="grid grid-cols-4 gap-2">
-                            {legendaryItems.map((d, i) => renderTile(d, i + coreItems.length + professionalItems.length + tacticalItems.length + expressiveItems.length))}
-                          </div>
-                        </div>
-                      )}
                     </>
                   );
                 })()}
@@ -1335,8 +1303,8 @@ export function ProfileDropdown({
 
               {/* ── Profile Card Animation ─────────────────────────────── */}
               <div className="space-y-3">
-                <Label className="text-sm font-medium">Card Animation</Label>
-                <p className="text-xs text-muted-foreground">Animated overlay effect on your participant card in voice rooms</p>
+                <Label className="text-sm font-medium">Card animation</Label>
+                <p className="text-xs text-muted-foreground">Soft overlay on your voice-room card — keep it light for performance</p>
 
                 {/* Live preview */}
                 <div className="flex justify-center mb-2">

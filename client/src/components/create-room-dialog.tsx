@@ -408,7 +408,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab, open: con
               </div>
             </div>
             <p className="text-[11px] text-muted-foreground leading-snug">
-              Pick a GIF from Tenor or upload your own picture / short video. Themes and host controls are set inside the room.
+              Pick a GIF or upload your own picture / short video. Themes and host controls are set inside the room.
             </p>
           </div>
         </div>
