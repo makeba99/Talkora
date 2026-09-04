@@ -68,7 +68,6 @@ import { FlairBadgeDisplay } from "@/components/profile-dropdown";
 import { ProfileDecoration, ROOM_THEMES, PRESET_BACKGROUNDS, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
 import { densityFromParticipantCount, getMaxDecorationBleedPx } from "@/components/avatar-shell";
 import { LobbyProfilePicker } from "@/components/lobby-profile-picker";
-import { resolveLobbyProfileStyle, lobbyShapeFromStyle } from "@/lib/lobby-profile";
 import type { DecorationDensity } from "@/components/vip-avatar-frames";
 import { BadgeFireworksOverlay } from "@/components/badge-fireworks";
 import { NeuParticipantSlider } from "@/components/neu-participant-slider";
@@ -686,7 +685,6 @@ function ParticipantCard({
   roomLevel,
   cardPx = 128,
   decoDensity = "full" as DecorationDensity,
-  profileShape = "tile",
   hologramVideoUrl,
   avatarGifUrl,
   onSetAvatarGif,
@@ -703,11 +701,8 @@ function ParticipantCard({
   const showMovieIcon = !!hasActiveMovie;
   const isWatcher = isYoutubeWatcher && !hasActiveYoutube;
   const isMovieWatcherBadge = !!isMovieWatcher && !hasActiveMovie;
-  const isCircle = profileShape === "circle";
-  const radiusClass = isCircle ? "rounded-full" : "rounded-lg";
-  const roleBadgeClass = isCircle
-    ? `absolute bottom-1 left-1 font-bold rounded-full shadow-sm z-20 flex items-center gap-0.5 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`
-    : `absolute bottom-0 left-0 font-bold rounded-tr-md shadow-sm z-20 flex items-center gap-0.5 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`;
+  const radiusClass = "rounded-lg";
+  const roleBadgeClass = `absolute bottom-0 left-0 font-bold rounded-tr-md shadow-sm z-20 flex items-center gap-0.5 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`;
 
   const ringClass = getAvatarRingClass(p.avatarRing);
   const hasCustomRing = !!ringClass;
@@ -737,7 +732,7 @@ function ParticipantCard({
     <>
       <button
         type="button"
-        className={`absolute ${isCircle ? "top-2 right-2 rounded-full" : "top-1 right-1 rounded-md"} z-30 cursor-pointer pointer-events-auto bg-black/35 backdrop-blur-[2px] hover:bg-black/55 ${cardPx <= 56 ? "p-px" : "p-0.5"}`}
+        className={`absolute top-1 right-1 z-30 cursor-pointer pointer-events-auto rounded-md bg-black/35 backdrop-blur-[2px] hover:bg-black/55 ${cardPx <= 56 ? "p-px" : "p-0.5"}`}
         onClick={(e) => {
           e.stopPropagation();
           setGearOpen(true);
@@ -1602,9 +1597,7 @@ function ParticipantCard({
             {cardPx <= 56 ? "🧌" : "🧌 Troll"}
           </div>
         ) : isMe ? (
-          <div className={isCircle
-            ? `absolute bottom-1 left-1 bg-white/20 backdrop-blur-sm text-white font-bold rounded-full shadow-sm z-20 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`
-            : `absolute bottom-0 left-0 bg-white/20 backdrop-blur-sm text-white font-bold rounded-tr-md shadow-sm z-20 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`}>
+          <div className={`absolute bottom-0 left-0 bg-white/20 backdrop-blur-sm text-white font-bold rounded-tr-md shadow-sm z-20 ${cardPx <= 56 ? "text-[8px] px-1 py-px" : "text-[10px] px-1.5 py-0.5"}`}>
             You
           </div>
         ) : null)}
@@ -1638,7 +1631,7 @@ function ParticipantCard({
         size={cardPx}
         density={decoDensity}
         soft={decoDensity !== "full"}
-        shape={isCircle ? "circle" : "tile"}
+        shape="tile"
       >
         <div
            className={`cursor-pointer w-full h-full ${fillMode ? "flex items-center justify-center" : ""}`}
@@ -16474,8 +16467,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             const gapPx = cardPx <= 60 ? 4 : 6;
             // Bleed matches max decoration visual extent (config-driven) + mood emoji headroom
             const decoBleed = getMaxDecorationBleedPx(cardPx, decoDensity) + (cardPx <= 60 ? 6 : 10);
-            const profileStyle = resolveLobbyProfileStyle((room as any).lobbyProfileStyle);
-            const profileShape = lobbyShapeFromStyle(profileStyle);
             const isInOverlayMode = (activeYoutubeId && showYoutube) || (activeMovieId && showMovie) || showEReader || isScreenSharing || !!remoteScreenShareUserId || !!remoteVideoUserId || !!(room as any).hologramVideoUrl || (currentTheme && currentTheme !== "none");
             let gridCols =
               visibleCount === 1 ? 1 :
@@ -16959,7 +16950,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       } : undefined}
                       cardPx={cardPx}
                       decoDensity={decoDensity}
-                      profileShape={profileShape}
                       fillMode={false}
                       hologramVideoUrl={null}
                       avatarGifUrl={participantAvatarGifs[p.id] || null}

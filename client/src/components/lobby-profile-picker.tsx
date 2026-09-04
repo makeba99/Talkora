@@ -25,10 +25,10 @@ export function LobbyProfilePicker({
     <div className="space-y-3" data-testid={`${testIdPrefix}-picker`}>
       <div className="space-y-1.5">
         <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
-          Profile shape
+          Profiles on lobby card
         </Label>
         <p className="text-[11px] text-muted-foreground leading-snug">
-          Square or round — used on the home-page room card and on profiles after you join.
+          Square or round on this room’s home-page card. Inside the room, profiles stay square.
         </p>
       </div>
       <div className="grid grid-cols-2 gap-2">

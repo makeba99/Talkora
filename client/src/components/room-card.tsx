@@ -792,7 +792,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
   const lobbyStyle = resolveLobbyProfileStyle((room as any).lobbyProfileStyle);
   const lobbyRadius = LOBBY_PROFILE_RADIUS[lobbyStyle];
   const lobbyShape = lobbyShapeFromStyle(lobbyStyle);
-  const baseCircleSize = 52;
+  const baseCircleSize = 64;
   const circleSize = Math.round(baseCircleSize * circleScale);
   const isCircle = lobbyStyle === "circle";
   const avatarRadiusClass = isCircle ? "rounded-full" : "rounded-lg";
@@ -1218,7 +1218,10 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                             : `0 0 6px ${glow.from}, 0 0 12px ${glow.to}`,
                       }}
                     >
-                      <Avatar style={{ width: circleSize, height: circleSize, borderRadius: lobbyRadius }} className={`${avatarRadiusClass} border ${hasRing ? "border-transparent" : isPremiumAtmosphere ? "border-white/20 shadow-[inset_0_0_12px_rgba(255,255,255,0.06)]" : "border-[#0a1228]"}`}>
+                      <Avatar
+                        style={{ width: circleSize, height: circleSize, borderRadius: lobbyRadius }}
+                        className={`${avatarRadiusClass} overflow-hidden border ${hasRing ? "border-transparent" : isPremiumAtmosphere ? "border-white/20 shadow-[inset_0_0_12px_rgba(255,255,255,0.06)]" : "border-[#0a1228]"}`}
+                      >
                         {(() => {
                           const a = buildAvatarSources(p.profileImageUrl);
                           return <AvatarImage
@@ -1229,7 +1232,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                             height={circleSize}
                             loading="lazy"
                             decoding="async"
-                            className={avatarRadiusClass}
+                            className={`${avatarRadiusClass} object-cover w-full h-full`}
                           />;
                         })()}
                         <AvatarFallback className={`${avatarRadiusClass} text-sm font-bold bg-[#1a1520] text-white/70`}>
@@ -1237,13 +1240,18 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                         </AvatarFallback>
                       </Avatar>
                       {(p as any).vipTier ? (
-                        <div className="absolute -top-1 -right-1 z-[2] text-[10px] leading-none drop-shadow" title="VIP">
+                        <div className="absolute -top-1 -right-1 z-[3] text-[10px] leading-none drop-shadow" title="VIP">
                           👑
                         </div>
                       ) : null}
-                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
-                        <UserBadgePips badges={badges} userId={p.id} compact />
-                      </div>
+                      {badges.length > 0 && (
+                        <div
+                          className="absolute bottom-0 left-0 z-[3] flex items-center gap-0.5 pl-0.5 pb-0.5"
+                          data-testid={`badges-lobby-${p.id}`}
+                        >
+                          <UserBadgePips badges={badges} userId={p.id} compact />
+                        </div>
+                      )}
                     </div>
                   );
 
