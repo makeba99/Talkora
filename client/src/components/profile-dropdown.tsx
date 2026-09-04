@@ -1222,7 +1222,8 @@ export function ProfileDropdown({
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Avatar decoration</Label>
                 <p className="text-xs text-muted-foreground">
-                  Premium Discord-style animated overlays (VIP). Basic glow rings were removed.
+                  Premium animated overlays (VIP) — sleeping cat, dragon, fox, sakura, flame, butterflies.
+                  Discord shop assets aren't free to redistribute; these are original SVG frames in the same overlay style.
                 </p>
 
                 {(() => {

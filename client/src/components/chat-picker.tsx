@@ -56,7 +56,7 @@ export function EmojiPickerButton({ onEmojiSelect }: EmojiPickerButtonProps) {
           data-testid="button-emoji-picker"
           aria-label="Open emoji picker"
         >
-          <Smile className="w-3.5 h-3.5" aria-hidden="true" />
+          <Smile className="w-5 h-5" aria-hidden="true" />
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -250,7 +250,7 @@ export function GifPickerButton({ onGifSelect, side = "top", align = "start" }: 
           data-testid="button-gif-picker"
           aria-label="Send a GIF"
         >
-          <span className="text-[10px] font-black leading-none tracking-tight">GIF</span>
+          <span className="text-[12px] font-black leading-none tracking-tight">GIF</span>
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -463,9 +463,9 @@ export function ImageUploadButton({ onImageSelect }: ImageUploadButtonProps) {
         aria-label="Upload image"
       >
         {uploading ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          <Loader2 className="w-5 h-5 animate-spin" />
         ) : (
-          <ImagePlus className="w-3.5 h-3.5" />
+          <ImagePlus className="w-5 h-5" />
         )}
       </button>
     </>

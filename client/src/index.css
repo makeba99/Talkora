@@ -10011,15 +10011,15 @@ html.neomorphic-light .scroll-jump-btn {
 /* ---- Tool buttons (globe, color, GIF, image) — deep carved mini-tiles --- */
 .room-tool-btn {
   position: relative;
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   /* Ghost state — sits in the dark form tray */
-  color: rgba(255, 255, 255, 0.38);
+  color: rgba(255, 255, 255, 0.42);
   background: linear-gradient(145deg, #0e0e12 0%, #0a0a0d 100%);
   border: 1px solid rgba(255, 255, 255, 0.052);
   box-shadow:
@@ -10069,10 +10069,10 @@ html.neomorphic-light .scroll-jump-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 34px;
-  padding: 0 18px 0 14px;
-  border-radius: 12px;
-  font-size: 12px;
+  height: 44px;
+  padding: 0 20px 0 16px;
+  border-radius: 14px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.4px;
   text-transform: uppercase;
@@ -10218,8 +10218,9 @@ html.neomorphic-light .scroll-jump-btn {
 .chat-toolbar-slab {
   display: flex;
   align-items: stretch;
-  padding: 5px 5px;
+  padding: 6px 6px;
   gap: 0;
+  min-height: 52px;
   background: linear-gradient(180deg, #0c0c10 0%, #080809 100%);
   border-radius: 26px;
   border: 1px solid rgba(255, 255, 255, 0.038);
@@ -10247,16 +10248,17 @@ html.neomorphic-light .scroll-jump-btn {
   flex: 1 !important;
   width: auto !important;
   height: auto !important;
-  min-width: 36px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 0 !important;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  color: rgba(255, 255, 255, 0.22) !important;
+  color: rgba(255, 255, 255, 0.38) !important;
   transition: color 150ms ease !important;
 }
 .chat-toolbar-slab .room-tool-btn:hover:not(:disabled) {
-  color: rgba(255, 255, 255, 0.70) !important;
+  color: rgba(255, 255, 255, 0.88) !important;
   background: transparent !important;
   box-shadow: none !important;
   transform: none !important;
@@ -11277,6 +11279,14 @@ html.neomorphic-light .pinned-socials-link {
     inset 0 1px 0 rgba(255,255,255,0.08);
   position: relative;
   overflow: hidden;
+}
+.chat-color-none-dot--lg {
+  width: 16px;
+  height: 16px;
+}
+.deco-wrap {
+  overflow: visible !important;
+  isolation: isolate;
 }
 .chat-color-none-dot::before {
   content: "";

@@ -1,0 +1,46 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" fill="none">
+  <defs>
+    <linearGradient id="scale" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6ee7b7"/>
+      <stop offset="50%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#fbbf24"/>
+    </linearGradient>
+    <linearGradient id="fire" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="100%" stop-color="#fde68a"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="1.6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect x="36" y="36" width="128" height="128" rx="22" ry="22" stroke="#34d399" stroke-width="2.6" opacity="0.55" filter="url(#glow)">
+    <animate attributeName="opacity" values="0.4;0.8;0.4" dur="2.4s" repeatCount="indefinite"/>
+  </rect>
+  <!-- Dragon coiling around the frame -->
+  <path d="M30,128 C16,88 38,46 72,34 C96,26 118,26 140,38 C168,54 186,92 176,132" stroke="url(#scale)" stroke-width="12" stroke-linecap="round" opacity="0.96">
+    <animate attributeName="stroke-width" values="11;13;11" dur="2.2s" repeatCount="indefinite"/>
+  </path>
+  <g fill="#10b981">
+    <polygon points="58,46 64,30 70,46"/>
+    <polygon points="82,34 88,18 94,34"/>
+    <polygon points="108,30 114,14 120,30"/>
+    <polygon points="132,36 138,20 144,36"/>
+    <polygon points="154,52 160,36 166,52"/>
+  </g>
+  <g transform="translate(174,128)">
+    <ellipse cx="0" cy="0" rx="15" ry="11" fill="#047857"/>
+    <ellipse cx="9" cy="-2" rx="9" ry="7" fill="#10b981"/>
+    <polygon points="16,-4 30,-10 18,3" fill="#34d399"/>
+    <circle cx="11" cy="-4" r="2.4" fill="#fde68a"/>
+    <circle cx="11.6" cy="-4.4" r="1" fill="#111"/>
+    <path d="M-4,-9 L-1,-20 L5,-9" fill="#fbbf24"/>
+  </g>
+  <g transform="translate(196,126)">
+    <path d="M0,0 Q10,-8 18,0 Q10,8 0,0" fill="url(#fire)" opacity="0.9">
+      <animateTransform attributeName="transform" type="scale" values="0.65;1.2;0.65" dur="0.65s" repeatCount="indefinite"/>
+    </path>
+  </g>
+  <path d="M30,128 Q18,158 40,174" stroke="#059669" stroke-width="8" stroke-linecap="round"/>
+  <polygon points="40,174 32,186 50,180" fill="#fbbf24"/>
+</svg>

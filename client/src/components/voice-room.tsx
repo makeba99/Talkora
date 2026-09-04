@@ -707,6 +707,7 @@ function ParticipantCard({
 
   const isFollowing = followingIds.has(p.id);
   const [roomPresenceStatus, setRoomPresenceStatus] = useState((p as any).status || "online");
+  const [icePickOpen, setIcePickOpen] = useState(false);
   useEffect(() => {
     setRoomPresenceStatus((p as any).status || "online");
   }, [p.id, (p as any).status]);
@@ -723,8 +724,20 @@ function ParticipantCard({
           <Settings className="w-4 h-4 text-white/80 drop-shadow-md hover:text-white" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-[min(18rem,calc(100vw-1rem))] p-0 bg-card border-border text-card-foreground shadow-xl" align="end" avoidCollisions collisionPadding={8} onClick={(e) => e.stopPropagation()} onInteractOutside={(e) => { const target = e.target as HTMLElement; if (target?.closest('[data-radix-popper-content-wrapper]')) e.preventDefault(); }}>
-        <div className="flex flex-col p-3 gap-3 max-h-[85vh] overflow-y-auto">
+      <PopoverContent
+        className="w-[min(18.5rem,calc(100vw-1rem))] max-h-[min(92dvh,calc(100svh-0.75rem))] p-0 bg-card border-border text-card-foreground shadow-xl overflow-y-auto overscroll-contain"
+        align="end"
+        side="bottom"
+        sideOffset={6}
+        avoidCollisions
+        collisionPadding={12}
+        onClick={(e) => e.stopPropagation()}
+        onInteractOutside={(e) => {
+          const target = e.target as HTMLElement;
+          if (target?.closest('[data-radix-popper-content-wrapper]')) e.preventDefault();
+        }}
+      >
+        <div className="flex flex-col p-3 gap-3">
           <div className="flex gap-3 items-start">
              <Avatar className="w-16 h-16 rounded-md border border-border flex-shrink-0">
                 <AvatarImage src={p.profileImageUrl || undefined} alt="" />
@@ -959,20 +972,59 @@ function ParticipantCard({
                <Button variant="outline" size="sm" onClick={() => onForceMuteVideo && onForceMuteVideo(p.id)} className="h-8 text-xs border-border bg-transparent hover:bg-muted px-1">
                   <VideoOff className="w-3.5 h-3.5 mr-1" /> Mute Video
                </Button>
-               <Button variant="outline" size="sm" onClick={() => onKick && onKick(p.id)} className="h-8 text-xs border-border bg-transparent hover:bg-muted px-1" data-testid={`button-kick-${p.id}`}>
+               <Button
+                 variant="outline"
+                 size="sm"
+                 onClick={() => onKick && onKick(p.id)}
+                 className="h-8 text-xs border-border bg-transparent hover:bg-rose-950/40 hover:text-rose-300 hover:border-rose-700/50 px-1"
+                 title="Kick permanently — cannot rejoin this room"
+                 data-testid={`button-kick-${p.id}`}
+               >
                   <UserX className="w-3.5 h-3.5 mr-1" /> Kick
                </Button>
                <Button
                  variant="outline"
                  size="sm"
-                 onClick={() => !isIced && onIce && onIce(p.id)}
+                 onClick={() => !isIced && setIcePickOpen((v) => !v)}
                  disabled={!!isIced}
-                 title={isIced ? "User is banned from this room" : "Ice (permanently ban from this room)"}
+                 title={isIced ? "User is iced from this room" : "Ice — temporary timeout (5 or 10 min)"}
                  className={`h-8 text-xs px-1 transition-all ${isIced ? "border-sky-700/50 bg-sky-950/30 text-sky-400/60 cursor-not-allowed" : "border-border bg-transparent hover:border-sky-700/60 hover:bg-sky-950/30 hover:text-sky-300"}`}
                  data-testid={`button-ice-${p.id}`}
                >
                   <span className="mr-1 text-[11px]">🧊</span> {isIced ? "Iced" : "Ice"}
                </Button>
+               {icePickOpen && !isIced && (
+                 <div className="col-span-2 flex gap-1.5 p-1.5 rounded-md border border-sky-700/40 bg-sky-950/25" data-testid={`ice-duration-${p.id}`}>
+                   <p className="sr-only">Choose ice duration</p>
+                   <Button
+                     variant="outline"
+                     size="sm"
+                     className="flex-1 h-9 text-xs border-sky-600/50 bg-sky-950/40 hover:bg-sky-900/50 text-sky-200"
+                     onClick={() => {
+                       onIce && onIce(p.id, 5);
+                       setIcePickOpen(false);
+                     }}
+                     data-testid={`button-ice-5-${p.id}`}
+                   >
+                     5 min
+                   </Button>
+                   <Button
+                     variant="outline"
+                     size="sm"
+                     className="flex-1 h-9 text-xs border-sky-600/50 bg-sky-950/40 hover:bg-sky-900/50 text-sky-200"
+                     onClick={() => {
+                       onIce && onIce(p.id, 10);
+                       setIcePickOpen(false);
+                     }}
+                     data-testid={`button-ice-10-${p.id}`}
+                   >
+                     10 min
+                   </Button>
+                 </div>
+               )}
+               <p className="col-span-2 text-[10px] text-muted-foreground/80 leading-snug px-0.5">
+                 Kick = forever out of this room. Ice = temporary (you pick 5 or 10 min).
+               </p>
                <Button variant="outline" size="sm" onClick={() => onClearChatGlobal && onClearChatGlobal(true)} className="h-8 text-xs border-border bg-transparent hover:bg-muted px-1">
                   <Trash2 className="w-3.5 h-3.5 mr-1" /> Clear Chat
                </Button>
@@ -1549,9 +1601,9 @@ function ParticipantCard({
   );
 
   return (
-    <ProfileDecoration decorationId={(p as any).profileDecoration} size={Math.max(48, cardPx - 16)}>
+    <ProfileDecoration decorationId={(p as any).profileDecoration} size={Math.max(64, fillMode ? Math.round(cardPx * 1.35) : cardPx - 8)}>
       <div 
-         className="cursor-pointer" 
+         className={`cursor-pointer ${fillMode ? "w-full h-full" : ""}`}
          onClick={onProfileClick} 
          data-testid={`card-wrapper-${p.id}`}
       >
@@ -4408,22 +4460,45 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       toast({ title: "Chat restricted", description: data.reason, variant: "destructive", duration: 3000 });
     });
 
-    socket.on("room:kicked", (data: { roomId: string; banned?: boolean }) => {
+    socket.on("room:kicked", (data: {
+      roomId: string;
+      banned?: boolean;
+      permanent?: boolean;
+      temporary?: boolean;
+      durationMinutes?: number;
+    }) => {
       if (data.roomId === room.id) {
+        const iced = !!data.temporary || (!!data.banned && !data.permanent);
         toast({
-          title: data.banned ? "🧊 You have been iced from this room" : "You have been removed from this room",
-          description: data.banned ? "The host has permanently banned you from this room." : undefined,
+          title: iced
+            ? `🧊 You were iced for ${data.durationMinutes || 5} minutes`
+            : data.banned || data.permanent
+              ? "You were kicked from this room"
+              : "You have been removed from this room",
+          description: iced
+            ? "You can rejoin after the timeout ends."
+            : data.banned || data.permanent
+              ? "You cannot rejoin this room."
+              : undefined,
           variant: "destructive",
         });
         handleLeave();
       }
     });
 
-    socket.on("room:banned", (data: { roomId: string }) => {
+    socket.on("room:banned", (data: {
+      roomId: string;
+      temporary?: boolean;
+      minutesLeft?: number | null;
+    }) => {
       if (data.roomId === room.id) {
         toast({
-          title: "🧊 You are banned from this room",
-          description: "The host has blocked you from rejoining this room.",
+          title: data.temporary
+            ? `🧊 Still iced (${data.minutesLeft || "?"} min left)`
+            : "You are banned from this room",
+          description: data.temporary
+            ? "Wait for the ice timeout to end, then try again."
+            : "The host kicked you permanently from this room.",
           variant: "destructive",
         });
         handleLeave();
@@ -7076,9 +7151,22 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     socket?.emit("room:kick", { roomId: room.id, targetUserId, kickedBy: user?.id });
   };
 
-  const handleIce = (targetUserId: string) => {
-    socket?.emit("room:ice", { roomId: room.id, targetUserId, icedBy: user?.id });
+  const handleIce = (targetUserId: string, durationMinutes: 5 | 10 = 5) => {
+    socket?.emit("room:ice", {
+      roomId: room.id,
+      targetUserId,
+      icedBy: user?.id,
+      durationMinutes,
+    });
     setIcedUserIds(prev => new Set(prev).add(targetUserId));
+    // Drop local "iced" flag after the timeout so Ice can be used again if they somehow reappear
+    window.setTimeout(() => {
+      setIcedUserIds(prev => {
+        const next = new Set(prev);
+        next.delete(targetUserId);
+        return next;
+      });
+    }, durationMinutes * 60 * 1000 + 1000);
   };
 
   const handleForceMute = (targetUserId: string) => {
@@ -11293,7 +11381,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     data-testid="button-chat-mode-toggle"
                     aria-label={privateChatToId === "public" ? "Switch to private" : "Switch to public"}
                   >
-                    {privateChatToId === "public" ? <Globe className="w-3.5 h-3.5" /> : <LockKeyhole className="w-3.5 h-3.5" />}
+                    {privateChatToId === "public" ? <Globe className="w-5 h-5" /> : <LockKeyhole className="w-5 h-5" />}
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-52 p-1.5" side="top" align="start" data-testid="popover-chat-mode">
@@ -11337,8 +11425,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                 <PopoverTrigger asChild>
                   <button type="button" className="room-tool-btn" data-testid="button-chat-color-picker" aria-label="Message color" title="Message color">
                     {chatMessageColor
-                      ? <span className="w-3 h-3 rounded-full border border-white/30" style={{ backgroundColor: chatMessageColor, boxShadow: `0 0 6px ${chatMessageColor}55, inset 0 1px 0 rgba(255,255,255,0.4)` }} />
-                      : <span className="chat-color-none-dot" />
+                      ? <span className="w-4 h-4 rounded-full border border-white/30" style={{ backgroundColor: chatMessageColor, boxShadow: `0 0 6px ${chatMessageColor}55, inset 0 1px 0 rgba(255,255,255,0.4)` }} />
+                      : <span className="chat-color-none-dot chat-color-none-dot--lg" />
                     }
                   </button>
                 </PopoverTrigger>
@@ -11567,7 +11655,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       aria-label={autoTranslate ? "Disable auto-translate" : "Enable auto-translate"}
                       aria-pressed={autoTranslate}
                     >
-                      <Languages className="w-3.5 h-3.5" />
+                      <Languages className="w-5 h-5" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top" sideOffset={6} className="text-[11px]">
@@ -16290,8 +16378,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
             const gridCols = visibleCount === 1 ? 1 : visibleCount <= 4 ? 2 : visibleCount <= 9 ? 3 : 4;
           return (
           <div
-            className={isInOverlayMode ? "flex items-end justify-center p-2 pb-4 absolute bottom-0 left-0 right-0 z-20 pt-16 overflow-visible" : "flex-1 min-h-0 p-2 pt-14 overflow-hidden"}
-            style={isInOverlayMode ? {} : { display: "grid", gridTemplateColumns: `repeat(${gridCols}, 1fr)`, gridAutoRows: "1fr", gap: 8 }}
+            className={isInOverlayMode ? "flex items-end justify-center p-2 pb-4 absolute bottom-0 left-0 right-0 z-20 pt-16 overflow-visible" : "flex-1 min-h-0 p-2 pt-14 overflow-y-auto overflow-x-visible"}
+            style={isInOverlayMode ? {} : { display: "grid", gridTemplateColumns: `repeat(${gridCols}, 1fr)`, gridAutoRows: "minmax(0, 1fr)", gap: Math.max(12, gapPx + 8), alignContent: "start" }}
           >
             <div
               className={isInOverlayMode ? "overflow-x-auto w-full" : "contents"}

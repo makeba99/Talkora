@@ -1,63 +1,64 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  LunaButterfliesFrame,
-  VioletRosesFrame,
-  EmberFlameFrame,
-  CrystalHaloFrame,
+  SleepingCatFrame,
+  DragonCoilFrame,
+  FoxSpiritFrame,
   SakuraOrbitFrame,
-  NeonArcadeFrame,
+  EmberFlameFrame,
+  LunaButterfliesFrame,
 } from "@/components/vip-avatar-frames";
 
 /**
- * Premium avatar decorations only — Discord / Free4Talk / DecoProfile overlay model.
- * Basic free glow rings were removed (low visual quality). Legacy ring ids remap to VIP.
+ * Premium character decorations — Free4Talk / Discord Nitro overlay model.
+ * Abstract glow rings removed; VIP frames are character art (cat, dragon, fox…).
  */
 export const PROFILE_DECORATIONS = [
   { id: "none", label: "None", description: "No decoration", category: "core", vip: false },
-
-  // ── VIP premium overlays (Discord Nitro / DecoProfile technique) ───────
-  { id: "luna-butterflies", label: "Luna Butterflies", description: "Neon butterflies orbiting your avatar", category: "vip", vip: true },
-  { id: "violet-roses", label: "Violet Roses", description: "Animated rose crown overlay", category: "vip", vip: true },
-  { id: "ember-flame", label: "Ember Flame", description: "Animated fire rim overlay", category: "vip", vip: true },
-  { id: "crystal-halo", label: "Crystal Halo", description: "Crystal shard halo overlay", category: "vip", vip: true },
-  { id: "sakura-orbit", label: "Sakura Orbit", description: "Cherry blossoms circling your avatar", category: "vip", vip: true },
-  { id: "neon-arcade", label: "Neon Arcade", description: "Cyber neon chase ring", category: "vip", vip: true },
+  { id: "sleeping-cat", label: "Sleeping Cat", description: "Cozy cat napping on your avatar", category: "vip", vip: true },
+  { id: "dragon-coil", label: "Dragon Coil", description: "Emerald dragon wrapping your frame", category: "vip", vip: true },
+  { id: "fox-spirit", label: "Fox Spirit", description: "Animated fox ears and collar", category: "vip", vip: true },
+  { id: "sakura-orbit", label: "Sakura Orbit", description: "Cherry blossoms circling you", category: "vip", vip: true },
+  { id: "ember-flame", label: "Ember Flame", description: "Warm fire rim overlay", category: "vip", vip: true },
+  { id: "luna-butterflies", label: "Luna Butterflies", description: "Neon butterflies in orbit", category: "vip", vip: true },
 ] as const;
 
 export type DecorationId = typeof PROFILE_DECORATIONS[number]["id"];
 export type DecorationCategory = typeof PROFILE_DECORATIONS[number]["category"];
 
-/** Map retired / basic decoration ids → modern VIP overlays (or none). */
+/** Map retired decoration ids → character VIP overlays. */
 export const LEGACY_DECORATION_MAP: Record<string, DecorationId> = {
-  quantum: "neon-arcade",
-  helix: "crystal-halo",
-  sentinel: "neon-arcade",
-  tactical: "neon-arcade",
+  quantum: "dragon-coil",
+  helix: "sakura-orbit",
+  sentinel: "dragon-coil",
+  tactical: "dragon-coil",
   aurora: "luna-butterflies",
-  pulse: "crystal-halo",
-  executive: "neon-arcade",
-  hologram: "neon-arcade",
+  pulse: "sakura-orbit",
+  executive: "fox-spirit",
+  hologram: "dragon-coil",
   crimson: "ember-flame",
-  circuit: "neon-arcade",
-  cosmic: "crystal-halo",
+  circuit: "dragon-coil",
+  cosmic: "sakura-orbit",
   rainbow: "sakura-orbit",
-  stars: "crystal-halo",
-  sparkles: "sakura-orbit",
+  stars: "sakura-orbit",
+  sparkles: "luna-butterflies",
   fire: "ember-flame",
   lightning: "ember-flame",
-  snow: "crystal-halo",
-  hearts: "violet-roses",
+  snow: "sleeping-cat",
+  hearts: "fox-spirit",
   bubbles: "sakura-orbit",
-  flowers: "violet-roses",
-  catears: "luna-butterflies",
-  crystals: "crystal-halo",
-  "crystals-aqua": "crystal-halo",
-  "neon-chaos": "neon-arcade",
+  flowers: "sakura-orbit",
+  catears: "sleeping-cat",
+  crystals: "sakura-orbit",
+  "crystals-aqua": "sakura-orbit",
+  "neon-chaos": "dragon-coil",
   "neon-chaos-purple": "luna-butterflies",
-  dragon: "violet-roses",
-  "dragon-ruby": "ember-flame",
+  dragon: "dragon-coil",
+  "dragon-ruby": "dragon-coil",
   "solar-eclipse": "ember-flame",
   "inferno-skull": "ember-flame",
+  "violet-roses": "fox-spirit",
+  "crystal-halo": "sakura-orbit",
+  "neon-arcade": "dragon-coil",
 };
 
 export function resolveDecorationId(id: string | null | undefined): DecorationId | "none" {
@@ -1665,18 +1666,22 @@ export function ProfileDecoration({ decorationId, size = 56, children }: Profile
 
   return (
     <div
-      style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+      style={{
+        position: "relative",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "visible",
+      }}
       className="deco-wrap"
+      data-decoration={id}
     >
-      {/* Free rings removed — VIP Discord/DecoProfile-style overlays only */}
-      {id === "luna-butterflies" && <LunaButterfliesFrame size={size} />}
-      {id === "violet-roses" && <VioletRosesFrame size={size} />}
-      {id === "ember-flame" && <EmberFlameFrame size={size} />}
-      {id === "crystal-halo" && <CrystalHaloFrame size={size} />}
+      {id === "sleeping-cat" && <SleepingCatFrame size={size} />}
+      {id === "dragon-coil" && <DragonCoilFrame size={size} />}
+      {id === "fox-spirit" && <FoxSpiritFrame size={size} />}
       {id === "sakura-orbit" && <SakuraOrbitFrame size={size} />}
-      {id === "neon-arcade" && <NeonArcadeFrame size={size} />}
-      {/* Legacy free-ring ids remapped via resolveDecorationId — keep no-ops for safety */}
-      {(id === "aurora" || id === "executive" || id === "pulse" || id === "hologram") && null}
+      {id === "ember-flame" && <EmberFlameFrame size={size} />}
+      {id === "luna-butterflies" && <LunaButterfliesFrame size={size} />}
       {children}
     </div>
   );

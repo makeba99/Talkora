@@ -205,9 +205,22 @@ const roomDjMoveStyle = new Map<string, string>();
 // both firing almost simultaneously on first page load.
 const joiningNow = new Set<string>();
 
-// Room-level bans ("ice") — host can permanently ban a user from a specific room.
-// Keyed by roomId → Set of banned userIds. Cleared when the room is fully deleted.
+// Permanent kicks — cannot rejoin while the room exists in memory.
 const roomBannedUsers = new Map<string, Set<string>>();
+/** Temporary ice timeouts: roomId → userId → expiresAt (ms). Owner picks 5 or 10 min. */
+const roomTempBans = new Map<string, Map<string, number>>();
+
+function isUserBannedFromRoom(roomId: string, userId: string): { banned: boolean; temporary?: boolean; until?: number } {
+  if (roomBannedUsers.get(roomId)?.has(userId)) {
+    return { banned: true, temporary: false };
+  }
+  const temp = roomTempBans.get(roomId)?.get(userId);
+  if (temp) {
+    if (temp > Date.now()) return { banned: true, temporary: true, until: temp };
+    roomTempBans.get(roomId)?.delete(userId);
+  }
+  return { banned: false };
+}
 
 // ── Follower room-join push notifications ──────────────────────────────────
 // Cooldown prevents a follower from receiving more than one push per joiner
@@ -4859,6 +4872,7 @@ export async function registerRoutes(
       roomKnockGrants.delete(roomId);
       roomPinnedMessages.delete(roomId);
       roomBannedUsers.delete(roomId);
+      roomTempBans.delete(roomId);
       startRoomDeleteTimer(roomId);
     } else {
       roomMuteStatus.get(roomId)?.delete(userId);
@@ -8184,9 +8198,17 @@ export async function registerRoutes(
       const room = await storage.getRoom(roomId);
       if (!room) return;
 
-      // Room-level ban check: host may have "iced" this user from this specific room
-      if (roomBannedUsers.get(roomId)?.has(userId)) {
-        socket.emit("room:banned", { roomId });
+      // Room-level ban: permanent kick OR temporary ice timeout
+      const banState = isUserBannedFromRoom(roomId, userId);
+      if (banState.banned) {
+        socket.emit("room:banned", {
+          roomId,
+          temporary: !!banState.temporary,
+          until: banState.until || null,
+          minutesLeft: banState.until
+            ? Math.max(1, Math.ceil((banState.until - Date.now()) / 60000))
+            : null,
+        });
         return;
       }
 
@@ -8524,15 +8546,24 @@ export async function registerRoutes(
       });
     });
 
+    // Kick = permanent remove from this room (cannot rejoin while room lives in memory).
     socket.on("room:kick", async (data: { roomId: string; targetUserId: string; kickedBy: string }) => {
       const room = await storage.getRoom(data.roomId);
-      if (!room || room.ownerId !== data.kickedBy) return;
+      if (!room) return;
+      const roles = roomRoles.get(data.roomId);
+      const kickerRole = roles?.get(data.kickedBy);
+      if (room.ownerId !== data.kickedBy && kickerRole !== "co-owner") return;
+
+      if (!roomBannedUsers.has(data.roomId)) roomBannedUsers.set(data.roomId, new Set());
+      roomBannedUsers.get(data.roomId)!.add(data.targetUserId);
+      // Clear any temporary ice so permanent kick wins
+      roomTempBans.get(data.roomId)?.delete(data.targetUserId);
 
       userCurrentRoom.delete(data.targetUserId);
 
       const targetSocketId = userSockets.get(data.targetUserId);
       if (targetSocketId) {
-        io.to(targetSocketId).emit("room:kicked", { roomId: data.roomId });
+        io.to(targetSocketId).emit("room:kicked", { roomId: data.roomId, banned: true, permanent: true });
         const targetSocket = io.sockets.sockets.get(targetSocketId);
         if (targetSocket) {
           targetSocket.leave(data.roomId);
@@ -8547,27 +8578,36 @@ export async function registerRoutes(
         await storage.updateRoomActiveUsers(data.roomId, participants.length);
         io.to(data.roomId).emit("room:user-left", { userId: data.targetUserId, participants, displayName: kickedDisplayName });
         io.emit("room:participants-update", { roomId: data.roomId, participants });
+        if (kickedDisplayName) {
+          emitSystemChatMsg(data.roomId, `🚫 ${kickedDisplayName} was kicked from this room (cannot rejoin).`);
+        }
       }
     });
 
-    // room:ice — same as kick but also adds the user to the room's ban list so they
-    // cannot rejoin this specific room for as long as the room exists in memory.
-    socket.on("room:ice", async (data: { roomId: string; targetUserId: string; icedBy: string }) => {
+    // Ice = temporary timeout (5 or 10 minutes). Owner/co-owner chooses duration.
+    socket.on("room:ice", async (data: { roomId: string; targetUserId: string; icedBy: string; durationMinutes?: number }) => {
       const room = await storage.getRoom(data.roomId);
       if (!room) return;
       const roles = roomRoles.get(data.roomId);
       const icerRole = roles?.get(data.icedBy);
       if (room.ownerId !== data.icedBy && icerRole !== "co-owner") return;
 
-      // Add to the room's ban list BEFORE kicking so a fast rejoin is blocked
-      if (!roomBannedUsers.has(data.roomId)) roomBannedUsers.set(data.roomId, new Set());
-      roomBannedUsers.get(data.roomId)!.add(data.targetUserId);
+      const mins = data.durationMinutes === 10 ? 10 : 5;
+      const expiresAt = Date.now() + mins * 60 * 1000;
+      if (!roomTempBans.has(data.roomId)) roomTempBans.set(data.roomId, new Map());
+      roomTempBans.get(data.roomId)!.set(data.targetUserId, expiresAt);
 
       userCurrentRoom.delete(data.targetUserId);
 
       const targetSocketId = userSockets.get(data.targetUserId);
       if (targetSocketId) {
-        io.to(targetSocketId).emit("room:kicked", { roomId: data.roomId, banned: true });
+        io.to(targetSocketId).emit("room:kicked", {
+          roomId: data.roomId,
+          banned: true,
+          temporary: true,
+          durationMinutes: mins,
+          until: expiresAt,
+        });
         const targetSocket = io.sockets.sockets.get(targetSocketId);
         if (targetSocket) {
           targetSocket.leave(data.roomId);
@@ -8583,9 +8623,17 @@ export async function registerRoutes(
         io.to(data.roomId).emit("room:user-left", { userId: data.targetUserId, participants, displayName: icedDisplayName });
         io.emit("room:participants-update", { roomId: data.roomId, participants });
         if (icedDisplayName) {
-          emitSystemChatMsg(data.roomId, `🧊 ${icedDisplayName} was iced from this room.`);
+          emitSystemChatMsg(data.roomId, `🧊 ${icedDisplayName} was iced for ${mins} minutes.`);
         }
       }
+
+      // Auto-clear temp ban so rejoin works after the timeout without manual cleanup
+      setTimeout(() => {
+        const map = roomTempBans.get(data.roomId);
+        if (map?.get(data.targetUserId) === expiresAt) {
+          map.delete(data.targetUserId);
+        }
+      }, mins * 60 * 1000 + 500);
     });
 
     socket.on("room:force-mute", async (data: { roomId: string; targetUserId: string; mutedBy: string }) => {
