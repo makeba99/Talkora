@@ -80,7 +80,7 @@ export function matchWakePhrase(raw: string): WakeMatch | null {
   if (miles) return { persona: "miles", afterText: (miles[1] || "").trim() };
 
   const ai = new RegExp(`^${WAKE_AI}\\b[,!.]?\\s*(.*)$`, "i").exec(rest);
-  if (ai) return { persona: "ai", afterText: (ai[1] || "").trim() };
+  if (ai) return { persona: "ai", afterText: (ai[2] ?? ai[1] || "").trim() };
 
   const isSoft = new RegExp(`^${WAKE_SOFT_GREET}$`, "i").test(lastGreet.token);
   if (isSoft && (!rest || /^(there|you)$/i.test(rest))) {

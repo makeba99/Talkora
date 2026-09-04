@@ -11,7 +11,17 @@ import multer, { type StorageEngine } from "multer";
 import path from "path";
 import fs from "fs";
 import { execFile } from "child_process";
-import nodemailer from "nodemailer";
+import {
+  createMailTransport,
+  getMailFrom,
+  getSmtpFromName,
+  getSmtpUser,
+  greetingName,
+  isMailConfigured,
+  renderOutreachEmail,
+  wrapLinksForTracking,
+  SMTP_REPLY_TO,
+} from "./mail";
 import webpush from "web-push";
 import { sendPushCampaign, previewPushAudience } from "./push-service";
 import { externalCache } from "./cache";
@@ -5615,23 +5625,20 @@ export async function registerRoutes(
       // Email notification — fire-and-forget, non-blocking
       (async () => {
         try {
-          const smtpUser = process.env.SMTP_USER;
-          const smtpPass = process.env.SMTP_PASS;
-          if (smtpUser && smtpPass) {
-            const [follower, followed] = await Promise.all([
-              storage.getUser(parsed.data.followerId),
-              storage.getUser(parsed.data.followingId),
-            ]);
-            if (followed?.email) {
-              const transporter = nodemailer.createTransport({ service: "gmail", auth: { user: smtpUser, pass: smtpPass } });
-              await transporter.sendMail({
-                from: `"Vextorn" <${smtpUser}>`,
-                to: followed.email,
-                subject: `${follower?.displayName || "Someone"} started following you on Vextorn`,
-                html: `<div style="font-family:sans-serif;max-width:600px;margin:auto"><p>Hi ${followed.displayName || "there"},</p><p><strong>${follower?.displayName || "Someone"}</strong> just followed you on Vextorn. Head over to your profile to connect!</p><p><a href="https://vextorn.app" style="color:#f59e0b">Open Vextorn</a></p></div>`,
-                text: `${follower?.displayName || "Someone"} just followed you on Vextorn. Head over to https://vextorn.app to connect!`,
-              });
-            }
+          const transporter = createMailTransport();
+          if (!transporter) return;
+          const [follower, followed] = await Promise.all([
+            storage.getUser(parsed.data.followerId),
+            storage.getUser(parsed.data.followingId),
+          ]);
+          if (followed?.email) {
+            await transporter.sendMail({
+              from: getMailFrom(),
+              to: followed.email,
+              subject: `${follower?.displayName || "Someone"} started following you on Vextorn`,
+              html: `<div style="font-family:sans-serif;max-width:600px;margin:auto"><p>Hi ${followed.displayName || "there"},</p><p><strong>${follower?.displayName || "Someone"}</strong> just followed you on Vextorn. Head over to your profile to connect!</p><p><a href="https://vextorn.app" style="color:#f59e0b">Open Vextorn</a></p></div>`,
+              text: `${follower?.displayName || "Someone"} just followed you on Vextorn. Head over to https://vextorn.app to connect!`,
+            });
           }
         } catch { /* non-critical */ }
       })();
@@ -6198,6 +6205,15 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/outreach/mail-status", isAuthenticated, isSuperAdmin, async (_req, res) => {
+    res.json({
+      configured: isMailConfigured(),
+      fromName: getSmtpFromName(),
+      fromUser: getSmtpUser(),
+      replyTo: SMTP_REPLY_TO,
+    });
+  });
+
   // ── Outreach: email broadcast ──────────────────────────────────────────────
   app.post("/api/admin/outreach/email", isAuthenticated, isSuperAdmin, async (req: any, res) => {
     try {
@@ -6206,33 +6222,41 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Subject and body are required." });
       }
 
-      const smtpUser = process.env.SMTP_USER || "vextornweb@gmail.com";
-      const smtpPass = process.env.SMTP_PASS;
-      if (!smtpPass) {
-        return res.status(503).json({ message: "Gmail App Password not configured. Set SMTP_PASS in your environment secrets." });
+      const transporter = createMailTransport();
+      if (!transporter) {
+        return res.status(503).json({ message: "Gmail App Password not configured. Set SMTP_PASS in Railway (or Replit) secrets." });
       }
 
-      let recipients: string[] = [];
+      type MailRecipient = { email: string; name: string };
+      let recipients: MailRecipient[] = [];
 
-      if (recipientType === "all_registered") {
+      if (recipientType === "test") {
+        const admin = await storage.getUser((req.user as any).id);
+        if (!admin?.email) {
+          return res.status(400).json({ message: "Your admin account has no email to send a test to." });
+        }
+        recipients = [{ email: admin.email, name: greetingName(admin) }];
+      } else if (recipientType === "all_registered") {
         const allUsers = await storage.getAllUsers();
-        recipients = allUsers.map((u) => u.email).filter(Boolean) as string[];
+        const seen = new Set<string>();
+        for (const u of allUsers) {
+          const email = u.email?.trim();
+          if (!email || seen.has(email.toLowerCase())) continue;
+          seen.add(email.toLowerCase());
+          recipients.push({ email, name: greetingName(u) });
+        }
       } else if (recipientType === "custom") {
         const raw = (customEmails || "") as string;
         recipients = raw
           .split(/[\n,;]+/)
           .map((e: string) => e.trim())
-          .filter((e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+          .filter((e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))
+          .map((email: string) => ({ email, name: email.split("@")[0] }));
       }
 
       if (recipients.length === 0) {
         return res.status(400).json({ message: "No valid recipient email addresses found." });
       }
-
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: { user: smtpUser, pass: smtpPass },
-      });
 
       const adminId = (req.user as any).id;
       const campaign = await storage.createEmailCampaign({
@@ -6245,36 +6269,36 @@ export async function registerRoutes(
 
       const baseUrl = `${req.protocol}://${req.get("host")}`;
       const trackingPixel = `<img src="${baseUrl}/t/o/${campaign.id}.gif" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0" />`;
+      const safeImage = typeof imageUrl === "string" && /^https?:\/\//i.test(imageUrl.trim()) ? imageUrl.trim() : undefined;
+      const bodyHtml = wrapLinksForTracking(escapeHtml(body).replace(/\n/g, "<br>"), campaign.id, baseUrl);
 
-      function wrapLinksForTracking(text: string, cid: string, base: string): string {
-        return text.replace(/https?:\/\/[^\s<>"]+[^\s<>".,!?;:)]/g, (url) =>
-          `${base}/t/c/${cid}?url=${encodeURIComponent(url)}`
-        );
-      }
-
-      const trackedBody = wrapLinksForTracking(body.replace(/\n/g, "<br>"), campaign.id, baseUrl);
-      const imageBlock = imageUrl?.trim()
-        ? `<img src="${imageUrl.trim()}" alt="" style="display:block;width:100%;max-width:600px;border-radius:8px;margin:16px 0" />`
-        : "";
-      const htmlBody = `<div style="font-family:sans-serif;max-width:600px;margin:auto">${trackedBody}${imageBlock}${trackingPixel}</div>`;
-      const textBody = body;
-
-      const chunkSize = 50;
       let sent = 0;
-      for (let i = 0; i < recipients.length; i += chunkSize) {
-        const chunk = recipients.slice(i, i + chunkSize);
-        await transporter.sendMail({
-          from: `"Vextorn" <${smtpUser}>`,
-          replyTo: "hello@vextorn.app",
-          bcc: chunk,
-          subject,
-          html: htmlBody,
-          text: textBody,
+      let failed = 0;
+      for (const recipient of recipients) {
+        const rendered = renderOutreachEmail({
+          name: recipient.name,
+          bodyHtml,
+          bodyText: body,
+          imageUrl: safeImage,
+          trackingPixelHtml: trackingPixel,
         });
-        sent += chunk.length;
+        try {
+          await transporter.sendMail({
+            from: getMailFrom(),
+            replyTo: SMTP_REPLY_TO,
+            to: recipient.email,
+            subject,
+            html: rendered.html,
+            text: rendered.text,
+          });
+          sent += 1;
+        } catch (mailErr) {
+          failed += 1;
+          console.error("[outreach] send failed", recipient.email, mailErr);
+        }
       }
 
-      res.json({ success: true, sent, total: recipients.length, campaignId: campaign.id });
+      res.json({ success: true, sent, failed, total: recipients.length, campaignId: campaign.id });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -6369,15 +6393,10 @@ export async function registerRoutes(
       const { reporterName, reportedName, category, reason } = req.body;
       const report = await storage.createReport({ ...parsed.data, reporterName, reportedName, category });
       try {
-        const smtpUser = process.env.SMTP_USER;
-        const smtpPass = process.env.SMTP_PASS;
-        if (smtpUser && smtpPass) {
-          const transporter = nodemailer.createTransport({
-            service: "gmail",
-            auth: { user: smtpUser, pass: smtpPass },
-          });
+        const transporter = createMailTransport();
+        if (transporter) {
           await transporter.sendMail({
-            from: smtpUser,
+            from: getMailFrom(),
             to: "bagpetrosyan@gmail.com",
             subject: `Vextorn Report: ${reporterName || "User"} reported ${reportedName || "User"}`,
             html: `
@@ -7609,34 +7628,30 @@ export async function registerRoutes(
       // Email confirmation — fire-and-forget, non-blocking
       (async () => {
         try {
-          const smtpUser = process.env.SMTP_USER;
-          const smtpPass = process.env.SMTP_PASS;
-          if (smtpUser && smtpPass) {
-            const student = await storage.getUser(userId);
-            const transporter = nodemailer.createTransport({ service: "gmail", auth: { user: smtpUser, pass: smtpPass } });
-            const sessionDate = new Date(scheduledAt).toLocaleString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" });
-            const amountDisplay = `$${(amountUsd).toFixed(2)}`;
-            // Notify student
-            if (student?.email) {
-              await transporter.sendMail({
-                from: `"Vextorn" <${smtpUser}>`,
-                to: student.email,
-                subject: `Your session with ${teacher.name} is confirmed!`,
-                html: `<div style="font-family:sans-serif;max-width:600px;margin:auto"><h2 style="color:#f59e0b">Booking Confirmed</h2><p>Hi ${student.displayName || "there"},</p><p>Your <strong>${sessionType}</strong> session with <strong>${teacher.name}</strong> has been booked.</p><ul><li><strong>Date:</strong> ${sessionDate}</li><li><strong>Duration:</strong> ${durationMinutes} minutes</li><li><strong>Amount:</strong> ${amountDisplay}</li></ul>${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ""}<p><a href="https://vextorn.app" style="color:#f59e0b">Open Vextorn</a></p></div>`,
-                text: `Booking confirmed! Session with ${teacher.name} on ${sessionDate} for ${durationMinutes} min (${amountDisplay}).`,
-              });
-            }
-            // Notify teacher
-            const teacherUser = teacher.userId ? await storage.getUser(teacher.userId) : null;
-            if (teacherUser?.email) {
-              await transporter.sendMail({
-                from: `"Vextorn" <${smtpUser}>`,
-                to: teacherUser.email,
-                subject: `New booking: ${student?.displayName || "A student"} booked a session`,
-                html: `<div style="font-family:sans-serif;max-width:600px;margin:auto"><h2 style="color:#f59e0b">New Booking</h2><p>Hi ${teacher.name},</p><p><strong>${student?.displayName || "A student"}</strong> has booked a <strong>${sessionType}</strong> session with you.</p><ul><li><strong>Date:</strong> ${sessionDate}</li><li><strong>Duration:</strong> ${durationMinutes} minutes</li><li><strong>Earnings:</strong> $${(teacherAmount / 100).toFixed(2)}</li></ul>${notes ? `<p><strong>Student notes:</strong> ${notes}</p>` : ""}<p><a href="https://vextorn.app" style="color:#f59e0b">Open Vextorn</a></p></div>`,
-                text: `New booking from ${student?.displayName || "a student"} on ${sessionDate} for ${durationMinutes} min.`,
-              });
-            }
+          const transporter = createMailTransport();
+          if (!transporter) return;
+          const student = await storage.getUser(userId);
+          const sessionDate = new Date(scheduledAt).toLocaleString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" });
+          const amountDisplay = `$${(amountUsd).toFixed(2)}`;
+          // Notify student
+          if (student?.email) {
+            await transporter.sendMail({
+              from: getMailFrom(),
+              to: student.email,
+              subject: `Your session with ${teacher.name} is confirmed!`,
+              html: `<div style="font-family:sans-serif;max-width:600px;margin:auto"><h2 style="color:#f59e0b">Booking Confirmed</h2><p>Hi ${student.displayName || "there"},</p><p>Your <strong>${sessionType}</strong> session with <strong>${teacher.name}</strong> has been booked.</p><ul><li><strong>Date:</strong> ${sessionDate}</li><li><strong>Duration:</strong> ${durationMinutes} minutes</li><li><strong>Amount:</strong> ${amountDisplay}</li></ul>${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ""}<p><a href="https://vextorn.app" style="color:#f59e0b">Open Vextorn</a></p></div>`,
+              text: `Booking confirmed! Session with ${teacher.name} on ${sessionDate} for ${durationMinutes} min (${amountDisplay}).`,
+            });
+          }
+          const teacherUser = teacher.userId ? await storage.getUser(teacher.userId) : null;
+          if (teacherUser?.email) {
+            await transporter.sendMail({
+              from: getMailFrom(),
+              to: teacherUser.email,
+              subject: `New booking: ${student?.displayName || "A student"} booked a session`,
+              html: `<div style="font-family:sans-serif;max-width:600px;margin:auto"><h2 style="color:#f59e0b">New Booking</h2><p>Hi ${teacher.name},</p><p><strong>${student?.displayName || "A student"}</strong> has booked a <strong>${sessionType}</strong> session with you.</p><ul><li><strong>Date:</strong> ${sessionDate}</li><li><strong>Duration:</strong> ${durationMinutes} minutes</li><li><strong>Earnings:</strong> $${(teacherAmount / 100).toFixed(2)}</li></ul>${notes ? `<p><strong>Student notes:</strong> ${notes}</p>` : ""}<p><a href="https://vextorn.app" style="color:#f59e0b">Open Vextorn</a></p></div>`,
+              text: `New booking from ${student?.displayName || "a student"} on ${sessionDate} for ${durationMinutes} min.`,
+            });
           }
         } catch { /* non-critical */ }
       })();

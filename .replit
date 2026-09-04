@@ -49,6 +49,7 @@ stack = "FULLSTACK_JS"
 [userenv]
 
 [userenv.shared]
-SMTP_USER = "vextornweb@gmail.com"
+SMTP_USER = "a46947314@gmail.com"
+SMTP_FROM_NAME = "Hello Vextorn"
 VAPID_PUBLIC_KEY = "BEsGiteMU1RlFA1PT-PukUjW-wgGBqi8ILrxJxLz3EQhGZnKsk9SHH7YptpKXD4grBpn_cUHvE94D1cV616jj8w"
 ELEVENLABS_EVA_VOICE_ID = "EXAVITQu4vr4xnSDxMaL"

@@ -3051,6 +3051,10 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
     refetchInterval: 30000,
   });
 
+  const { data: mailStatus } = useQuery<{ configured: boolean; fromName: string; fromUser: string; replyTo: string }>({
+    queryKey: ["/api/admin/outreach/mail-status"],
+  });
+
   const { data: pushSubCount } = useQuery<{ count: number }>({
     queryKey: ["/api/admin/push/subscriber-count"],
     refetchInterval: 60000,
@@ -3082,22 +3086,30 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
   });
 
   const emailMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (opts?: { recipientType?: "all_registered" | "custom" | "test" }) => {
       const res = await apiRequest("POST", "/api/admin/outreach/email", {
         subject: emailSubject,
         body: emailBody,
-        recipientType: emailRecipientType,
+        recipientType: opts?.recipientType ?? emailRecipientType,
         customEmails,
         imageUrl: emailImageUrl || undefined,
       });
       return res.json();
     },
-    onSuccess: (data: any) => {
-      toast({ title: "Emails sent!", description: `Delivered to ${data.sent} recipient${data.sent !== 1 ? "s" : ""}.` });
-      setEmailSubject("");
-      setEmailBody("");
-      setEmailImageUrl("");
-      setCustomEmails("");
+    onSuccess: (data: any, vars) => {
+      const test = vars?.recipientType === "test";
+      toast({
+        title: test ? "Test email sent" : "Emails sent!",
+        description: test
+          ? "Check your inbox — it should show as Hello Vextorn."
+          : `Delivered to ${data.sent} recipient${data.sent !== 1 ? "s" : ""}${data.failed ? ` · ${data.failed} failed` : ""}.`,
+      });
+      if (!test) {
+        setEmailSubject("");
+        setEmailBody("");
+        setEmailImageUrl("");
+        setCustomEmails("");
+      }
       refetchCampaigns();
     },
     onError: (err: any) => toast({ title: "Failed to send email", description: err.message, variant: "destructive" }),
@@ -3293,29 +3305,48 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
 
             <div className="rounded-lg bg-blue-500/10 border border-blue-400/20 p-3 text-xs text-blue-300 space-y-1.5">
               <p className="font-semibold flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 shrink-0" /> Sent via <span className="font-mono">vextornweb@gmail.com</span> · displayed as <span className="font-mono">hello@vextorn.app</span>
+                <Mail className="w-3.5 h-3.5 shrink-0" />
+                Inbox shows <span className="font-mono">{mailStatus?.fromName || "Hello Vextorn"}</span>
+                {" · "}
+                sent from <span className="font-mono">{mailStatus?.fromUser || "a46947314@gmail.com"}</span>
               </p>
-              <p className="text-blue-300/80">Requires a Gmail App Password stored as the <code className="font-mono">SMTP_PASS</code> secret.</p>
-              <details className="cursor-pointer">
-                <summary className="text-blue-400 hover:text-blue-300 transition-colors font-medium">How to get a Gmail App Password →</summary>
-                <ol className="mt-2 space-y-1 text-blue-300/80 list-decimal list-inside">
-                  <li>Go to <span className="font-mono">myaccount.google.com/security</span></li>
-                  <li>Enable 2-Step Verification if not already on</li>
-                  <li>Search "App passwords" → create one named "Vextorn"</li>
-                  <li>Copy the 16-character code → paste it as the <code className="font-mono">SMTP_PASS</code> secret in Replit</li>
-                </ol>
-              </details>
+              <p className="text-blue-300/80">
+                Each registered user gets a personal email starting with <span className="font-medium text-blue-200">Hello {'{name}'}</span> and a Vextorn header.
+              </p>
+              {mailStatus && !mailStatus.configured && (
+                <p className="text-amber-300">SMTP_PASS is missing on the server — emails will not send until the Gmail app password is set in Railway.</p>
+              )}
             </div>
 
-            <Button
-              className="w-full"
-              onClick={() => emailMutation.mutate()}
-              disabled={emailMutation.isPending || !emailSubject.trim() || !emailBody.trim()}
-              data-testid="button-send-email"
-            >
-              {emailMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
-              {emailMutation.isPending ? "Sending..." : "Send Email"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => emailMutation.mutate({ recipientType: "test" })}
+                disabled={emailMutation.isPending || !emailSubject.trim() || !emailBody.trim()}
+                data-testid="button-test-email"
+              >
+                {emailMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
+                Send test to me
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={() => {
+                  const count = emailRecipientType === "all_registered" ? registeredWithEmail.length : customEmails.split(/[\n,;]+/).filter((e) => e.trim()).length;
+                  const ok = window.confirm(
+                    emailRecipientType === "all_registered"
+                      ? `Send this email from Hello Vextorn to ${count} registered user${count === 1 ? "" : "s"}?`
+                      : `Send this email from Hello Vextorn to ${count} address${count === 1 ? "" : "es"}?`
+                  );
+                  if (ok) emailMutation.mutate();
+                }}
+                disabled={emailMutation.isPending || !emailSubject.trim() || !emailBody.trim()}
+                data-testid="button-send-email"
+              >
+                {emailMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
+                {emailMutation.isPending ? "Sending..." : emailRecipientType === "all_registered" ? `Send to all (${registeredWithEmail.length})` : "Send Email"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 

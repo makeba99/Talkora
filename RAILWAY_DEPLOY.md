@@ -24,8 +24,9 @@ Use the table below — copy the values from your Replit Secrets panel for the s
 | `CALLBACK_URL` | `https://vextorn.up.railway.app/api/auth/callback` |
 | `VAPID_PUBLIC_KEY` | Optional — if unset, auto-generated & stored in `app_settings`. For multi-instance, set the same keys on every replica (`npx web-push generate-vapid-keys`) |
 | `VAPID_PRIVATE_KEY` | Optional — pair with `VAPID_PUBLIC_KEY`; never expose to the client |
-| `SMTP_USER` | `vextornweb@gmail.com` |
-| `SMTP_PASS` | From your Replit Secrets panel |
+| `SMTP_USER` | `a46947314@gmail.com` |
+| `SMTP_PASS` | Gmail App Password (16 characters, no spaces) |
+| `SMTP_FROM_NAME` | `Hello Vextorn` (inbox display name) |
 
 **Optional** (features degrade gracefully without these):
 
