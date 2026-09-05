@@ -22,7 +22,7 @@ import { SPEECH_LANG_MAP } from "./types";
 /** Pure-filler transcript pattern — recognized but carries no real content */
 export const FILLER_ONLY_PATTERN = /^(um+|uh+|hmm+|hm+|err+|erm+|ah+|mm+|mhm+|ugh+)(\s+(um+|uh+|hmm+|hm+|err+|erm+|ah+|mm+|mhm+|ugh+))*\.?$/i;
 
-export type WakePersona = "maya" | "miles" | "ai";
+export type WakePersona = "maya" | "miles" | "eva" | "ai";
 
 export interface WakeMatch {
   persona: WakePersona;
@@ -34,8 +34,12 @@ const WAKE_HARD_GREET = "(?:ok|okay|yo|wake\\s+up|start|listen|activate)";
 const WAKE_GREET = `(?:${WAKE_SOFT_GREET}|${WAKE_HARD_GREET})`;
 const WAKE_MAYA = "(?:maya|maia|mya)";
 const WAKE_MILES = "(?:miles|myles)";
+const WAKE_EVA = "(?:eva|evelyn)";
+const WAKE_AFI = "(?:afi(?:\\s*k)?|afik)";
+const WAKE_DUDE = "(?:dude)";
+const WAKE_AGENT_NAME = `(?:${WAKE_MAYA}|${WAKE_MILES}|${WAKE_EVA}|${WAKE_AFI}|${WAKE_DUDE})`;
 /** STT often hears "AI" as "I" / "aye" / "eye". */
-const WAKE_AI = "(?:ai|a\\.i\\.?|a\\s*i|aye|eye|tutor|afi(?:\\s*k)?|eva|dude|agent)";
+const WAKE_AI = `(?:ai|a\\.i\\.?|a\\s*i|aye|eye|tutor|agent|${WAKE_AFI}|${WAKE_EVA}|${WAKE_DUDE})`;
 const WAKE_SKIP_AFTER_HEY = /^(everyone|everybody|guys|all|y'?all|people|folks|friends|chat|room)\b/i;
 
 const WAKE_AI_MISS = /^(i|a|ay|eh)$/i;
@@ -53,6 +57,24 @@ function normalizeWakeText(raw: string): string {
  * Parse a transcript into a wake persona + leftover question.
  * Accepts "hey", "hey AI", "hey I" (common STT miss), "Maya", "Miles".
  */
+function personaFromAgentToken(token: string): WakePersona {
+  const t = token.toLowerCase().replace(/\s+/g, "");
+  if (/^(miles|myles|dude)$/.test(t)) return "miles";
+  if (/^(eva|evelyn)$/.test(t)) return "eva";
+  return "maya";
+}
+
+/** Strip "Maya," / "hey Miles" from the start of a live question. */
+export function stripLeadingAgentCall(raw: string): string {
+  const text = normalizeWakeText(raw);
+  if (!text) return "";
+  const stripped = text.replace(
+    new RegExp(`^(?:${WAKE_GREET}\\s+)?${WAKE_AGENT_NAME}\\b[,!.]?\\s*`, "i"),
+    "",
+  ).trim();
+  return stripped;
+}
+
 export function matchWakePhrase(raw: string): WakeMatch | null {
   const text = normalizeWakeText(raw);
   if (!text) return null;
@@ -62,11 +84,15 @@ export function matchWakePhrase(raw: string): WakeMatch | null {
     return { persona: "ai", afterText: "" };
   }
 
-  if (new RegExp(`^${WAKE_MAYA}$`, "i").test(text)) {
-    return { persona: "maya", afterText: "" };
-  }
-  if (new RegExp(`^${WAKE_MILES}$`, "i").test(text)) {
-    return { persona: "miles", afterText: "" };
+  // "Maya", "Miles hello", "hey Eva what's 2+2" — name does not need a greeting.
+  const named = new RegExp(
+    `^(?:(?:um+|uh+|${WAKE_GREET})\\s+)?(${WAKE_AGENT_NAME})\\b[,!.]?\\s*(.*)$`,
+    "i",
+  ).exec(text);
+  if (named) {
+    const rest = (named[2] || "").trim();
+    if (WAKE_SKIP_AFTER_HEY.test(rest)) return null;
+    return { persona: personaFromAgentToken(named[1]), afterText: rest };
   }
 
   const greetRe = new RegExp(`\\b(${WAKE_GREET})\\b`, "gi");
@@ -105,7 +131,10 @@ export function matchWakePhrase(raw: string): WakeMatch | null {
 
 /** True when the phrase is distinctive enough to fire on interim STT. */
 export function isStrongWakeMatch(match: WakeMatch, raw: string): boolean {
-  if (match.persona === "maya" || match.persona === "miles") return true;
+  if (match.persona === "maya" || match.persona === "miles" || match.persona === "eva") {
+    // Name-only: wait for leftover words or a final result so "Maya what's…" is not cut off.
+    return match.afterText.trim().length > 1;
+  }
   const t = raw.toLowerCase();
   if (/\b(ai|a\.i\.?|a\s*i|tutor|maya|maia|miles|myles|eva)\b/.test(t)) return true;
   if (/\b(hey|hi|hello)\b/.test(t) && /\b(i|aye|eye|a)\b/.test(t)) return true;
@@ -124,7 +153,7 @@ export function isStrongWakeMatch(match: WakeMatch, raw: string): boolean {
  * Kept for callers that only need a boolean "is this a wake phrase".
  */
 export const WAKE_PATTERN = new RegExp(
-  `\\b(?:${WAKE_GREET}\\s+${WAKE_AI}|(?:${WAKE_GREET}\\s+)?(?:${WAKE_MAYA}|${WAKE_MILES})|${WAKE_SOFT_GREET})\\b`,
+  `\\b(?:${WAKE_GREET}\\s+${WAKE_AI}|(?:${WAKE_GREET}\\s+)?(?:${WAKE_AGENT_NAME})|${WAKE_SOFT_GREET})\\b`,
   "i",
 );
 
@@ -248,7 +277,7 @@ export class WakeWordDetector {
         return;
       }
       this._clearPending();
-      this.pendingWake = setTimeout(fire, 400);
+      this.pendingWake = setTimeout(fire, 700);
     };
 
     rec.onerror = (e: any) => {

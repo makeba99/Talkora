@@ -11229,9 +11229,16 @@ html.neomorphic-light .pinned-socials-link {
 .rup {
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   overflow: visible;
   isolation: isolate;
+}
+.rup__stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
 }
 .rup__deco,
 .rup__spark {
@@ -11290,56 +11297,63 @@ html.neomorphic-light .pinned-socials-link {
   color: rgba(255, 255, 255, 0.72);
   background: linear-gradient(160deg, #24182e, #12101c);
 }
-.rup__veil {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 3;
+.rup__under {
+  width: 100%;
+  margin-top: 5px;
+  min-height: 28px;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  gap: 0;
-  padding: 16px 6px 4px;
-  background: linear-gradient(to top, rgba(4, 3, 12, 0.92) 0%, rgba(4, 3, 12, 0.42) 58%, transparent 100%);
+  align-items: center;
+  gap: 2px;
   pointer-events: none;
 }
-.rup__name-row {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  min-width: 0;
+.rup__under--ghost {
+  visibility: hidden;
 }
 .rup__name {
-  flex: 1;
-  min-width: 0;
+  max-width: 100%;
   font-size: 10px;
-  font-weight: 650;
+  font-weight: 700;
   letter-spacing: 0.01em;
   color: rgba(255, 255, 255, 0.95);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-}
-.rup__followers {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 8px;
-  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
   line-height: 1.15;
-  color: rgba(255, 255, 255, 0.68);
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-.rup__followers svg {
-  width: 7px;
-  height: 7px;
+.rup__hearts {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 1px 7px 2px;
+  border-radius: 999px;
+  background: rgba(8, 6, 16, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  line-height: 1;
+}
+.rup__heart {
+  width: 9px;
+  height: 9px;
   flex-shrink: 0;
-  opacity: 0.85;
+}
+.rup__heart-n {
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.rup[data-heart="quiet"] .rup__heart,
+.rup[data-heart="quiet"] .rup__heart-n { color: rgba(255, 255, 255, 0.42); }
+.rup[data-heart="warm"] .rup__heart,
+.rup[data-heart="warm"] .rup__heart-n { color: #fb7185; }
+.rup[data-heart="hot"] .rup__heart,
+.rup[data-heart="hot"] .rup__heart-n { color: #f472b6; }
+.rup[data-heart="gold"] .rup__heart,
+.rup[data-heart="gold"] .rup__heart-n {
+  color: #fbbf24;
+  filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.45));
 }
 .rup__veil-mic {
   width: 9px;
@@ -11363,10 +11377,11 @@ html.neomorphic-light .pinned-socials-link {
 .rup__pip svg { width: 8px; height: 8px; }
 .rup__pip--host { top: 5px; left: 5px; color: #fbbf24; }
 .rup__pip--muted { top: 5px; right: 5px; color: rgba(248, 113, 113, 0.95); }
+.rup__pip--speak { top: 5px; right: 5px; color: rgb(196, 181, 253); }
 .rup__ach {
   position: absolute;
   left: 5px;
-  bottom: 28px;
+  bottom: 6px;
   z-index: 4;
   font-size: 9px;
   line-height: 1;
@@ -11380,7 +11395,7 @@ html.neomorphic-light .pinned-socials-link {
 .rup[data-state="speaking"] .rup__card {
   border-color: rgba(196, 181, 253, 0.55);
 }
-.rup[data-state="speaking"]::after {
+.rup[data-state="speaking"] .rup__stage::after {
   content: "";
   position: absolute;
   inset: -3px;
@@ -11399,7 +11414,7 @@ html.neomorphic-light .pinned-socials-link {
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: none;
 }
-.rup--empty .rup__veil { display: none; }
+.rup--empty .rup__under { min-height: 28px; }
 .rup__plus {
   width: 30%;
   height: 30%;
@@ -11477,7 +11492,7 @@ html.neomorphic-light .pinned-socials-link {
 
 @media (max-width: 420px) {
   .rup__name { font-size: 9px; }
-  .rup__followers { font-size: 7.5px; }
+  .rup__heart-n { font-size: 8px; }
 }
 
 @container lobby-profile-body (max-width: 280px) {

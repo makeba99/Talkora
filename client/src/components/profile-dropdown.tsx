@@ -33,8 +33,6 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { PROFILE_DECORATIONS, ProfileDecoration, resolveDecorationId } from "@/components/profile-decorations";
-import { SQUARE_PROFILE_STYLES } from "@/lib/square-profile-style";
-import { SquareStyleSwatch } from "@/components/room-user-profile";
 import { PROFILE_ANIMATIONS, ProfileAnimationOverlay, resolveProfileAnimationId } from "@/lib/profile-animations";
 import { BADGE_TYPES } from "@shared/constants";
 import { isVipUser, vipNameClass, titleColorStyle } from "@/lib/vip";
@@ -1224,38 +1222,10 @@ export function ProfileDropdown({
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Avatar decoration</Label>
                 <p className="text-xs text-muted-foreground">
-                  Square frames for room cards — available to everyone. VIP users also get character overlays.
+                  Character overlays sit around your photo on room cards. VIP unlocks the set.
                 </p>
 
                 {(() => {
-                  const renderSquare = (deco: typeof SQUARE_PROFILE_STYLES[number], idx: number) => {
-                    const locked = deco.vip && !isVipUser(user);
-                    return (
-                      <button
-                        key={deco.id}
-                        onClick={() => {
-                          if (locked) {
-                            toast({ title: "VIP only", description: "Buy Me a Coffee to unlock this frame." });
-                            return;
-                          }
-                          setSelectedDecoration(deco.id);
-                        }}
-                        className={`neu-deco-tile ${selectedDecoration === deco.id ? "is-active" : ""} ${locked ? "opacity-50" : ""}`}
-                        style={{ ["--neu-deco-delay" as any]: `${idx * 25}ms` }}
-                        data-testid={`decoration-option-${deco.id}`}
-                        title={locked ? `${deco.label} (VIP)` : deco.description}
-                      >
-                        <SquareStyleSwatch styleId={deco.id} size={40} />
-                        <span className="neu-deco-tile-label">
-                          {locked ? `🔒 ${deco.label}` : deco.label}
-                        </span>
-                        {selectedDecoration === deco.id && (
-                          <span className="neu-deco-tile-check"><Check /></span>
-                        )}
-                      </button>
-                    );
-                  };
-
                   const renderTile = (deco: typeof PROFILE_DECORATIONS[number], idx: number) => {
                     const locked = deco.vip && !isVipUser(user);
                     return (
@@ -1292,36 +1262,12 @@ export function ProfileDropdown({
                     );
                   };
 
-                  const freeFrames = SQUARE_PROFILE_STYLES.filter((d) => !d.vip);
-                  const rareFrames = SQUARE_PROFILE_STYLES.filter((d) => d.vip);
-                  const vipItems = PROFILE_DECORATIONS.filter((d) => d.category === "vip");
+                  const vipItems = PROFILE_DECORATIONS.filter((d) => d.category === "vip" || d.id === "none");
 
                   return (
-                    <>
-                      <div className="grid grid-cols-4 gap-2">
-                        {freeFrames.map((d, i) => renderSquare(d, i))}
-                      </div>
-                      <div className="pt-2">
-                        <p className="text-[11px] font-semibold uppercase tracking-wider mb-2 text-amber-300/90">
-                          Rare frames
-                        </p>
-                        <div className="grid grid-cols-4 gap-2">
-                          {rareFrames.map((d, i) => renderSquare(d, i + freeFrames.length))}
-                        </div>
-                      </div>
-                      <div className="pt-2">
-                        <p
-                          className="text-[11px] font-semibold uppercase tracking-wider mb-2"
-                          style={{ color: "rgba(251,191,36,0.95)" }}
-                          data-testid="decoration-section-vip"
-                        >
-                          VIP overlays
-                        </p>
-                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                          {vipItems.map((d, i) => renderTile(d, i))}
-                        </div>
-                      </div>
-                    </>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                      {vipItems.map((d, i) => renderTile(d, i))}
+                    </div>
                   );
                 })()}
               </div>

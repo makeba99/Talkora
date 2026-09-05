@@ -19,7 +19,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { extractSentences } from "@/lib/ai-tutor/tts";
 import { createTts, type TtsLike } from "@/lib/ai-tutor/tts-factory";
-import { SttEngine, WakeWordDetector, FILLER_ONLY_PATTERN, type WakeMatch } from "@/lib/ai-tutor/stt";
+import { SttEngine, WakeWordDetector, FILLER_ONLY_PATTERN, stripLeadingAgentCall, type WakeMatch } from "@/lib/ai-tutor/stt";
 import type { Viseme } from "@/lib/ai-tutor/lipsync";
 import { streamTokens, fetchBufferedReply } from "@/lib/ai-tutor/stream";
 import {
@@ -333,9 +333,19 @@ export function useAiTutor(deps: AiTutorDeps) {
   }, [addDebug]);
 
   const onFinalTranscript = useCallback((text: string) => {
-    const trimmed = text.trim();
+    const trimmed = stripLeadingAgentCall(text.trim()) || text.trim();
     // Ignore fragments shorter than 3 characters — almost always echo artifacts
     if (trimmed.length < 3) return;
+    // Bare agent name while already in session — stay listening.
+    if (/^(maya|maia|mya|miles|myles|eva|evelyn|dude|afi(?:\s*k)?|afik|ai)$/i.test(trimmed)) {
+      addDebug("info", `Addressed as ${trimmed} — already listening`);
+      setTimeout(() => {
+        if (activeRef.current && !speakingRef.current && !loadingRef.current) {
+          sttRef.current?.startListening();
+        }
+      }, 200);
+      return;
+    }
     // Ignore pure filler transcripts (um, uh, hmm…) — no real content to send
     if (FILLER_ONLY_PATTERN.test(trimmed)) {
       addDebug("info", `Filler filtered: "${trimmed}" — restarting mic`);
@@ -831,6 +841,8 @@ export function useAiTutor(deps: AiTutorDeps) {
         addDebug("info", `Wake word detected (${persona})${afterText ? ` — "${afterText}"` : ""}`);
         if (persona === "miles") {
           startWithPersonaRef.current?.("Male", "Miles");
+        } else if (persona === "eva") {
+          startWithPersonaRef.current?.("Eva", "Eva");
         } else {
           startWithPersonaRef.current?.("Female", "Maya");
         }
@@ -838,7 +850,7 @@ export function useAiTutor(deps: AiTutorDeps) {
         if (leftover) {
           setTimeout(() => {
             sendAiMessageRef.current?.(leftover);
-          }, 600);
+          }, 1100);
         }
       },
       (listening: boolean) => setWakeListening(listening)

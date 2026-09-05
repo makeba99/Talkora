@@ -9254,9 +9254,10 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         setMentionQuery(null);
         setReplyingTo(null);
         if (wake.persona === "miles") startWithPersona("Male", "Miles");
+        else if (wake.persona === "eva") startWithPersona("Eva", "Eva");
         else startWithPersona("Female", "Maya");
         if (wake.afterText) {
-          setTimeout(() => sendAiMessage(wake.afterText), 600);
+          setTimeout(() => sendAiMessage(wake.afterText), 1100);
         }
         return;
       }
@@ -17999,7 +18000,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     <div>
                       <span className="text-[11px] font-semibold block" style={{ color: "rgba(255,255,255,0.70)" }}>Hands-Free</span>
                       <span className="text-[9px] leading-tight block mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
-                        {aiTutorSettings.wakeWordEnabled ? `Say "hey", "Maya", or "Miles"` : "Wake word disabled"}
+                        {aiTutorSettings.wakeWordEnabled ? `Say Maya, Miles, Eva, or "hey AI"` : "Wake word disabled"}
                       </span>
                     </div>
                     <div

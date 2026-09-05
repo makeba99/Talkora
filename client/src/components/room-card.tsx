@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, memo, lazy, Suspense } from "react";
+import { useState, useRef, useEffect, useCallback, memo, lazy, Suspense, type ReactNode } from "react";
 import { loadKnockCooldown, saveKnockCooldown } from "@/lib/knock-cooldown";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -224,12 +224,12 @@ function ParticipantPopoverShell({
   currentUserId?: string;
   onOpenDm?: (userId: string) => void;
   badges?: UserBadge[];
-  children: React.ReactNode;
+  children: (open: boolean) => ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverTrigger asChild>{children(open)}</PopoverTrigger>
       {open && (
         <PopoverContent className="w-60 p-2" align="center">
           <ParticipantPopover
@@ -241,6 +241,31 @@ function ParticipantPopoverShell({
         </PopoverContent>
       )}
     </Popover>
+  );
+}
+
+function LobbySeatPeek({
+  label,
+  children,
+}: {
+  label: string;
+  children: (open: boolean) => ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <button
+      type="button"
+      className="lobby-profile-slot lobby-profile-slot__btn"
+      data-neo-skip
+      aria-label={label}
+      aria-pressed={open}
+      onClick={(e) => {
+        e.stopPropagation();
+        setOpen((v) => !v);
+      }}
+    >
+      {children(open)}
+    </button>
   );
 }
 
@@ -942,7 +967,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           background: isPremiumAtmosphere
             ? "linear-gradient(145deg, rgb(3,6,22) 0%, rgb(6,8,28) 38%, rgb(5,3,20) 72%, rgb(8,4,25) 100%)"
             : "linear-gradient(160deg, rgb(16, 20, 50) 0%, rgb(11, 15, 42) 100%)",
-          minHeight: isPremiumAtmosphere ? 276 : 264,
+          minHeight: isPremiumAtmosphere ? 308 : 296,
           height: isPremiumAtmosphere ? 276 : 264,
           boxShadow: [
             "inset 0 1px 0 rgba(255,255,255,0.09)",
@@ -1159,7 +1184,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                 if (p) {
                   const badges = participantBadges[p.id] || [];
                   const displayName = getUserDisplayName(p);
-                  const portrait = (
+                  const portrait = (showName: boolean) => (
                     <RoomUserProfile
                       participant={p}
                       size={slotSize}
@@ -1168,14 +1193,15 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                       isSpeaking={!!(p as any).isSpeaking}
                       isMuted={!!(p as any).isMuted}
                       followerCount={followerCounts[p.id] ?? 0}
+                      showName={showName}
                     />
                   );
 
                   if (!isLoggedIn) {
                     return (
-                      <div key={i} className="lobby-profile-slot">
-                        {portrait}
-                      </div>
+                      <LobbySeatPeek key={i} label={`View ${displayName}'s name`}>
+                        {(open) => portrait(open)}
+                      </LobbySeatPeek>
                     );
                   }
 
@@ -1187,15 +1213,17 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                       onOpenDm={onOpenDm}
                       badges={badges}
                     >
-                      <button
-                        className="lobby-profile-slot lobby-profile-slot__btn"
-                        data-neo-skip
-                        data-testid={`button-card-participant-${p.id}`}
-                        aria-label={`View ${displayName}'s profile`}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {portrait}
-                      </button>
+                      {(open) => (
+                        <button
+                          className="lobby-profile-slot lobby-profile-slot__btn"
+                          data-neo-skip
+                          data-testid={`button-card-participant-${p.id}`}
+                          aria-label={`View ${displayName}'s profile`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {portrait(open)}
+                        </button>
+                      )}
                     </ParticipantPopoverShell>
                   );
                 }
