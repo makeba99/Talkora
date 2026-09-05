@@ -68,10 +68,8 @@ export function resolveDecorationId(id: string | null | undefined): DecorationId
 
 function uid(prefix: string, i: number) { return `${prefix}-${i}`; }
 
-/* ── Rounded-rect ring helpers ─────────────────────────────────────
-   Avatar tiles in room cards are `rounded-2xl` (16px corner). All
-   decoration rings/auras now trace a rounded square instead of a
-   circle so they hug the actual tile shape. */
+/* ── Tile ring helpers ─────────────────────────────────────────────
+   Avatar tiles in room cards are rounded-2xl (16px), not a squircle. */
 const AVATAR_TILE_RADIUS = 16;
 
 function roundedRectPath(cx: number, cy: number, halfSize: number, cornerRadius: number): string {

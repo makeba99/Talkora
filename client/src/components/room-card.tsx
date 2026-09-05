@@ -4,13 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Users, Settings, Lock, Globe, UserPlus, UserCheck, MessageSquare, Heart, Instagram, Linkedin, Facebook, X, Copy, Bell, Mic, Flame, Plus, Hand } from "lucide-react";
+import { Users, Settings, Lock, Globe, UserPlus, UserCheck, MessageSquare, Instagram, Linkedin, Facebook, X, Copy, Bell, Mic, Flame, Plus, Hand } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAvatarRingClass } from "@/lib/avatar-ring";
 import { ROOM_THEMES } from "@/lib/room-theme-utils";
 import { UserBadgePips } from "@/components/user-badge-pips";
 import { ProfileAnimationOverlay } from "@/lib/profile-animations";
-import { resolveLobbyProfileStyle, lobbyShapeFromStyle } from "@/lib/lobby-profile";
 
 // Heavy components — only loaded on user interaction, never on initial paint.
 // profile-decorations.tsx is 1,900 lines of SVG data; keeping it out of the
@@ -76,25 +75,25 @@ function subscribeVpResize(cb: () => void): () => void {
   return () => _vpSubs.delete(cb);
 }
 
-/** Pixel size for lobby portraits — larger when few people, tighter when the grid is full. */
+/** Pixel size for lobby square portraits — larger when few people, tighter when the grid is full. */
 function computeAvatarPx(displayCount: number): number {
   const w = _vpWidth;
   const byCount =
-    displayCount <= 1 ? 104 :
-    displayCount === 2 ? 90 :
-    displayCount === 3 ? 80 :
-    displayCount === 4 ? 66 :
-    displayCount === 5 ? 68 :
-    displayCount === 6 ? 66 :
-    displayCount <= 8 ? 62 :
-    displayCount <= 10 ? 54 :
-    50;
+    displayCount <= 1 ? 96 :
+    displayCount === 2 ? 82 :
+    displayCount === 3 ? 70 :
+    displayCount === 4 ? 68 :
+    displayCount === 5 ? 58 :
+    displayCount === 6 ? 56 :
+    displayCount <= 8 ? 52 :
+    displayCount <= 10 ? 48 :
+    44;
   const vw =
-    w >= 1536 ? 1.06 :
-    w >= 1280 ? 1.02 :
-    w >= 1024 ? 0.98 :
-    w >= 768 ? 0.92 :
-    0.86;
+    w >= 1536 ? 1.08 :
+    w >= 1280 ? 1.04 :
+    w >= 1024 ? 1.0 :
+    w >= 768 ? 0.96 :
+    0.94;
   return Math.round(byCount * vw);
 }
 
@@ -781,30 +780,11 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
 
   /* Viewport + occupancy sizing so 1–2 people fill the card and 8-person
      rooms still fit two rows. Shared resize listener (one per page). */
-  const [circleSize, setCircleSize] = useState(() => computeAvatarPx(displayCount));
+  const [slotSize, setSlotSize] = useState(() => computeAvatarPx(displayCount));
   useEffect(() => {
-    setCircleSize(computeAvatarPx(displayCount));
-    return subscribeVpResize(() => setCircleSize(computeAvatarPx(displayCount)));
+    setSlotSize(computeAvatarPx(displayCount));
+    return subscribeVpResize(() => setSlotSize(computeAvatarPx(displayCount)));
   }, [displayCount]);
-
-  const lobbyStyle = resolveLobbyProfileStyle((room as any).lobbyProfileStyle);
-  const lobbyShape = lobbyShapeFromStyle(lobbyStyle);
-  const isCircle = lobbyStyle === "circle";
-  /* Round must be a true circle — % radius + clip-path, not a 14px squircle
-     (that leftover corner is the “angle” on Round rooms). Square stays a
-     squircle, just soft enough that 68px tiles don’t look boxy. */
-  const avatarClip = isCircle ? "50%" : `${Math.max(20, Math.round(circleSize * 0.42))}px`;
-  const photoClipStyle = isCircle
-    ? {
-        borderRadius: "50%" as const,
-        overflow: "hidden" as const,
-        clipPath: "circle(50% at 50% 50%)",
-        WebkitClipPath: "circle(50% at 50% 50%)",
-      }
-    : {
-        borderRadius: avatarClip,
-        overflow: "hidden" as const,
-      };
 
   const settingsButton = isOwner ? (
     <button
@@ -950,7 +930,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
 
   return (
     <div
-      className={glow.animated ?? ""}
+      className={`room-card ${glow.animated ?? ""}`}
       style={{
         width: "100%",
         padding: "1.5px",
@@ -970,7 +950,8 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           background: isPremiumAtmosphere
             ? "linear-gradient(145deg, rgb(3,6,22) 0%, rgb(6,8,28) 38%, rgb(5,3,20) 72%, rgb(8,4,25) 100%)"
             : "linear-gradient(160deg, rgb(16, 20, 50) 0%, rgb(11, 15, 42) 100%)",
-          height: isPremiumAtmosphere ? 268 : 252,
+          minHeight: isPremiumAtmosphere ? 300 : 288,
+          height: isPremiumAtmosphere ? 300 : 288,
           boxShadow: [
             "inset 0 1px 0 rgba(255,255,255,0.09)",
             "inset 0 -1px 0 rgba(0,0,0,0.50)",
@@ -1022,7 +1003,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
         <div className="relative z-[4] flex flex-col h-full">
 
           {/* ── Header ── */}
-          <div className="relative z-10 flex items-start justify-between gap-2 px-3 pt-2 pb-4">
+          <div className="relative z-10 flex items-start justify-between gap-2 px-3 pt-2 pb-2">
             <div className="flex-1 min-w-0 pr-2">
               {/* Title row with green live dot */}
               <div className="flex items-center gap-1.5 min-w-0">
@@ -1163,122 +1144,81 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             </div>
           )}
 
-          {/* ── Body: unified neon ring circle grid ──
-              `overflow-visible` so avatar rings/decorations that extend a few
-              pixels outside the body never get clipped at the top. The outer
-              card already owns the rounded-corner clipping.
-
-              `tightSpacing` applies to crowded multi-row layouts whose bottom
-              row reaches the rightmost column (7, 8, 11, 12). Without it the
-              4th-column avatar in the bottom row drifts directly under the
-              ENTER door icon and the top-row 4th avatar crowds the settings
-              cog. We pull the spots horizontally closer together (smaller
-              column gap) AND nudge the whole grid slightly inward from the
-              right so the rightmost column clears the door, while still
-              keeping the design exactly as-is for sparser rooms. */}
+          {/* Square profile grid — overflow visible so VIP frames / rims are not clipped. */}
           {(() => {
             const tightSpacing = displayCount === 7 || displayCount === 8 || displayCount === 11 || displayCount === 12;
-            const colGapPx = tightSpacing ? 6 : 8;
-            const rowGapPx = 8;
-            // Door is now absolutely positioned at bottom-right; protect the
-            // bottom-right slot for any multi-column grid (≥2 cols).
-            const gridRightPad = gridCols >= 2 ? 42 : 0;
+            const gridRightPad = gridCols >= 2 ? 40 : 0;
             return (
-          <div className="flex-1 flex flex-col justify-center px-3 pt-3 pb-1 min-h-0 overflow-visible">
+          <div className="lobby-profile-body flex-1 flex flex-col justify-center px-3 pt-1.5 pb-1 min-h-0 overflow-visible">
             <div
-              className="grid"
+              className="lobby-profile-grid"
+              data-cols={gridCols}
               style={{
-                gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
-                justifyItems: "center",
-                columnGap: colGapPx,
-                rowGap: rowGapPx,
+                gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
+                columnGap: tightSpacing ? 8 : 12,
+                rowGap: 10,
                 paddingRight: gridRightPad,
+                ["--lobby-slot-size" as string]: `${slotSize}px`,
               }}
             >
               {displaySlots.map((_, i) => {
                 const p = participants[i];
 
                 if (p) {
-                  const count = followerCounts[p.id] || 0;
                   const ringClass = getAvatarRingClass(p.avatarRing);
                   const hasRing = !!ringClass;
                   const badges = participantBadges[p.id] || [];
-
-                  // Participant avatars are always lazy — the LCP anchor is
-                  // the /vextorn-icon-192.png in the pre-render skeleton
-                  // (96×96 = 9,216 px²). Marking any external avatar as
-                  // fetchpriority="high" would compete for bandwidth with the
-                  // icon preload and potentially steal LCP. Keep all avatars
-                  // lazy so the browser prioritises the icon instead.
+                  const displayName = getUserDisplayName(p);
+                  const isSpeaking = !!(p as any).isSpeaking;
+                  const presence = String((p as any).status || "online");
+                  const statusClass =
+                    presence === "away" ? "lobby-profile-status--away" :
+                    presence === "dnd" || presence === "busy" ? "lobby-profile-status--dnd" :
+                    presence === "offline" || presence === "invisible" ? "lobby-profile-status--offline" :
+                    "";
+                  const statusLabel =
+                    presence === "away" ? "Away" :
+                    presence === "dnd" || presence === "busy" ? "Do not disturb" :
+                    presence === "offline" || presence === "invisible" ? "Offline" :
+                    "Online";
 
                   const avatarEl = (
-                    <div
-                      className={`relative flex-shrink-0 flex items-center justify-center aspect-square ${isCircle ? "rounded-full lobby-slot-photo--circle" : ""} ${hasRing ? `${ringClass} ${isCircle ? "!rounded-full" : ""}` : ""}`}
-                      style={{
-                        width: circleSize,
-                        height: circleSize,
-                        aspectRatio: "1 / 1",
-                        padding: hasRing ? 2 : 0,
-                        background: hasRing ? undefined : `linear-gradient(135deg, ${glow.from}, ${glow.to})`,
-                        boxShadow: hasRing
-                          ? undefined
-                          : isPremiumAtmosphere
-                            ? `0 0 5px rgba(145,40,130,0.35), 0 0 10px rgba(145,40,130,0.15)`
-                            : `0 0 6px ${glow.from}, 0 0 12px ${glow.to}`,
-                        ...photoClipStyle,
-                      }}
-                    >
-                      <div
-                        className={`relative w-full h-full ${isCircle ? "lobby-slot-photo--circle" : ""}`}
-                        style={photoClipStyle}
-                      >
+                    <div className="lobby-profile-card">
+                      <div className={`lobby-profile-card__frame${hasRing ? ` ${ringClass}` : ""}`}>
                         {(() => {
                           const a = buildAvatarSources(p.profileImageUrl);
                           return a.src ? (
                             <img
                               src={a.src}
                               srcSet={a.srcSet}
-                              alt={getUserDisplayName(p)}
-                              width={circleSize}
-                              height={circleSize}
+                              alt=""
+                              width={slotSize}
+                              height={slotSize}
                               loading="lazy"
                               decoding="async"
-                              className="w-full h-full object-cover"
-                              style={photoClipStyle}
+                              className="lobby-profile-card__media"
                             />
                           ) : (
-                            <div
-                              className="w-full h-full flex items-center justify-center text-sm font-bold bg-[#1a1520] text-white/70"
-                              style={photoClipStyle}
-                            >
+                            <div className="lobby-profile-card__fallback" aria-hidden="true">
                               {getUserInitials(p)}
                             </div>
                           );
                         })()}
                       </div>
-                      {(p as any).vipTier ? (
-                        <div className="absolute -top-1 -right-1 z-[3] text-[10px] leading-none drop-shadow" title="VIP">
-                          👑
-                        </div>
-                      ) : null}
-                      {badges.length > 0 && (
-                        <div
-                          className="absolute bottom-0 left-0 z-[3] flex items-center gap-0.5 pl-0.5 pb-0.5"
-                          data-testid={`badges-lobby-${p.id}`}
-                        >
-                          <UserBadgePips badges={badges} userId={p.id} compact />
-                        </div>
-                      )}
                     </div>
                   );
 
-                  // ProfileDecoration is a lazy chunk (~1,900-line SVG file).
-                  // Most participants have no decoration — skip the Suspense
-                  // overhead entirely in that case and render avatarEl directly.
                   const decorated = (p as any).profileDecoration
                     ? (
                       <Suspense fallback={avatarEl}>
-                        <ProfileDecoration decorationId={(p as any).profileDecoration} size={circleSize} density="lite" soft shape={lobbyShape}>
+                        <ProfileDecoration
+                          decorationId={(p as any).profileDecoration}
+                          size={slotSize}
+                          density="lite"
+                          soft
+                          shape="tile"
+                          className="lobby-profile-shell"
+                        >
                           {avatarEl}
                         </ProfileDecoration>
                       </Suspense>
@@ -1286,37 +1226,41 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                     : avatarEl;
 
                   const portrait = (
-                    <div
-                      className="relative flex-shrink-0"
-                      style={{
-                        width: circleSize,
-                        height: circleSize,
-                        aspectRatio: "1 / 1",
-                        /* Keep overflow visible so VIP frames / rim animations
-                           sit around the photo. The photo itself is clipped. */
-                        overflow: "visible",
-                      }}
-                    >
+                    <div className={`lobby-profile-portrait${isSpeaking ? " lobby-profile-portrait--speaking" : ""}`}>
                       {decorated}
-                      <ProfileAnimationOverlay animationId={(p as any).profileAnimation} shape={lobbyShape} />
+                      <span
+                        className={`lobby-profile-status ${statusClass}`}
+                        title={statusLabel}
+                        aria-label={statusLabel}
+                      />
+                      {(p as any).vipTier ? (
+                        <div className="lobby-profile-crown" title="VIP">👑</div>
+                      ) : null}
+                      {badges.length > 0 && (
+                        <div className="lobby-profile-badges" data-testid={`badges-lobby-${p.id}`}>
+                          <UserBadgePips badges={badges} userId={p.id} compact />
+                        </div>
+                      )}
+                      {isSpeaking && (
+                        <span className="lobby-profile-mic" aria-label="Speaking">
+                          <Mic className="w-2.5 h-2.5" aria-hidden="true" />
+                        </span>
+                      )}
+                      <ProfileAnimationOverlay animationId={(p as any).profileAnimation} shape="tile" />
                     </div>
                   );
 
-                  /* Hearts under 2-row grids eat height and clip the circles
-                     into flat “angles”. Keep them only on 1–2 person cards. */
-                  const showHeartRow = displayCount <= 2;
-                  const heartRow = showHeartRow ? (
-                    <div className="flex items-center justify-center gap-0.5 mt-0.5" data-testid={`text-follower-count-card-${p.id}`}>
-                      <Heart className="w-2.5 h-2.5 text-red-400 fill-red-400" />
-                      <span className="text-[9px] text-white/60 font-medium">{count}</span>
-                    </div>
-                  ) : null;
+                  const nameEl = (
+                    <span className="lobby-profile-name" title={displayName}>
+                      {displayName}
+                    </span>
+                  );
 
                   if (!isLoggedIn) {
                     return (
-                      <div key={i} className="flex flex-col items-center">
+                      <div key={i} className="lobby-profile-slot">
                         {portrait}
-                        {heartRow}
+                        {nameEl}
                       </div>
                     );
                   }
@@ -1330,61 +1274,38 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                       badges={badges}
                     >
                       <button
-                        className="flex flex-col items-center cursor-pointer hover:scale-[1.03] transition-transform"
+                        className="lobby-profile-slot lobby-profile-slot__btn"
+                        data-neo-skip
                         data-testid={`button-card-participant-${p.id}`}
-                        aria-label={`View ${getUserDisplayName(p)}'s profile`}
+                        aria-label={`View ${displayName}'s profile`}
                         onClick={(e) => e.stopPropagation()}
                       >
                         {portrait}
-                        {heartRow}
+                        {nameEl}
                       </button>
                     </ParticipantPopoverShell>
                   );
                 }
 
-                /* Empty slot — deep 3D neumorphic tile */
                 return (
-                  <div key={i} className="flex flex-col items-center">
-                    <div
-                      className={`flex items-center justify-center flex-shrink-0 aspect-square ${isCircle ? "lobby-slot-photo--circle" : ""}`}
-                      style={{
-                        width: circleSize,
-                        height: circleSize,
-                        aspectRatio: "1 / 1",
-                        background: "linear-gradient(155deg, hsl(228 18% 13%) 0%, hsl(228 16% 8%) 60%, hsl(228 14% 6%) 100%)",
-                        border: "1px solid rgba(255,255,255,0.07)",
-                        boxShadow: [
-                          "-3px -3px 8px rgba(255,255,255,0.04)",
-                          "4px 4px 12px rgba(0,0,0,0.85)",
-                          "inset 0 1px 0 rgba(255,255,255,0.06)",
-                          "inset 0 -1px 0 rgba(0,0,0,0.45)",
-                        ].join(", "),
-                        ...photoClipStyle,
-                      }}
-                    >
-                      <Users
-                        style={{
-                          width: Math.round(circleSize * 0.36),
-                          height: Math.round(circleSize * 0.36),
-                          color: "rgba(255,255,255,0.12)",
-                          filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.8))",
-                        }}
-                      />
+                  <div key={i} className="lobby-profile-slot" aria-hidden="true">
+                    <div className="lobby-profile-portrait">
+                      <div className="lobby-profile-card lobby-profile-card--empty">
+                        <div className="lobby-profile-card__frame">
+                          <Plus
+                            style={{
+                              width: Math.round(slotSize * 0.32),
+                              height: Math.round(slotSize * 0.32),
+                            }}
+                            aria-hidden="true"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
-
-            {/* + Join Spot — only for very small rooms (1-3 spots) where there's
-                room to breathe; crowded rooms (5+) need every vertical pixel for
-                avatars so the first row never crowds the language/level header. */}
-            {!isFull && displayCount <= 3 && (
-              <div className="flex items-center justify-center gap-1 mt-1.5">
-                <Plus className="w-3 h-3 text-white/50" />
-                <span className="text-[11px] text-white/50 font-medium">Join Spot</span>
-              </div>
-            )}
           </div>
             );
           })()}
