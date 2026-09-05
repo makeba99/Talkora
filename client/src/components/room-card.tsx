@@ -4,19 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Users, Settings, Lock, Globe, UserPlus, UserCheck, MessageSquare, Instagram, Linkedin, Facebook, X, Copy, Bell, Mic, Flame, Plus, Hand } from "lucide-react";
+import { Users, Settings, Lock, Globe, UserPlus, UserCheck, MessageSquare, Instagram, Linkedin, Facebook, X, Copy, Bell, Mic, Flame, Hand } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getAvatarRingClass } from "@/lib/avatar-ring";
 import { ROOM_THEMES } from "@/lib/room-theme-utils";
 import { UserBadgePips } from "@/components/user-badge-pips";
-import { ProfileAnimationOverlay } from "@/lib/profile-animations";
-
-// Heavy components — only loaded on user interaction, never on initial paint.
-// profile-decorations.tsx is 1,900 lines of SVG data; keeping it out of the
-// critical path saves ~400 ms of script evaluation on the lobby load.
-const ProfileDecoration = lazy(() =>
-  import("@/components/profile-decorations").then((m) => ({ default: m.ProfileDecoration }))
-);
+import { RoomUserEmptySlot, RoomUserProfile } from "@/components/room-user-profile";
 const ReportDialog = lazy(() =>
   import("@/components/report-dialog").then((m) => ({ default: m.ReportDialog }))
 );
@@ -79,15 +71,15 @@ function subscribeVpResize(cb: () => void): () => void {
 function computeAvatarPx(displayCount: number): number {
   const w = _vpWidth;
   const byCount =
-    displayCount <= 1 ? 96 :
-    displayCount === 2 ? 82 :
-    displayCount === 3 ? 70 :
-    displayCount === 4 ? 68 :
-    displayCount === 5 ? 58 :
-    displayCount === 6 ? 56 :
-    displayCount <= 8 ? 52 :
-    displayCount <= 10 ? 48 :
-    44;
+    displayCount <= 1 ? 108 :
+    displayCount === 2 ? 92 :
+    displayCount === 3 ? 78 :
+    displayCount === 4 ? 80 :
+    displayCount === 5 ? 68 :
+    displayCount === 6 ? 64 :
+    displayCount <= 8 ? 60 :
+    displayCount <= 10 ? 54 :
+    50;
   const vw =
     w >= 1536 ? 1.08 :
     w >= 1280 ? 1.04 :
@@ -950,8 +942,8 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           background: isPremiumAtmosphere
             ? "linear-gradient(145deg, rgb(3,6,22) 0%, rgb(6,8,28) 38%, rgb(5,3,20) 72%, rgb(8,4,25) 100%)"
             : "linear-gradient(160deg, rgb(16, 20, 50) 0%, rgb(11, 15, 42) 100%)",
-          minHeight: isPremiumAtmosphere ? 300 : 288,
-          height: isPremiumAtmosphere ? 300 : 288,
+          minHeight: isPremiumAtmosphere ? 276 : 264,
+          height: isPremiumAtmosphere ? 276 : 264,
           boxShadow: [
             "inset 0 1px 0 rgba(255,255,255,0.09)",
             "inset 0 -1px 0 rgba(0,0,0,0.50)",
@@ -1165,102 +1157,23 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                 const p = participants[i];
 
                 if (p) {
-                  const ringClass = getAvatarRingClass(p.avatarRing);
-                  const hasRing = !!ringClass;
                   const badges = participantBadges[p.id] || [];
                   const displayName = getUserDisplayName(p);
-                  const isSpeaking = !!(p as any).isSpeaking;
-                  const presence = String((p as any).status || "online");
-                  const statusClass =
-                    presence === "away" ? "lobby-profile-status--away" :
-                    presence === "dnd" || presence === "busy" ? "lobby-profile-status--dnd" :
-                    presence === "offline" || presence === "invisible" ? "lobby-profile-status--offline" :
-                    "";
-                  const statusLabel =
-                    presence === "away" ? "Away" :
-                    presence === "dnd" || presence === "busy" ? "Do not disturb" :
-                    presence === "offline" || presence === "invisible" ? "Offline" :
-                    "Online";
-
-                  const avatarEl = (
-                    <div className="lobby-profile-card">
-                      <div className={`lobby-profile-card__frame${hasRing ? ` ${ringClass}` : ""}`}>
-                        {(() => {
-                          const a = buildAvatarSources(p.profileImageUrl);
-                          return a.src ? (
-                            <img
-                              src={a.src}
-                              srcSet={a.srcSet}
-                              alt=""
-                              width={slotSize}
-                              height={slotSize}
-                              loading="lazy"
-                              decoding="async"
-                              className="lobby-profile-card__media"
-                            />
-                          ) : (
-                            <div className="lobby-profile-card__fallback" aria-hidden="true">
-                              {getUserInitials(p)}
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  );
-
-                  const decorated = (p as any).profileDecoration
-                    ? (
-                      <Suspense fallback={avatarEl}>
-                        <ProfileDecoration
-                          decorationId={(p as any).profileDecoration}
-                          size={slotSize}
-                          density="lite"
-                          soft
-                          shape="tile"
-                          className="lobby-profile-shell"
-                        >
-                          {avatarEl}
-                        </ProfileDecoration>
-                      </Suspense>
-                    )
-                    : avatarEl;
-
                   const portrait = (
-                    <div className={`lobby-profile-portrait${isSpeaking ? " lobby-profile-portrait--speaking" : ""}`}>
-                      {decorated}
-                      <span
-                        className={`lobby-profile-status ${statusClass}`}
-                        title={statusLabel}
-                        aria-label={statusLabel}
-                      />
-                      {(p as any).vipTier ? (
-                        <div className="lobby-profile-crown" title="VIP">👑</div>
-                      ) : null}
-                      {badges.length > 0 && (
-                        <div className="lobby-profile-badges" data-testid={`badges-lobby-${p.id}`}>
-                          <UserBadgePips badges={badges} userId={p.id} compact />
-                        </div>
-                      )}
-                      {isSpeaking && (
-                        <span className="lobby-profile-mic" aria-label="Speaking">
-                          <Mic className="w-2.5 h-2.5" aria-hidden="true" />
-                        </span>
-                      )}
-                      <ProfileAnimationOverlay animationId={(p as any).profileAnimation} shape="tile" />
-                    </div>
-                  );
-
-                  const nameEl = (
-                    <span className="lobby-profile-name" title={displayName}>
-                      {displayName}
-                    </span>
+                    <RoomUserProfile
+                      participant={p}
+                      size={slotSize}
+                      badges={badges}
+                      isHost={p.id === room.ownerId}
+                      isSpeaking={!!(p as any).isSpeaking}
+                      isMuted={!!(p as any).isMuted}
+                    />
                   );
 
                   if (!isLoggedIn) {
                     return (
                       <div key={i} className="lobby-profile-slot">
                         {portrait}
-                        {nameEl}
                       </div>
                     );
                   }
@@ -1281,7 +1194,6 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                         onClick={(e) => e.stopPropagation()}
                       >
                         {portrait}
-                        {nameEl}
                       </button>
                     </ParticipantPopoverShell>
                   );
@@ -1289,19 +1201,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
 
                 return (
                   <div key={i} className="lobby-profile-slot" aria-hidden="true">
-                    <div className="lobby-profile-portrait">
-                      <div className="lobby-profile-card lobby-profile-card--empty">
-                        <div className="lobby-profile-card__frame">
-                          <Plus
-                            style={{
-                              width: Math.round(slotSize * 0.32),
-                              height: Math.round(slotSize * 0.32),
-                            }}
-                            aria-hidden="true"
-                          />
-                        </div>
-                      </div>
-                    </div>
+                    <RoomUserEmptySlot size={slotSize} />
                   </div>
                 );
               })}

@@ -5,6 +5,7 @@ import {
   type DecorationDensity,
 } from "@/components/vip-avatar-frames";
 import { AvatarShell } from "@/components/avatar-shell";
+import { SQUARE_PROFILE_STYLES } from "@/lib/square-profile-style";
 
 /**
  * Premium character decorations — Free4Talk / Discord Nitro overlay model.
@@ -59,9 +60,10 @@ export const LEGACY_DECORATION_MAP: Record<string, DecorationId> = {
   "neon-arcade": "dragon-coil",
 };
 
-export function resolveDecorationId(id: string | null | undefined): DecorationId | "none" {
+export function resolveDecorationId(id: string | null | undefined): string {
   if (!id || id === "none") return "none";
-  if (PROFILE_DECORATIONS.some((d) => d.id === id)) return id as DecorationId;
+  if (SQUARE_PROFILE_STYLES.some((s) => s.id === id)) return id;
+  if (PROFILE_DECORATIONS.some((d) => d.id === id)) return id;
   return LEGACY_DECORATION_MAP[id] || "none";
 }
 
@@ -1678,6 +1680,20 @@ export function ProfileDecoration({
   children,
 }: ProfileDecorationProps) {
   const id = resolveDecorationId(decorationId);
+  const squareStyle = SQUARE_PROFILE_STYLES.find((s) => s.id === id);
+  if (squareStyle && id !== "none") {
+    return (
+      <div
+        className={`rup ${className || ""}`}
+        data-deco={id}
+        style={{ width: size, height: size, aspectRatio: "1 / 1" }}
+      >
+        <span className="rup__deco" aria-hidden="true" />
+        <div className="rup__card">{children}</div>
+      </div>
+    );
+  }
+
   const frameId =
     id && id !== "none" && id in VIP_OVERLAY_FRAMES
       ? (id as VipOverlayId)
