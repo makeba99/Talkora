@@ -3051,8 +3051,13 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
     refetchInterval: 30000,
   });
 
-  const { data: mailStatus } = useQuery<{ configured: boolean; fromName: string; fromUser: string; replyTo: string }>({
+  const { data: mailStatus } = useQuery<{ configured: boolean; fromName: string; fromUser: string; replyTo: string; passChars: number }>({
     queryKey: ["/api/admin/outreach/mail-status"],
+  });
+
+  const { data: emailJob } = useQuery<{ status: string; sent: number; failed: number; total: number; lastError?: string }>({
+    queryKey: ["/api/admin/outreach/email-job"],
+    refetchInterval: (q) => (q.state.data?.status === "sending" ? 1500 : 8000),
   });
 
   const { data: pushSubCount } = useQuery<{ count: number }>({
@@ -3098,12 +3103,20 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
     },
     onSuccess: (data: any, vars) => {
       const test = vars?.recipientType === "test";
-      toast({
-        title: test ? "Test email sent" : "Emails sent!",
-        description: test
-          ? "Check your inbox — it should show as Hello Vextorn."
-          : `Delivered to ${data.sent} recipient${data.sent !== 1 ? "s" : ""}${data.failed ? ` · ${data.failed} failed` : ""}.`,
-      });
+      if (data?.queued) {
+        toast({
+          title: "Sending in the background",
+          description: `Queued ${data.total} email${data.total === 1 ? "" : "s"}. Progress updates below — this tab can stay open.`,
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/outreach/email-job"] });
+      } else {
+        toast({
+          title: test ? "Test email sent" : "Emails sent!",
+          description: test
+            ? `Sent to ${data.to || "your inbox"} — check Gmail (and Spam). It should show as Hello Vextorn.`
+            : `Delivered to ${data.sent} recipient${data.sent !== 1 ? "s" : ""}${data.failed ? ` · ${data.failed} failed` : ""}.`,
+        });
+      }
       if (!test) {
         setEmailSubject("");
         setEmailBody("");
@@ -3313,8 +3326,21 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
               <p className="text-blue-300/80">
                 Each registered user gets a personal email starting with <span className="font-medium text-blue-200">Hello {'{name}'}</span> and a Vextorn header.
               </p>
+              <p className="text-blue-300/80">
+                SMTP vars must be in Railway → <span className="font-semibold">Variables</span> (not the Postgres database). SMTP_PASS should be 16 characters.
+                {typeof mailStatus?.passChars === "number" ? ` Server currently sees ${mailStatus.passChars} character${mailStatus.passChars === 1 ? "" : "s"}.` : ""}
+              </p>
               {mailStatus && !mailStatus.configured && (
-                <p className="text-amber-300">SMTP_PASS is missing on the server — emails will not send until the Gmail app password is set in Railway.</p>
+                <p className="text-amber-300">SMTP_PASS is missing on the server — emails will not send until the Gmail app password is set in Railway Variables.</p>
+              )}
+              {emailJob && emailJob.status === "sending" && (
+                <p className="text-sky-200">Sending… {emailJob.sent} / {emailJob.total} delivered{emailJob.failed ? ` · ${emailJob.failed} failed` : ""}.</p>
+              )}
+              {emailJob && emailJob.status === "done" && emailJob.total > 0 && (
+                <p className="text-emerald-300">Last campaign: {emailJob.sent} sent{emailJob.failed ? ` · ${emailJob.failed} failed` : ""}.</p>
+              )}
+              {emailJob?.status === "error" && emailJob.lastError && (
+                <p className="text-amber-300">{emailJob.lastError}</p>
               )}
             </div>
 
@@ -3323,7 +3349,7 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
                 variant="outline"
                 className="flex-1"
                 onClick={() => emailMutation.mutate({ recipientType: "test" })}
-                disabled={emailMutation.isPending || !emailSubject.trim() || !emailBody.trim()}
+                disabled={emailMutation.isPending || emailJob?.status === "sending" || !emailSubject.trim() || !emailBody.trim()}
                 data-testid="button-test-email"
               >
                 {emailMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
@@ -3340,7 +3366,7 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
                   );
                   if (ok) emailMutation.mutate();
                 }}
-                disabled={emailMutation.isPending || !emailSubject.trim() || !emailBody.trim()}
+                disabled={emailMutation.isPending || emailJob?.status === "sending" || !emailSubject.trim() || !emailBody.trim()}
                 data-testid="button-send-email"
               >
                 {emailMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}

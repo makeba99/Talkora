@@ -13,12 +13,17 @@ import fs from "fs";
 import { execFile } from "child_process";
 import {
   createMailTransport,
+  describeSmtpError,
   getMailFrom,
+  getOutreachJob,
   getSmtpFromName,
+  getSmtpPass,
   getSmtpUser,
   greetingName,
   isMailConfigured,
-  renderOutreachEmail,
+  sendOneOutreachMail,
+  startOutreachJob,
+  verifyMailTransport,
   wrapLinksForTracking,
   SMTP_REPLY_TO,
 } from "./mail";
@@ -6206,12 +6211,18 @@ export async function registerRoutes(
   });
 
   app.get("/api/admin/outreach/mail-status", isAuthenticated, isSuperAdmin, async (_req, res) => {
+    const passLen = getSmtpPass().length;
     res.json({
       configured: isMailConfigured(),
       fromName: getSmtpFromName(),
       fromUser: getSmtpUser(),
       replyTo: SMTP_REPLY_TO,
+      passChars: passLen,
     });
+  });
+
+  app.get("/api/admin/outreach/email-job", isAuthenticated, isSuperAdmin, async (_req, res) => {
+    res.json(getOutreachJob() || { status: "idle", sent: 0, failed: 0, total: 0 });
   });
 
   // ── Outreach: email broadcast ──────────────────────────────────────────────
@@ -6222,9 +6233,9 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Subject and body are required." });
       }
 
-      const transporter = createMailTransport();
-      if (!transporter) {
-        return res.status(503).json({ message: "Gmail App Password not configured. Set SMTP_PASS in Railway (or Replit) secrets." });
+      const verified = await verifyMailTransport();
+      if (!verified.ok) {
+        return res.status(503).json({ message: verified.error });
       }
 
       type MailRecipient = { email: string; name: string };
@@ -6232,10 +6243,8 @@ export async function registerRoutes(
 
       if (recipientType === "test") {
         const admin = await storage.getUser((req.user as any).id);
-        if (!admin?.email) {
-          return res.status(400).json({ message: "Your admin account has no email to send a test to." });
-        }
-        recipients = [{ email: admin.email, name: greetingName(admin) }];
+        const testEmail = admin?.email?.trim() || getSmtpUser();
+        recipients = [{ email: testEmail, name: greetingName(admin || { email: testEmail }) }];
       } else if (recipientType === "all_registered") {
         const allUsers = await storage.getAllUsers();
         const seen = new Set<string>();
@@ -6255,6 +6264,7 @@ export async function registerRoutes(
       }
 
       if (recipients.length === 0) {
+        try { verified.transporter.close(); } catch { /* ignore */ }
         return res.status(400).json({ message: "No valid recipient email addresses found." });
       }
 
@@ -6271,36 +6281,49 @@ export async function registerRoutes(
       const trackingPixel = `<img src="${baseUrl}/t/o/${campaign.id}.gif" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0" />`;
       const safeImage = typeof imageUrl === "string" && /^https?:\/\//i.test(imageUrl.trim()) ? imageUrl.trim() : undefined;
       const bodyHtml = wrapLinksForTracking(escapeHtml(body).replace(/\n/g, "<br>"), campaign.id, baseUrl);
+      const mailOpts = {
+        subject,
+        body,
+        bodyHtml,
+        imageUrl: safeImage,
+        trackingPixelHtml: trackingPixel,
+      };
 
-      let sent = 0;
-      let failed = 0;
-      for (const recipient of recipients) {
-        const rendered = renderOutreachEmail({
-          name: recipient.name,
-          bodyHtml,
-          bodyText: body,
-          imageUrl: safeImage,
-          trackingPixelHtml: trackingPixel,
-        });
+      if (recipientType === "test") {
         try {
-          await transporter.sendMail({
-            from: getMailFrom(),
-            replyTo: SMTP_REPLY_TO,
-            to: recipient.email,
-            subject,
-            html: rendered.html,
-            text: rendered.text,
-          });
-          sent += 1;
-        } catch (mailErr) {
-          failed += 1;
-          console.error("[outreach] send failed", recipient.email, mailErr);
+          await sendOneOutreachMail(verified.transporter, recipients[0], mailOpts);
+        } catch (err) {
+          try { verified.transporter.close(); } catch { /* ignore */ }
+          return res.status(502).json({ message: describeSmtpError(err) });
         }
+        try { verified.transporter.close(); } catch { /* ignore */ }
+        return res.json({
+          success: true,
+          sent: 1,
+          failed: 0,
+          total: 1,
+          campaignId: campaign.id,
+          to: recipients[0].email,
+        });
       }
 
-      res.json({ success: true, sent, failed, total: recipients.length, campaignId: campaign.id });
+      const existing = getOutreachJob();
+      if (existing?.status === "sending") {
+        try { verified.transporter.close(); } catch { /* ignore */ }
+        return res.status(409).json({ message: "A campaign is already sending. Wait until it finishes." });
+      }
+
+      try { verified.transporter.close(); } catch { /* ignore */ }
+      startOutreachJob(campaign.id, recipients, mailOpts);
+      res.json({
+        success: true,
+        queued: true,
+        sent: 0,
+        total: recipients.length,
+        campaignId: campaign.id,
+      });
     } catch (err: any) {
-      res.status(500).json({ message: err.message });
+      res.status(500).json({ message: describeSmtpError(err) });
     }
   });
 

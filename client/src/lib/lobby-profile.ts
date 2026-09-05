@@ -7,8 +7,8 @@ export type { LobbyProfileStyle };
 
 export const LOBBY_PROFILE_RADIUS: Record<string, string> = {
   circle: "50%",
-  squircle: "12px",
-  tile: "12px",
+  squircle: "32%",
+  tile: "32%",
 };
 
 export function resolveLobbyProfileStyle(value: unknown): LobbyProfileStyle {

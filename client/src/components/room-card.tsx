@@ -76,26 +76,30 @@ function subscribeVpResize(cb: () => void): () => void {
   return () => _vpSubs.delete(cb);
 }
 
-function computeCircleScale(displayCount: number): number {
+/** Pixel size for lobby portraits — larger when few people, tighter when the grid is full. */
+function computeAvatarPx(displayCount: number): number {
   const w = _vpWidth;
-  // Scale by both viewport and participant density for efficient lobby packing
-  const density =
-    displayCount >= 12 ? 0.78 :
-    displayCount >= 8 ? 0.88 :
-    displayCount >= 5 ? 0.94 :
-    displayCount >= 3 ? 0.98 :
-    1;
-  let base = 1;
-  if (w >= 1536) base = 1.06;
-  else if (w >= 1280) base = 1.02;
-  else if (w >= 1024) base = 0.98;
-  else if (w >= 768) base = 0.94;
-  else base = 0.9;
-  return Math.round(base * density * 100) / 100;
+  const byCount =
+    displayCount <= 1 ? 104 :
+    displayCount === 2 ? 90 :
+    displayCount === 3 ? 80 :
+    displayCount === 4 ? 66 :
+    displayCount === 5 ? 68 :
+    displayCount === 6 ? 66 :
+    displayCount <= 8 ? 62 :
+    displayCount <= 10 ? 54 :
+    50;
+  const vw =
+    w >= 1536 ? 1.06 :
+    w >= 1280 ? 1.02 :
+    w >= 1024 ? 0.98 :
+    w >= 768 ? 0.92 :
+    0.86;
+  return Math.round(byCount * vw);
 }
 
 /**
- * Avatars in this card render at 52–74 CSS px. randomuser.me serves portraits
+ * Avatars in this card render at ~50–104 CSS px. randomuser.me serves portraits
  * at 128 px by default — that's 2–3× larger than needed on a 1× display, and
  * Lighthouse flagged 7+ KiB of waste per avatar. Their CDN exposes a `/med/`
  * path variant (~72 px) which is the perfect base for 1× displays. We then
@@ -775,26 +779,32 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
     : Math.min(room.maxUsers, 12);
   const displaySlots = Array.from({ length: displayCount });
 
-  /* viewport-based scale factor so the participant circles grow on bigger screens
-     while the card itself stays a comfortable, fixed-feeling size. Sizing is
-     based on maxUsers (total capacity) so the grid always fills the card area
-     proportionally whether slots are filled or empty.
-     Uses the module-level singleton so all cards share ONE passive listener
-     instead of N separate resize handlers (one per card). */
-  const [circleScale, setCircleScale] = useState(() => computeCircleScale(displayCount));
+  /* Viewport + occupancy sizing so 1–2 people fill the card and 8-person
+     rooms still fit two rows. Shared resize listener (one per page). */
+  const [circleSize, setCircleSize] = useState(() => computeAvatarPx(displayCount));
   useEffect(() => {
-    setCircleScale(computeCircleScale(displayCount));
-    return subscribeVpResize(() => setCircleScale(computeCircleScale(displayCount)));
+    setCircleSize(computeAvatarPx(displayCount));
+    return subscribeVpResize(() => setCircleSize(computeAvatarPx(displayCount)));
   }, [displayCount]);
 
-  /* Base avatar size — density scaling via circleScale keeps rooms compact
-     when many participants are present while staying readable with 1–2 users. */
   const lobbyStyle = resolveLobbyProfileStyle((room as any).lobbyProfileStyle);
   const lobbyShape = lobbyShapeFromStyle(lobbyStyle);
-  const baseCircleSize = 68;
-  const circleSize = Math.round(baseCircleSize * circleScale);
   const isCircle = lobbyStyle === "circle";
-  const avatarClip = isCircle ? "50%" : "14px";
+  /* Round must be a true circle — % radius + clip-path, not a 14px squircle
+     (that leftover corner is the “angle” on Round rooms). Square stays a
+     squircle, just soft enough that 68px tiles don’t look boxy. */
+  const avatarClip = isCircle ? "50%" : `${Math.max(20, Math.round(circleSize * 0.42))}px`;
+  const photoClipStyle = isCircle
+    ? {
+        borderRadius: "50%" as const,
+        overflow: "hidden" as const,
+        clipPath: "circle(50% at 50% 50%)",
+        WebkitClipPath: "circle(50% at 50% 50%)",
+      }
+    : {
+        borderRadius: avatarClip,
+        overflow: "hidden" as const,
+      };
 
   const settingsButton = isOwner ? (
     <button
@@ -925,7 +935,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
     displayCount <= 1 ? 1 :
     displayCount === 2 ? 2 :
     displayCount === 3 ? 3 :
-    displayCount === 4 ? 4 :
+    displayCount === 4 ? 2 :       // 2×2 — one row of 4 made faces too small
     displayCount === 5 ? 3 :       // 3+2
     displayCount === 6 ? 3 :       // 3×2 ✓ exact
     displayCount === 7 ? 4 :       // 4+3
@@ -1174,7 +1184,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             // bottom-right slot for any multi-column grid (≥2 cols).
             const gridRightPad = gridCols >= 2 ? 42 : 0;
             return (
-          <div className="flex-1 flex flex-col justify-center px-3 pt-4 pb-2 min-h-0 overflow-hidden">
+          <div className="flex-1 flex flex-col justify-center px-3 pt-3 pb-1 min-h-0 overflow-visible">
             <div
               className="grid"
               style={{
@@ -1203,24 +1213,24 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
 
                   const avatarEl = (
                     <div
-                      className={`relative flex-shrink-0 flex items-center justify-center ${isCircle ? "rounded-full" : "rounded-[14px]"} ${hasRing ? ringClass : ""}`}
+                      className={`relative flex-shrink-0 flex items-center justify-center aspect-square ${isCircle ? "rounded-full lobby-slot-photo--circle" : ""} ${hasRing ? `${ringClass} ${isCircle ? "!rounded-full" : ""}` : ""}`}
                       style={{
                         width: circleSize,
                         height: circleSize,
+                        aspectRatio: "1 / 1",
                         padding: hasRing ? 2 : 0,
-                        borderRadius: avatarClip,
-                        overflow: "hidden",
                         background: hasRing ? undefined : `linear-gradient(135deg, ${glow.from}, ${glow.to})`,
                         boxShadow: hasRing
                           ? undefined
                           : isPremiumAtmosphere
                             ? `0 0 5px rgba(145,40,130,0.35), 0 0 10px rgba(145,40,130,0.15)`
                             : `0 0 6px ${glow.from}, 0 0 12px ${glow.to}`,
+                        ...photoClipStyle,
                       }}
                     >
                       <div
-                        className="relative w-full h-full overflow-hidden"
-                        style={{ borderRadius: avatarClip }}
+                        className={`relative w-full h-full ${isCircle ? "lobby-slot-photo--circle" : ""}`}
+                        style={photoClipStyle}
                       >
                         {(() => {
                           const a = buildAvatarSources(p.profileImageUrl);
@@ -1234,12 +1244,12 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                               loading="lazy"
                               decoding="async"
                               className="w-full h-full object-cover"
-                              style={{ borderRadius: avatarClip }}
+                              style={photoClipStyle}
                             />
                           ) : (
                             <div
                               className="w-full h-full flex items-center justify-center text-sm font-bold bg-[#1a1520] text-white/70"
-                              style={{ borderRadius: avatarClip }}
+                              style={photoClipStyle}
                             >
                               {getUserInitials(p)}
                             </div>
@@ -1277,12 +1287,14 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
 
                   const portrait = (
                     <div
-                      className="relative"
+                      className="relative flex-shrink-0"
                       style={{
                         width: circleSize,
                         height: circleSize,
-                        borderRadius: avatarClip,
-                        overflow: "hidden",
+                        aspectRatio: "1 / 1",
+                        /* Keep overflow visible so VIP frames / rim animations
+                           sit around the photo. The photo itself is clipped. */
+                        overflow: "visible",
                       }}
                     >
                       {decorated}
@@ -1290,12 +1302,9 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                     </div>
                   );
 
-                  /* Heart/follower count is only useful in small, uncluttered
-                     rooms — in crowded rooms (5+ slots) it eats vertical space
-                     and pushes the first row of avatars into the language/level
-                     header. The full follower count is still shown in the
-                     hover popover, so it's safe to hide here. */
-                  const showHeartRow = displayCount <= 4;
+                  /* Hearts under 2-row grids eat height and clip the circles
+                     into flat “angles”. Keep them only on 1–2 person cards. */
+                  const showHeartRow = displayCount <= 2;
                   const heartRow = showHeartRow ? (
                     <div className="flex items-center justify-center gap-0.5 mt-0.5" data-testid={`text-follower-count-card-${p.id}`}>
                       <Heart className="w-2.5 h-2.5 text-red-400 fill-red-400" />
@@ -1337,11 +1346,11 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                 return (
                   <div key={i} className="flex flex-col items-center">
                     <div
-                      className="flex items-center justify-center flex-shrink-0"
+                      className={`flex items-center justify-center flex-shrink-0 aspect-square ${isCircle ? "lobby-slot-photo--circle" : ""}`}
                       style={{
                         width: circleSize,
                         height: circleSize,
-                        borderRadius: avatarClip,
+                        aspectRatio: "1 / 1",
                         background: "linear-gradient(155deg, hsl(228 18% 13%) 0%, hsl(228 16% 8%) 60%, hsl(228 14% 6%) 100%)",
                         border: "1px solid rgba(255,255,255,0.07)",
                         boxShadow: [
@@ -1350,6 +1359,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                           "inset 0 1px 0 rgba(255,255,255,0.06)",
                           "inset 0 -1px 0 rgba(0,0,0,0.45)",
                         ].join(", "),
+                        ...photoClipStyle,
                       }}
                     >
                       <Users

@@ -11176,7 +11176,7 @@ html.neomorphic-light .pinned-socials-link {
   border-radius: 22%;
 }
 .avatar-shell[data-shape="tile"] {
-  border-radius: 12px;
+  border-radius: 32%;
 }
 .avatar-shell__media {
   position: relative;
@@ -11190,6 +11190,22 @@ html.neomorphic-light .pinned-socials-link {
 .avatar-shell[data-shape="circle"] .avatar-shell__media {
   overflow: hidden;
   border-radius: 50%;
+  clip-path: circle(50% at 50% 50%);
+}
+.avatar-shell[data-shape="circle"] .avatar-shell__media > * {
+  border-radius: 50%;
+  clip-path: circle(50% at 50% 50%);
+}
+/* Lobby Round portraits — clip-path beats leftover 14px / ring square corners */
+.lobby-slot-photo--circle {
+  border-radius: 50% !important;
+  overflow: hidden;
+  clip-path: circle(50% at 50% 50%);
+}
+.lobby-slot-photo--circle img,
+.lobby-slot-photo--circle > * {
+  border-radius: 50% !important;
+  clip-path: circle(50% at 50% 50%);
 }
 .avatar-shell[data-shape="tile"] .avatar-shell__media,
 .avatar-shell[data-shape="rounded"] .avatar-shell__media {
