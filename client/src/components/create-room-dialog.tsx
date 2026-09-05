@@ -6,11 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Hammer, X, Sparkles, Upload, Loader2 } from "lucide-react";
-import { LANGUAGES, LEVELS, DEFAULT_LOBBY_PROFILE_STYLE, type LobbyProfileStyle } from "@shared/constants";
+import { LANGUAGES, LEVELS } from "@shared/constants";
 import { GifPickerButton } from "@/components/chat-picker";
 import { NeuParticipantSlider } from "@/components/neu-participant-slider";
 import { TitleAppearancePicker } from "@/components/title-appearance-picker";
-import { LobbyProfilePicker } from "@/components/lobby-profile-picker";
 import { useToast } from "@/hooks/use-toast";
 
 interface CreateRoomDialogProps {
@@ -23,7 +22,7 @@ interface CreateRoomDialogProps {
     hologramVideoUrl?: string | null;
     titleColor?: string | null;
     titleStyle?: string | null;
-    lobbyProfileStyle?: LobbyProfileStyle;
+    lobbyProfileStyle?: string;
   }) => void;
   isPending?: boolean;
   mobileFab?: boolean;
@@ -46,7 +45,6 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab, open: con
   const [level, setLevel] = useState("Beginner");
   const [maxUsers, setMaxUsers] = useState(8);
   const [isPublic, setIsPublic] = useState(true);
-  const [lobbyProfileStyle, setLobbyProfileStyle] = useState<LobbyProfileStyle>(DEFAULT_LOBBY_PROFILE_STYLE);
   // mediaUrl is the chosen card hologram. It can come from either the Tenor
   // GIF picker or a direct upload (image / GIF / short video). Whichever the
   // host selects last wins, since the card slot only shows one piece of media.
@@ -61,7 +59,6 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab, open: con
     setTitleStyle("normal");
     setMediaUrl(null);
     setMediaKind("gif");
-    setLobbyProfileStyle(DEFAULT_LOBBY_PROFILE_STYLE);
   };
 
   const handleFilePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,7 +101,7 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab, open: con
       hologramVideoUrl: mediaUrl,
       titleColor: titleColor || null,
       titleStyle: titleStyle !== "normal" ? titleStyle : null,
-      lobbyProfileStyle,
+      lobbyProfileStyle: "tile",
     });
     resetForm();
     setOpen(false);
@@ -268,12 +265,6 @@ export function CreateRoomDialog({ onCreateRoom, isPending, mobileFab, open: con
               testId="slider-max-users"
             />
           </div>
-
-          <LobbyProfilePicker
-            style={lobbyProfileStyle}
-            onStyleChange={setLobbyProfileStyle}
-            testIdPrefix="create-lobby-profile"
-          />
 
           <div className="flex items-center justify-between">
             <Label htmlFor="public-toggle">Public Room</Label>

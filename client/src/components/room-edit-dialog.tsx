@@ -18,8 +18,6 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LANGUAGES, LEVELS } from "@shared/constants";
 import { TitleAppearancePicker } from "@/components/title-appearance-picker";
-import { LobbyProfilePicker } from "@/components/lobby-profile-picker";
-import { DEFAULT_LOBBY_PROFILE_STYLE, type LobbyProfileStyle } from "@shared/constants";
 
 const GifPickerButton = lazy(() =>
   import("@/components/chat-picker").then((m) => ({ default: m.GifPickerButton }))
@@ -38,7 +36,6 @@ interface RoomEditDialogProps {
     hologramVideoUrl?: string | null;
     titleColor?: string | null;
     titleStyle?: string | null;
-    lobbyProfileStyle?: string | null;
   };
   onClose: () => void;
 }
@@ -84,9 +81,6 @@ export function RoomEditDialog({ room, onClose }: RoomEditDialogProps) {
     return "image";
   });
   const [editHologramUploading, setEditHologramUploading] = useState(false);
-  const [editLobbyProfileStyle, setEditLobbyProfileStyle] = useState<LobbyProfileStyle>(
-    (room.lobbyProfileStyle as LobbyProfileStyle) || DEFAULT_LOBBY_PROFILE_STYLE
-  );
   const editHologramFileRef = useRef<HTMLInputElement>(null);
 
   const handleEditHologramFilePick = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -118,7 +112,7 @@ export function RoomEditDialog({ room, onClose }: RoomEditDialogProps) {
   };
 
   const editMutation = useMutation({
-    mutationFn: async (data: { title: string; language: string; level: string; maxUsers: number; hologramVideoUrl: string | null; titleColor: string | null; titleStyle: string; lobbyProfileStyle: LobbyProfileStyle }) => {
+    mutationFn: async (data: { title: string; language: string; level: string; maxUsers: number; hologramVideoUrl: string | null; titleColor: string | null; titleStyle: string }) => {
       const res = await apiRequest("PATCH", `/api/rooms/${room.id}`, data);
       return res.json();
     },
@@ -171,7 +165,6 @@ export function RoomEditDialog({ room, onClose }: RoomEditDialogProps) {
       hologramVideoUrl: editHologramUrl,
       titleColor: editTitleColor || null,
       titleStyle: editTitleStyle,
-      lobbyProfileStyle: editLobbyProfileStyle,
     });
   };
 
@@ -295,12 +288,6 @@ export function RoomEditDialog({ room, onClose }: RoomEditDialogProps) {
                 />
               </Suspense>
             </div>
-
-            <LobbyProfilePicker
-              style={editLobbyProfileStyle}
-              onStyleChange={setEditLobbyProfileStyle}
-              testIdPrefix="edit-lobby-profile"
-            />
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">

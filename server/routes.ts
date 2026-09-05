@@ -4606,6 +4606,22 @@ export async function registerRoutes(
       }
       // Broadcast profile changes to all connected clients so avatars, rings,
       // and decorations refresh in real-time without a page reload.
+      for (const parts of roomParticipants.values()) {
+        const existing = parts.get(userId);
+        if (existing) {
+          parts.set(userId, {
+            ...existing,
+            displayName: updated.displayName,
+            profileImageUrl: updated.profileImageUrl,
+            avatarRing: updated.avatarRing,
+            flairBadge: updated.flairBadge,
+            profileDecoration: updated.profileDecoration,
+            profileAnimation: updated.profileAnimation,
+            status: updated.status,
+            titleColor: (updated as any).titleColor ?? (existing as any).titleColor,
+          } as User);
+        }
+      }
       io.emit("user:profile-updated", {
         userId,
         displayName: updated.displayName,

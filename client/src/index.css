@@ -11297,11 +11297,18 @@ html.neomorphic-light .pinned-socials-link {
   bottom: 0;
   z-index: 3;
   display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 14px 6px 5px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 16px 6px 4px;
   background: linear-gradient(to top, rgba(4, 3, 12, 0.92) 0%, rgba(4, 3, 12, 0.42) 58%, transparent 100%);
   pointer-events: none;
+}
+.rup__name-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
 }
 .rup__name {
   flex: 1;
@@ -11314,6 +11321,25 @@ html.neomorphic-light .pinned-socials-link {
   overflow: hidden;
   text-overflow: ellipsis;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+.rup__followers {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 8px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: rgba(255, 255, 255, 0.68);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rup__followers svg {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  opacity: 0.85;
 }
 .rup__veil-mic {
   width: 9px;
@@ -11340,7 +11366,7 @@ html.neomorphic-light .pinned-socials-link {
 .rup__ach {
   position: absolute;
   left: 5px;
-  bottom: 20px;
+  bottom: 28px;
   z-index: 4;
   font-size: 9px;
   line-height: 1;
@@ -11451,6 +11477,7 @@ html.neomorphic-light .pinned-socials-link {
 
 @media (max-width: 420px) {
   .rup__name { font-size: 9px; }
+  .rup__followers { font-size: 7.5px; }
 }
 
 @container lobby-profile-body (max-width: 280px) {

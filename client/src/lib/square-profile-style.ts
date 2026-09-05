@@ -1,8 +1,14 @@
+import { VIP_OVERLAY_FRAMES, type VipOverlayId } from "@/components/vip-avatar-frames";
+
 /**
  * Square lobby/room profile frames.
  * Independent of VIP overlays, avatar rings, and room theme.
  * Saved as `user.profileDecoration` (same field as before).
  */
+
+export function isVipOverlayDecoration(id?: string | null): id is VipOverlayId {
+  return !!id && id in VIP_OVERLAY_FRAMES;
+}
 
 export const SQUARE_PROFILE_STYLES = [
   { id: "none", label: "None", description: "Clean square card", vip: false },
@@ -25,14 +31,8 @@ export type SquareProfileStyleId = typeof SQUARE_PROFILE_STYLES[number]["id"];
 
 const SQUARE_IDS = new Set<string>(SQUARE_PROFILE_STYLES.map((s) => s.id));
 
-/** Retired / VIP overlay ids → square frame style. */
+/** Retired decoration / ring ids → square frame style. */
 const LEGACY_TO_SQUARE: Record<string, SquareProfileStyleId> = {
-  "sleeping-cat": "nature",
-  "dragon-coil": "cyber",
-  "fox-spirit": "sunset",
-  "sakura-orbit": "seasonal",
-  "ember-flame": "fire",
-  "luna-butterflies": "aurora",
   quantum: "cyber",
   helix: "seasonal",
   sentinel: "cyber",
@@ -83,6 +83,10 @@ export function resolveSquareProfileStyle(
 ): SquareProfileStyleId {
   if (decorationId && SQUARE_IDS.has(decorationId)) {
     return decorationId as SquareProfileStyleId;
+  }
+  // VIP character overlays are rendered separately — do not remap them to a frame.
+  if (isVipOverlayDecoration(decorationId)) {
+    return "none";
   }
   if (decorationId && LEGACY_TO_SQUARE[decorationId]) {
     return LEGACY_TO_SQUARE[decorationId];

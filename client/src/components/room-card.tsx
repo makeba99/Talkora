@@ -1167,6 +1167,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                       isHost={p.id === room.ownerId}
                       isSpeaking={!!(p as any).isSpeaking}
                       isMuted={!!(p as any).isMuted}
+                      followerCount={followerCounts[p.id] ?? 0}
                     />
                   );
 

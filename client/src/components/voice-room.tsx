@@ -46,7 +46,7 @@ import {
   type VoicePresetId,
 } from "@/lib/voice-processor";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
-import { LANGUAGES, LEVELS, DEFAULT_LOBBY_PROFILE_STYLE, type LobbyProfileStyle } from "@shared/constants";
+import { LANGUAGES, LEVELS, DEFAULT_LOBBY_PROFILE_STYLE } from "@shared/constants";
 import { DmDialog } from "@/components/dm-dialog";
 import { ReportDialog } from "@/components/report-dialog";
 import { RoomOnboardingTour } from "@/components/room-onboarding-tour";
@@ -66,7 +66,6 @@ import { getAvatarRingClass } from "@/lib/avatar-ring";
 import { FlairBadgeDisplay } from "@/components/profile-dropdown";
 import { ROOM_THEMES, PRESET_BACKGROUNDS, getRoomThemeStyle, RoomThemeOverlay, getChatPanelStyle } from "@/components/profile-decorations";
 import { densityFromParticipantCount } from "@/components/avatar-shell";
-import { LobbyProfilePicker } from "@/components/lobby-profile-picker";
 import type { DecorationDensity } from "@/components/vip-avatar-frames";
 import { BadgeFireworksOverlay } from "@/components/badge-fireworks";
 import { NeuParticipantSlider } from "@/components/neu-participant-slider";
@@ -2577,9 +2576,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     return "gif";
   });
   const [editHologramUploading, setEditHologramUploading] = useState(false);
-  const [editLobbyProfileStyle, setEditLobbyProfileStyle] = useState<LobbyProfileStyle>(
-    ((roomProp as any).lobbyProfileStyle as LobbyProfileStyle) || DEFAULT_LOBBY_PROFILE_STYLE
-  );
   const editHologramFileRef = useRef<HTMLInputElement>(null);
   const [youtubeFeatured, setYoutubeFeatured] = useState<any[]>([]);
   const [youtubeFeaturedLoading, setYoutubeFeaturedLoading] = useState(false);
@@ -9337,7 +9333,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       screenPermission: editScreenPermission,
       youtubePermission: editYoutubePermission,
       chatPermission: editChatPermission,
-      lobbyProfileStyle: editLobbyProfileStyle,
+      lobbyProfileStyle: DEFAULT_LOBBY_PROFILE_STYLE,
     });
   };
 
@@ -14389,11 +14385,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
               {/* ── Tab: Appearance ── */}
               {editTab === "appearance" && (
                 <div className="space-y-4">
-                  <LobbyProfilePicker
-                    style={editLobbyProfileStyle}
-                    onStyleChange={setEditLobbyProfileStyle}
-                    testIdPrefix="edit-lobby-profile"
-                  />
                   {/* Card Theme */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -15089,7 +15080,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       const themeIndex = ROOM_THEMES.findIndex((theme) => theme.id === currentEditTheme);
                       setEditRoomTheme(currentEditTheme);
                       setEditThemeOffset(Math.max(0, Math.floor(Math.max(0, themeIndex) / 4) * 4));
-                      setEditLobbyProfileStyle((((room as any).lobbyProfileStyle as LobbyProfileStyle) || DEFAULT_LOBBY_PROFILE_STYLE));
                       setEditDialogOpen(true);
                     }}
                     data-testid="button-host-settings"

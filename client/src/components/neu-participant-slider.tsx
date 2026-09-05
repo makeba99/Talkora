@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Infinity as InfinityIcon } from "lucide-react";
 
-/* Steps run from solo (1) on the left up through 12, with the
-   Unlimited (∞) option pinned to the right end of the rail. */
+/* Steps run from solo (1) on the left up through 10, with Unlimited (∞) last. */
 const STEPS: { value: number; label: string; short: string }[] = [
   { value: 1, label: "Solo", short: "1" },
   { value: 2, label: "2 people", short: "2" },
@@ -11,9 +10,16 @@ const STEPS: { value: number; label: string; short: string }[] = [
   { value: 6, label: "6 people", short: "6" },
   { value: 8, label: "8 people", short: "8" },
   { value: 10, label: "10 people", short: "10" },
-  { value: 12, label: "12 people", short: "12" },
   { value: 0, label: "Unlimited", short: "∞" },
 ];
+
+function indexForValue(value: number): number {
+  const exact = STEPS.findIndex((s) => s.value === value);
+  if (exact >= 0) return exact;
+  if (value === 12 || value === 11) return STEPS.findIndex((s) => s.value === 10);
+  if (value > 10) return STEPS.findIndex((s) => s.value === 0);
+  return 0;
+}
 
 const KNOB = 26;
 
@@ -27,9 +33,13 @@ export function NeuParticipantSlider({ value, onChange, testId }: NeuParticipant
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
 
-  const currentIndex = Math.max(0, STEPS.findIndex((s) => s.value === value));
-  const safeIndex = currentIndex === -1 ? 0 : currentIndex;
+  const currentIndex = indexForValue(value);
+  const safeIndex = currentIndex;
   const current = STEPS[safeIndex];
+
+  useEffect(() => {
+    if (value === 11 || value === 12) onChange(10);
+  }, [value, onChange]);
 
   const setFromClientX = useCallback(
     (clientX: number) => {
