@@ -142,5 +142,25 @@ export async function runMigrations(): Promise<void> {
     console.log(`[db] Applied migration: ${entry.tag}`);
   }
 
+  // Tables whose SQL files existed before they were added to the journal —
+  // always ensure they exist so a missed tag cannot break live features.
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "message_requests" (
+        "id" varchar(36) PRIMARY KEY DEFAULT gen_random_uuid(),
+        "from_id" varchar(36) NOT NULL,
+        "to_id" varchar(36) NOT NULL,
+        "status" varchar(20) NOT NULL DEFAULT 'pending',
+        "created_at" timestamp NOT NULL DEFAULT now(),
+        "updated_at" timestamp NOT NULL DEFAULT now()
+      )
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS "mr_from_id_idx" ON "message_requests" ("from_id")`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS "mr_to_id_idx" ON "message_requests" ("to_id")`);
+    await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS "mr_unique_idx" ON "message_requests" ("from_id", "to_id")`);
+  } catch (err: any) {
+    console.error("[db] Could not ensure message_requests table:", err?.message || err);
+  }
+
   console.log(`[db] Migrations complete — ${ran} applied, ${skipped} already up-to-date`);
 }

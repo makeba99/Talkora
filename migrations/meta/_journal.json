@@ -127,6 +127,20 @@
       "when": 1779270000000,
       "tag": "0019_lobby_profile_default_tile",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1779280000000,
+      "tag": "0012_message_requests",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1779290000000,
+      "tag": "0013_book_bookmarks",
+      "breakpoints": true
     }
   ]
 }
