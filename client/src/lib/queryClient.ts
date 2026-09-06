@@ -31,6 +31,18 @@ export async function apiRequest(
   return res;
 }
 
+/** GET a JSON array; never throw — failed/non-array responses become []. */
+export async function fetchJsonArray<T>(url: string): Promise<T[]> {
+  try {
+    const res = await fetch(url, { credentials: "include" });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;

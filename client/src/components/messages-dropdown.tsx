@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useSocket } from "@/lib/socket-context";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, fetchJsonArray } from "@/lib/queryClient";
 import type { User, Message } from "@shared/schema";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -70,17 +70,14 @@ export function MessagesDropdown({ onOpenDm, open: controlledOpen, onOpenChange,
     enabled: !!user,
   });
 
-  const { data: pendingRequests = [] } = useQuery<PendingRequest[]>({
+  const { data: pendingRequestsData } = useQuery<PendingRequest[]>({
     queryKey: ["/api/message-requests/pending"],
-    queryFn: async () => {
-      const res = await fetch("/api/message-requests/pending", { credentials: "include" });
-      if (!res.ok) throw new Error(`${res.status}`);
-      return res.json();
-    },
+    queryFn: () => fetchJsonArray<PendingRequest>("/api/message-requests/pending"),
     enabled: !!user,
     refetchInterval: 60000,
     refetchIntervalInBackground: false,
   });
+  const pendingRequests = Array.isArray(pendingRequestsData) ? pendingRequestsData : [];
 
   const respondMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "accepted" | "declined" }) => {

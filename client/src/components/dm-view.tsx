@@ -5,7 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Send, ChevronDown, Smile, Lock, MessageCircle, Clock, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, Send, ChevronDown, Smile, MessageCircle, Clock } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
@@ -105,24 +105,42 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
     sentRequest?.status === "accepted" || receivedRequest?.status === "accepted";
   const canChat = statusConfirmed && (isMutual || !!acceptedRequest);
 
-  const { data: messages = [], isLoading } = useQuery<Message[]>({
+  const { data: messagesRaw = [], isLoading } = useQuery<Message[]>({
     queryKey: ["/api/messages", user?.id, otherUserId],
     enabled: !!user && !!otherUserId && canChat,
     refetchInterval: 30000,
   });
+  const messages = Array.isArray(messagesRaw) ? messagesRaw : [];
 
   /* ── Send message request ── */
   const sendRequestMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/message-requests", { toId: otherUserId });
-      return res.json();
+      const raw = await res.text();
+      if (!raw) return { id: "", status: "pending" as const };
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return { id: "", status: "pending" as const };
+      }
     },
-    onSuccess: () => {
-      toast({ title: "Message request sent!", description: `${getUserDisplayName(otherUser)} can now choose to accept it.` });
+    onSuccess: (data) => {
+      queryClient.setQueryData<DmRelationStatus>(["/api/message-requests/status", otherUserId], (old) => ({
+        canDm: old?.canDm ?? false,
+        isMutual: old?.isMutual ?? false,
+        iFollowThem: old?.iFollowThem ?? false,
+        theyFollowMe: old?.theyFollowMe ?? false,
+        receivedRequest: old?.receivedRequest ?? null,
+        sentRequest: { id: data?.id || old?.sentRequest?.id || "pending", status: "pending" },
+      }));
+      toast({
+        title: "Message request sent!",
+        description: `${getUserDisplayName(otherUser)} can now choose to accept it.`,
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/message-requests/status", otherUserId] });
     },
     onError: (err: any) => {
-      toast({ title: "Couldn't send request", description: err.message || "Please try again.", variant: "destructive" });
+      toast({ title: "Couldn't send request", description: err?.message || "Please try again.", variant: "destructive" });
     },
   });
 
@@ -310,105 +328,72 @@ export function DmView({ otherUserId, onBack }: DmViewProps) {
       );
     }
 
-    /* Completely blocked — confirmed no relationship */
-    if (!iFollowThem && !theyFollowMe) {
+    /* Incoming request from them */
+    if (receivedRequest?.status === "pending") {
       return (
         <div className="flex flex-col items-center justify-center flex-1 gap-4 px-6 py-12 text-center">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(100,85,210,0.10)", border: "1px solid rgba(120,100,255,0.18)" }}>
-            <Lock className="w-5 h-5" style={{ color: "rgba(160,148,255,0.5)" }} />
+          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(251,146,60,0.10)", border: "1px solid rgba(251,146,60,0.2)" }}>
+            <Clock className="w-5 h-5 text-orange-400/70" />
           </div>
           <div className="space-y-1">
-            <p className="text-sm font-semibold text-foreground/80">Private messages are restricted</p>
+            <p className="text-sm font-semibold text-foreground/80">Incoming request</p>
             <p className="text-xs text-muted-foreground leading-snug max-w-[220px]">
-              You and <span className="text-foreground/70">{name}</span> need to mutually follow each other to chat.
+              <span className="text-foreground/70">{name}</span> wants to message you. Accept it from Messages → Requests.
             </p>
           </div>
         </div>
       );
     }
 
-    /* I follow them but they don't follow back — can send a request */
-    if (iFollowThem && !theyFollowMe) {
-      const pending = sentRequest?.status === "pending";
-      const declined = sentRequest?.status === "declined";
+    const pending = sentRequest?.status === "pending";
+    const declined = sentRequest?.status === "declined";
 
-      if (pending) {
-        return (
-          <div className="flex flex-col items-center justify-center flex-1 gap-4 px-6 py-12 text-center">
-            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(251,146,60,0.10)", border: "1px solid rgba(251,146,60,0.2)" }}>
-              <Clock className="w-5 h-5 text-orange-400/70" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-foreground/80">Request pending</p>
-              <p className="text-xs text-muted-foreground leading-snug max-w-[220px]">
-                Waiting for <span className="text-foreground/70">{name}</span> to accept your message request.
-              </p>
-            </div>
-          </div>
-        );
-      }
-
+    if (pending) {
       return (
         <div className="flex flex-col items-center justify-center flex-1 gap-4 px-6 py-12 text-center">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(100,85,210,0.10)", border: "1px solid rgba(120,100,255,0.18)" }}>
-            <MessageCircle className="w-5 h-5" style={{ color: "rgba(160,148,255,0.5)" }} />
+          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(251,146,60,0.10)", border: "1px solid rgba(251,146,60,0.2)" }}>
+            <Clock className="w-5 h-5 text-orange-400/70" />
           </div>
           <div className="space-y-1">
-            <p className="text-sm font-semibold text-foreground/80">
-              {declined ? "Request declined" : "Request to message"}
-            </p>
+            <p className="text-sm font-semibold text-foreground/80">Request pending</p>
             <p className="text-xs text-muted-foreground leading-snug max-w-[220px]">
-              {declined
-                ? `${name} declined your previous request. You can send a new one.`
-                : `${name} doesn't follow you back yet. Send a message request and they can choose to accept it.`}
-            </p>
-          </div>
-          <Button
-            size="sm"
-            onClick={() => sendRequestMutation.mutate()}
-            disabled={sendRequestMutation.isPending}
-            className="text-xs"
-            data-testid={`button-send-message-request-${otherUserId}`}
-          >
-            {sendRequestMutation.isPending ? "Sending…" : declined ? "Send new request" : "Send message request"}
-          </Button>
-        </div>
-      );
-    }
-
-    /* They follow me but I don't — follow back, or wait if they already requested */
-    if (!iFollowThem && theyFollowMe) {
-      if (receivedRequest?.status === "pending") {
-        return (
-          <div className="flex flex-col items-center justify-center flex-1 gap-4 px-6 py-12 text-center">
-            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(251,146,60,0.10)", border: "1px solid rgba(251,146,60,0.2)" }}>
-              <Clock className="w-5 h-5 text-orange-400/70" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-foreground/80">Incoming request</p>
-              <p className="text-xs text-muted-foreground leading-snug max-w-[220px]">
-                <span className="text-foreground/70">{name}</span> wants to message you. Accept it from Messages → Requests.
-              </p>
-            </div>
-          </div>
-        );
-      }
-      return (
-        <div className="flex flex-col items-center justify-center flex-1 gap-4 px-6 py-12 text-center">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(100,85,210,0.10)", border: "1px solid rgba(120,100,255,0.18)" }}>
-            <Lock className="w-5 h-5" style={{ color: "rgba(160,148,255,0.5)" }} />
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm font-semibold text-foreground/80">Follow back to chat</p>
-            <p className="text-xs text-muted-foreground leading-snug max-w-[220px]">
-              <span className="text-foreground/70">{name}</span> follows you. Follow them back to unlock messaging.
+              Waiting for <span className="text-foreground/70">{name}</span> to accept your message request.
             </p>
           </div>
         </div>
       );
     }
 
-    return null;
+    /* Non-friends and one-way follows can send a message request */
+    return (
+      <div className="flex flex-col items-center justify-center flex-1 gap-4 px-6 py-12 text-center">
+        <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(100,85,210,0.10)", border: "1px solid rgba(120,100,255,0.18)" }}>
+          <MessageCircle className="w-5 h-5" style={{ color: "rgba(160,148,255,0.5)" }} />
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-foreground/80">
+            {declined ? "Request declined" : "Request to message"}
+          </p>
+          <p className="text-xs text-muted-foreground leading-snug max-w-[220px]">
+            {declined
+              ? `${name} declined your previous request. You can send a new one.`
+              : theyFollowMe && !iFollowThem
+                ? `${name} follows you. Follow them back, or send a message request.`
+                : `You're not friends with ${name} yet. Send a message request and they can choose to accept it.`}
+          </p>
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => sendRequestMutation.mutate()}
+          disabled={sendRequestMutation.isPending}
+          className="text-xs"
+          data-testid={`button-send-message-request-${otherUserId}`}
+        >
+          {sendRequestMutation.isPending ? "Sending…" : declined ? "Send new request" : "Send message request"}
+        </Button>
+      </div>
+    );
   };
 
   return (

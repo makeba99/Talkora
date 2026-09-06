@@ -585,15 +585,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createMessageRequest(fromId: string, toId: string): Promise<MessageRequest> {
-    const [row] = await db
+    try {
+      const [row] = await db
+        .insert(messageRequests)
+        .values({ fromId, toId, status: "pending" })
+        .onConflictDoUpdate({
+          target: [messageRequests.fromId, messageRequests.toId],
+          set: { status: "pending", updatedAt: new Date() },
+        })
+        .returning();
+      if (row) return row;
+    } catch {
+      /* unique index may be missing in some deploys — fall through */
+    }
+
+    const existing = await this.getMessageRequest(fromId, toId);
+    if (existing) {
+      const [updated] = await db
+        .update(messageRequests)
+        .set({ status: "pending", updatedAt: new Date() })
+        .where(eq(messageRequests.id, existing.id))
+        .returning();
+      return updated ?? existing;
+    }
+
+    const [inserted] = await db
       .insert(messageRequests)
       .values({ fromId, toId, status: "pending" })
-      .onConflictDoUpdate({
-        target: [messageRequests.fromId, messageRequests.toId],
-        set: { status: "pending", updatedAt: new Date() },
-      })
       .returning();
-    return row;
+    return inserted;
   }
 
   async getMessageRequest(fromId: string, toId: string): Promise<MessageRequest | undefined> {

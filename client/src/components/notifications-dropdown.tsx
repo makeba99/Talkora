@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertTriangle, Award, Bell, Check, Crown, Shield, ShieldAlert, ShieldCheck, Ban, ShieldOff, Palette, MessageCircle, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, fetchJsonArray } from "@/lib/queryClient";
 import type { Notification, User } from "@shared/schema";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import { useSocket } from "@/lib/socket-context";
@@ -38,23 +38,22 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
   const { toast } = useToast();
   const [, navigate] = useLocation();
 
-  const { data: notifications = [] } = useQuery<Notification[]>({
+  const { data: notificationsData = [] } = useQuery<Notification[]>({
     queryKey: ["/api/notifications"],
     enabled: !!user,
     refetchInterval: 60000,
     refetchIntervalInBackground: false,
   });
 
-  const { data: pendingRequests = [] } = useQuery<PendingRequest[]>({
+  const { data: pendingRequestsData } = useQuery<PendingRequest[]>({
     queryKey: ["/api/message-requests/pending"],
-    queryFn: async () => {
-      const res = await fetch("/api/message-requests/pending", { credentials: "include" });
-      return res.json();
-    },
+    queryFn: () => fetchJsonArray<PendingRequest>("/api/message-requests/pending"),
     enabled: !!user,
     refetchInterval: 60000,
     refetchIntervalInBackground: false,
   });
+  const pendingRequests = Array.isArray(pendingRequestsData) ? pendingRequestsData : [];
+  const notifications = Array.isArray(notificationsData) ? notificationsData : [];
 
   const respondRequestMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "accepted" | "declined" }) => {

@@ -1173,7 +1173,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               style={{
                 gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
                 columnGap: tightSpacing ? 8 : 12,
-                rowGap: 10,
+                rowGap: 8,
                 paddingRight: gridRightPad,
                 ["--lobby-slot-size" as string]: `${slotSize}px`,
               }}

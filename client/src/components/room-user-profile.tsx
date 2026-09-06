@@ -149,10 +149,10 @@ export function RoomUserProfile({
             <span className="rup__heart-n">{formatFollowerCount(followerCount)}</span>
           </span>
         )}
+        {showName && (
+          <span className="rup__name" title={fullName}>{name}</span>
+        )}
       </div>
-      {showName && (
-        <span className="rup__name" title={fullName}>{name}</span>
-      )}
     </div>
   );
 }

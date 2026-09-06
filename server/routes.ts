@@ -5464,7 +5464,7 @@ export async function registerRoutes(
       const result = requests.map((r) => ({ ...r, fromUser: usersMap.get(r.fromId) ?? null }));
       res.json(result);
     } catch (err: any) {
-      res.status(500).json({ message: err.message });
+      res.json([]);
     }
   });
 
@@ -5504,27 +5504,40 @@ export async function registerRoutes(
 
   app.post("/api/message-requests", isAuthenticated, async (req: any, res) => {
     try {
-      const me = (req.user as any).id;
-      const { toId } = req.body as { toId: string };
+      const me = String((req.user as any).id);
+      const toId = String((req.body as { toId?: string })?.toId || "");
       if (!toId || toId === me) return res.status(400).json({ message: "Invalid request" });
 
-      // Must follow them (one-way minimum)
-      const doesFollow = await storage.isFollowing(me, toId);
-      if (!doesFollow) return res.status(403).json({ message: "You must follow this user to send a message request." });
-
-      // Already mutual — no request needed
-      const mutual = await storage.isFollowing(toId, me);
+      const mutual = await storage.isFollowing(toId, me) && await storage.isFollowing(me, toId);
       if (mutual) return res.status(400).json({ message: "You can message this user directly." });
 
       const request = await storage.createMessageRequest(me, toId);
+      if (!request) {
+        return res.status(500).json({ message: "Could not create message request." });
+      }
 
-      // Notify recipient via socket (all their tabs via personal room)
       const fromUser = await storage.getUser(me);
-      io.to(`user:${toId}`).emit("message_request:new", { ...request, fromUser });
+      const payload = {
+        id: request.id,
+        fromId: request.fromId,
+        toId: request.toId,
+        status: request.status,
+        createdAt: request.createdAt,
+        fromUser: fromUser
+          ? {
+              id: fromUser.id,
+              displayName: fromUser.displayName,
+              firstName: fromUser.firstName,
+              lastName: fromUser.lastName,
+              profileImageUrl: fromUser.profileImageUrl,
+            }
+          : null,
+      };
+      io.to(`user:${toId}`).emit("message_request:new", payload);
 
-      res.json(request);
+      res.json(payload);
     } catch (err: any) {
-      res.status(500).json({ message: err.message });
+      res.status(500).json({ message: err.message || "Could not send message request." });
     }
   });
 
@@ -5541,6 +5554,7 @@ export async function registerRoutes(
       if (!request) return res.status(404).json({ message: "Request not found or already actioned" });
 
       const updated = await storage.updateMessageRequestStatus(req.params.id, status);
+      if (!updated) return res.status(500).json({ message: "Could not update request." });
 
       // Notify both parties so DMs unlock / refresh on every open tab.
       io.to(`user:${request.fromId}`).emit("message_request:updated", updated);
