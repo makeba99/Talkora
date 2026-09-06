@@ -6568,16 +6568,26 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   position: static;
   flex-shrink: 0;
   margin-left: auto;
-  opacity: 0.55;
+  opacity: 0.7;
   transform: none;
 }
 .orbit-ring--sheet .orbit-sat:hover .orbit-sat-pin,
 .orbit-ring--sheet .orbit-sat-pin {
-  opacity: 0.7;
+  opacity: 0.85;
   transform: none;
 }
 .orbit-ring--sheet .orbit-sat-pin-corner {
-  display: none;
+  display: inline-flex;
+  position: static;
+  flex-shrink: 0;
+  margin-left: 0;
+  opacity: 0.7;
+  transform: none;
+}
+.orbit-ring--sheet .orbit-sat-pin-corner.is-active {
+  opacity: 1;
+  color: hsl(var(--neu-orange-hi, 252 95% 84%));
+  border-color: hsl(var(--neu-orange, 252 90% 70%) / 0.7);
 }
 
 /* the orbit container */
@@ -11415,8 +11425,66 @@ html.neomorphic-light .pinned-socials-link {
     0 8px 18px rgba(0, 0, 0, 0.38);
   transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
+.rup[data-ring="pulse-cyan"] .rup__card {
+  border-color: rgba(34, 211, 238, 0.95);
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.9), 0 0 12px rgba(34, 211, 238, 0.5);
+}
+.rup[data-ring="pulse-purple"] .rup__card {
+  border-color: rgba(192, 132, 252, 0.95);
+  box-shadow: 0 0 0 2px rgba(192, 132, 252, 0.9), 0 0 12px rgba(192, 132, 252, 0.5);
+}
+.rup[data-ring="glow-gold"] .rup__card {
+  border-color: rgba(250, 204, 21, 0.95);
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.9), 0 0 12px rgba(250, 204, 21, 0.55);
+}
+.rup[data-ring="glow-green"] .rup__card {
+  border-color: rgba(52, 211, 153, 0.95);
+  box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.9), 0 0 12px rgba(52, 211, 153, 0.5);
+}
+.rup[data-ring="glow-pink"] .rup__card {
+  border-color: rgba(244, 114, 182, 0.95);
+  box-shadow: 0 0 0 2px rgba(244, 114, 182, 0.9), 0 0 12px rgba(244, 114, 182, 0.5);
+}
+.rup[data-ring="rainbow"] .rup__card {
+  border-color: transparent;
+  box-shadow:
+    0 0 0 2px #f43f5e,
+    0 0 0 3px #eab308,
+    0 0 0 4px #3b82f6,
+    0 0 12px rgba(139, 92, 246, 0.45);
+}
+.rup[data-ring="fire"] .rup__card {
+  border-color: rgba(249, 115, 22, 0.95);
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.95), 0 0 14px rgba(249, 115, 22, 0.6);
+}
+.rup[data-ring="ice"] .rup__card {
+  border-color: rgba(125, 211, 252, 0.95);
+  box-shadow: 0 0 0 2px rgba(125, 211, 252, 0.9), 0 0 12px rgba(125, 211, 252, 0.55);
+}
+.rup[data-ring="vip-crown"] .rup__card {
+  border-color: rgba(251, 191, 36, 0.98);
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.95), 0 0 16px rgba(251, 191, 36, 0.7);
+}
+.rup[data-ring="vip-aurora"] .rup__card {
+  border-color: rgba(232, 121, 249, 0.95);
+  box-shadow: 0 0 0 2px rgba(232, 121, 249, 0.9), 0 0 16px rgba(232, 121, 249, 0.65);
+}
+.rup[data-ring="pulse-cyan"] .rup__card,
+.rup[data-ring="pulse-purple"] .rup__card,
+.rup[data-ring="fire"] .rup__card,
+.rup[data-ring="vip-crown"] .rup__card {
+  animation: rup-ring-pulse 1.8s ease-in-out infinite;
+}
+@keyframes rup-ring-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.18); }
+}
 .rup__card::after {
+  display: none;
+}
+.rup[data-named="1"] .rup__card::after {
   content: "";
+  display: block;
   position: absolute;
   inset: auto 0 0 0;
   height: 42%;
@@ -11474,12 +11542,12 @@ html.neomorphic-light .pinned-socials-link {
   justify-content: center;
   align-self: center;
   gap: 3px;
-  margin-top: 5px;
-  min-height: 16px;
-  padding: 0 2px;
-  border-radius: 0;
-  background: none;
+  margin-top: 8px;
+  min-height: 14px;
+  padding: 0;
   border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;

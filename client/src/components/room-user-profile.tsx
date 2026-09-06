@@ -5,6 +5,7 @@ import {
   densityFromSize,
 } from "@/components/vip-avatar-frames";
 import { isVipOverlayDecoration } from "@/lib/square-profile-style";
+import { getAvatarRingClass } from "@/lib/avatar-ring";
 import { BADGE_TYPES } from "@shared/constants";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import type { User, UserBadge } from "@shared/schema";
@@ -80,6 +81,9 @@ export function RoomUserProfile({
     : undefined;
   const showFollowers = typeof followerCount === "number";
   const tone = heartTone(followerCount ?? 0);
+  const ringId = (participant as any).avatarRing as string | null | undefined;
+  const ringClass = getAvatarRingClass(ringId);
+  const hasRing = !!ringClass;
 
   return (
     <div
@@ -88,13 +92,14 @@ export function RoomUserProfile({
       data-heart={tone}
       data-overlay={overlayId ? "1" : undefined}
       data-named={showName ? "1" : undefined}
+      data-ring={hasRing ? ringId : undefined}
       style={{
         ["--rup-size" as string]: `${size}px`,
         ["--avatar-size" as string]: `${size}px`,
       }}
     >
       <div className="rup__stage">
-        <div className="rup__card">
+        <div className={`rup__card${hasRing ? ` ${ringClass}` : ""}`}>
           {sources.src ? (
             <img
               src={sources.src}
