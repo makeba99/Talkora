@@ -81,7 +81,6 @@ import {
   PLACEHOLDER_ROOMS,
   BASE_SAMPLE_PARTICIPANTS,
   BASE_SAMPLE_VOTE_COUNTS,
-  SAMPLE_FOLLOWER_COUNTS,
   ALL_SAMPLE_USERS,
 } from "@/lib/sample-data";
 
@@ -2553,7 +2552,6 @@ export default function Lobby() {
                  * is only recomputed when liveParticipants or roomParticipants
                  * actually change — not on every socket presence event. */
                 const mergedParticipants = mergedRoomParticipants;
-                const hasLobbyFollowerCounts = Object.keys(followerCounts).length > 0;
                 /* PERF: ALWAYS pass the lobby badges override (even before it
                  * resolves), so per-card queries stay disabled from the very
                  * first render. Previously we waited for hasLobbyBadges to be
@@ -2576,13 +2574,6 @@ export default function Lobby() {
                     voteCount={isSample ? liveVoteCounts[room.id] ?? 0 : (voteData?.counts?.[room.id] || 0)}
                     hasVoted={voteData?.userVotes?.[room.id] || false}
                     onVote={isSample ? undefined : (user ? () => voteMutation.mutate({ roomId: room.id, hasVoted: voteData?.userVotes?.[room.id] || false }) : undefined)}
-                    followerCountsOverride={
-                      isSample
-                        ? SAMPLE_FOLLOWER_COUNTS
-                        : hasLobbyFollowerCounts
-                          ? followerCounts
-                          : undefined
-                    }
                     participantBadgesOverride={lobbyParticipantBadges}
                     priority={idx < 3}
                   />
@@ -2597,11 +2588,11 @@ export default function Lobby() {
                  * card styles, and React.memo on RoomCard plus the deferred
                  * overlays in this round handle the perf side. */
                 return idx === 0 ? (
-                <div key={`${room.id}-${idx}`} data-tour-target="rooms" style={{ contain: "layout paint", minHeight: 268 }}>
+                <div key={`${room.id}-${idx}`} data-tour-target="rooms" style={{ contain: "layout paint", minHeight: 200 }}>
                     {card}
                   </div>
                 ) : (
-                  <div key={`${room.id}-${idx}`} style={{ contain: "layout paint", minHeight: 268 }}>{card}</div>
+                  <div key={`${room.id}-${idx}`} style={{ contain: "layout paint", minHeight: 200 }}>{card}</div>
                 );
                 });
               })()}

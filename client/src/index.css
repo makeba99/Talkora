@@ -11341,14 +11341,14 @@ html.neomorphic-light .pinned-socials-link {
 .lobby-profile-slot {
   width: 100%;
   min-width: 0;
-  max-width: min(100%, var(--lobby-slot-size, 176px));
+  max-width: min(100%, var(--lobby-slot-size, 104px));
   background: transparent !important;
 }
-.lobby-profile-grid[data-cols="1"] .lobby-profile-slot { max-width: min(72%, var(--lobby-slot-size, 176px)); }
-.lobby-profile-grid[data-cols="2"] .lobby-profile-slot { max-width: min(100%, var(--lobby-slot-size, 148px)); }
-.lobby-profile-grid[data-cols="3"] .lobby-profile-slot { max-width: min(100%, var(--lobby-slot-size, 122px)); }
+.lobby-profile-grid[data-cols="1"] .lobby-profile-slot { max-width: min(72%, var(--lobby-slot-size, 104px)); }
+.lobby-profile-grid[data-cols="2"] .lobby-profile-slot { max-width: min(100%, var(--lobby-slot-size, 96px)); }
+.lobby-profile-grid[data-cols="3"] .lobby-profile-slot { max-width: min(100%, var(--lobby-slot-size, 84px)); }
 .lobby-profile-grid[data-cols="4"] .lobby-profile-slot,
-.lobby-profile-grid[data-cols="5"] .lobby-profile-slot { max-width: min(100%, var(--lobby-slot-size, 118px)); }
+.lobby-profile-grid[data-cols="5"] .lobby-profile-slot { max-width: min(100%, var(--lobby-slot-size, 80px)); }
 .lobby-profile-slot__btn,
 html.neomorphic-dark .lobby-profile-slot__btn,
 html.neomorphic-light .lobby-profile-slot__btn,
@@ -11546,70 +11546,6 @@ html.neomorphic-light button.lobby-profile-slot__btn {
   border-radius: 0 0 14px 14px;
   pointer-events: none;
 }
-.rup__hearts,
-.rup__hearts::before,
-.rup__hearts::after,
-.rup__hearts .rup__heart,
-.rup__hearts .rup__heart-n {
-  background: none !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  outline: none !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  -webkit-appearance: none;
-  appearance: none;
-}
-.rup__hearts {
-  position: relative;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  align-self: center;
-  gap: 3px;
-  width: max-content;
-  max-width: 100%;
-  height: 14px;
-  margin: 5px 0 0;
-  padding: 0 !important;
-  line-height: 1;
-  pointer-events: none;
-  isolation: auto;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.92);
-}
-.rup[data-named="1"] .rup__hearts {
-  margin-top: 5px;
-}
-.rup__hearts--spacer {
-  visibility: hidden;
-  opacity: 0;
-}
-.rup__heart {
-  width: 9px;
-  height: 9px;
-  flex-shrink: 0;
-}
-.rup__heart-n {
-  font-size: 9px;
-  font-weight: 750;
-  letter-spacing: 0.02em;
-  font-variant-numeric: tabular-nums;
-}
-.rup[data-heart="quiet"] .rup__heart,
-.rup[data-heart="quiet"] .rup__heart-n { color: rgba(255, 255, 255, 0.42); }
-.rup[data-heart="warm"] .rup__heart,
-.rup[data-heart="warm"] .rup__heart-n { color: #fb7185; }
-.rup[data-heart="hot"] .rup__heart,
-.rup[data-heart="hot"] .rup__heart-n { color: #f472b6; }
-.rup[data-heart="gold"] .rup__heart,
-.rup[data-heart="gold"] .rup__heart-n {
-  color: #fbbf24;
-  filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.45));
-}
 .rup__veil-mic {
   width: 9px;
   height: 9px;
@@ -11754,7 +11690,6 @@ html.neomorphic-light button.lobby-profile-slot__btn {
 
 @media (max-width: 420px) {
   .rup__name { font-size: 9px; }
-  .rup__heart-n { font-size: 8px; }
 }
 
 @container lobby-profile-body (max-width: 280px) {
@@ -11954,10 +11889,12 @@ html.neomorphic-light button.lobby-profile-slot__btn {
    ============================================================================ */
 .room-card {
   content-visibility: auto;
-  contain-intrinsic-size: auto 280px;
+  contain-intrinsic-size: auto 240px;
   /* Content-driven height. The card no longer carries a fixed height, so a
-     row is only as tall as the tallest card in it instead of a hard 356px. */
+     row is only as tall as the tallest card in it instead of a hard 356px.
+     height:100% keeps every card in a grid row flush with its neighbours. */
   display: flex;
+  height: 100%;
 }
 .room-card-inner {
   display: flex;
@@ -14673,22 +14610,6 @@ html.boost-mode .glass-panel {
   .pa-around-fire {
     animation: none !important;
   }
-}
-
-/* Lobby follower counts: heart + number only — never a glass/pill chip. */
-html .rup__hearts,
-html .rup__hearts *,
-html .rup__hearts::before,
-html .rup__hearts::after {
-  background: transparent !important;
-  background-image: none !important;
-  border: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
 }
 
 

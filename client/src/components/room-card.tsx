@@ -71,21 +71,21 @@ function subscribeVpResize(cb: () => void): () => void {
 function computeAvatarPx(displayCount: number): number {
   const w = _vpWidth;
   const byCount =
-    displayCount <= 1 ? 176 :
-    displayCount === 2 ? 148 :
-    displayCount === 3 ? 122 :
-    displayCount === 4 ? 118 :
-    displayCount === 5 ? 92 :
-    displayCount === 6 ? 86 :
-    displayCount <= 8 ? 72 :
-    displayCount <= 10 ? 62 :
-    58;
+    displayCount <= 1 ? 104 :
+    displayCount === 2 ? 96 :
+    displayCount === 3 ? 84 :
+    displayCount === 4 ? 80 :
+    displayCount === 5 ? 72 :
+    displayCount === 6 ? 68 :
+    displayCount <= 8 ? 60 :
+    displayCount <= 10 ? 54 :
+    50;
   const vw =
-    w >= 1536 ? 1.08 :
-    w >= 1280 ? 1.04 :
-    w >= 1024 ? 1.0 :
-    w >= 768 ? 0.96 :
-    0.94;
+    w >= 1536 ? 1.04 :
+    w >= 1280 ? 1.0 :
+    w >= 1024 ? 0.98 :
+    w >= 768 ? 0.95 :
+    0.92;
   return Math.round(byCount * vw);
 }
 
@@ -126,7 +126,6 @@ interface RoomCardProps {
   voteCount?: number;
   hasVoted?: boolean;
   onVote?: () => void;
-  followerCountsOverride?: Record<string, number>;
   /** When the parent (e.g. lobby) already runs a single batched fetch for
    *  badges of all participants across all rooms, it can pass the result here
    *  so each card doesn't fire its own duplicate /api/users/badges/batch
@@ -647,7 +646,7 @@ function CardHologramVideo({ src, priority = false }: { src: string; priority?: 
   );
 }
 
-function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedIn = true, voteCount = 0, hasVoted = false, onVote, followerCountsOverride, participantBadgesOverride, priority = false }: RoomCardProps) {
+function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedIn = true, voteCount = 0, hasVoted = false, onVote, participantBadgesOverride, priority = false }: RoomCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { theme } = useTheme();
@@ -743,19 +742,6 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
       ? `${Math.floor(knockSecsLeft / 60)}:${String(knockSecsLeft % 60).padStart(2, "0")}`
       : null;
   const participantIds = participants.map((p) => p.id);
-
-  const { data: fetchedFollowerCounts = {} } = useQuery<Record<string, number>>({
-    queryKey: ["/api/follows/counts", ...participantIds],
-    queryFn: async () => {
-      if (participantIds.length === 0) return {};
-      const res = await apiRequest("POST", "/api/follows/counts", { userIds: participantIds });
-      return res.json();
-    },
-    enabled: participantIds.length > 0 && !followerCountsOverride,
-    staleTime: 30000,
-  });
-
-  const followerCounts = followerCountsOverride ?? fetchedFollowerCounts;
 
   const { data: fetchedParticipantBadges = {} } = useQuery<Record<string, UserBadge[]>>({
     queryKey: ["/api/users/badges/batch", ...participantIds],
@@ -1189,7 +1175,6 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                       isHost={p.id === room.ownerId}
                       isSpeaking={!!(p as any).isSpeaking}
                       isMuted={!!(p as any).isMuted}
-                      followerCount={followerCounts[p.id] ?? 0}
                       showName={showName}
                     />
                   );
