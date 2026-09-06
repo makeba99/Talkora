@@ -3,9 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { X, Volume2, VolumeX } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { proxyMediaUrl } from "@/lib/media-proxy";
-import { BADGE_CELEBRATION_GIF } from "@shared/constants";
-import { BadgeFireworksOverlay } from "@/components/badge-fireworks";
 
 interface BadgeDef {
   id: string;
@@ -30,7 +27,7 @@ interface BadgeAnnouncementProps {
   onDismiss: () => void;
 }
 
-const AUTO_DISMISS_MS = 12000;
+const AUTO_DISMISS_MS = 4200;
 
 function playCelebrationSound(muted: boolean) {
   if (muted) return;
@@ -87,31 +84,6 @@ function playCelebrationSound(muted: boolean) {
     applauseSource.stop(ctx.currentTime + 3.3);
 
     setTimeout(() => ctx.close(), 4000);
-  } catch (_) {}
-}
-
-/** Spoken nomination announcement — plays site-wide (lobby + rooms), not only in chat. */
-function speakNomination(userName: string, badgeLabel: string, muted: boolean) {
-  if (muted) return;
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-  try {
-    window.speechSynthesis.cancel();
-    const line = new SpeechSynthesisUtterance(
-      `Nomination! ${userName} has been awarded the ${badgeLabel} badge. Congratulations!`
-    );
-    line.rate = 0.94;
-    line.pitch = 1.08;
-    line.volume = 0.9;
-    const voices = window.speechSynthesis.getVoices();
-    const preferred =
-      voices.find((v) => /en(-|_)?(US|GB)/i.test(v.lang) && /female|samantha|google uk english female|zira|jenny/i.test(v.name)) ||
-      voices.find((v) => /^en/i.test(v.lang)) ||
-      null;
-    if (preferred) line.voice = preferred;
-    // Slight delay so fanfare starts first
-    setTimeout(() => {
-      try { window.speechSynthesis.speak(line); } catch (_) {}
-    }, 700);
   } catch (_) {}
 }
 
@@ -243,8 +215,8 @@ function SparkleRing({ color }: { color: string }) {
               marginTop: -3,
             }}
             animate={{
-              x: [0, Math.cos((angle * Math.PI) / 180) * 52],
-              y: [0, Math.sin((angle * Math.PI) / 180) * 52],
+              x: [0, Math.cos((angle * Math.PI) / 180) * 26],
+              y: [0, Math.sin((angle * Math.PI) / 180) * 26],
               opacity: [0, 1, 0],
               scale: [0, 1.4, 0],
             }}
@@ -306,7 +278,6 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
       hasPlayedRef.current = eventKey;
       setConfettiActive(true);
       playCelebrationSound(muted);
-      speakNomination(safeEvent.userName, safeEvent.badgeDef.label, muted);
     }
 
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -320,215 +291,99 @@ export function BadgeAnnouncement({ event, onDismiss }: BadgeAnnouncementProps) 
     : "U";
 
   const color = safeEvent?.badgeDef.color ?? "#8B5CF6";
-  const celebrationGif = proxyMediaUrl(safeEvent?.badgeGifUrl || BADGE_CELEBRATION_GIF);
 
   return (
     <AnimatePresence>
       {safeEvent && (
-        <>
-          {/* Full-viewport fireworks outside chat — lobby + every page */}
-          <BadgeFireworksOverlay active={confettiActive} durationMs={9000} />
-          <motion.div
+        <motion.div
           key={safeEvent.badge.id}
-          initial={{ opacity: 0, y: -100, scale: 0.85 }}
+          initial={{ opacity: 0, y: -24, scale: 0.94 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -80, scale: 0.9 }}
-          transition={{ type: "spring", stiffness: 280, damping: 24 }}
-          className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] w-[min(500px,92vw)]"
+          exit={{ opacity: 0, y: -16, scale: 0.96 }}
+          transition={{ type: "spring", stiffness: 420, damping: 28 }}
+          className="fixed top-3 left-1/2 -translate-x-1/2 z-[9999] w-[min(420px,calc(100vw-24px))] pointer-events-auto"
           data-testid="badge-announcement"
         >
           <div
-            className="relative rounded-2xl overflow-hidden shadow-2xl border"
+            className="relative overflow-hidden rounded-2xl border shadow-2xl"
             style={{
-              background: `linear-gradient(150deg, rgba(8,4,22,0.97) 0%, rgba(18,10,40,0.98) 100%)`,
-              borderColor: `${color}50`,
-              boxShadow: `0 0 0 1px ${color}25, 0 0 60px ${color}35, 0 20px 60px rgba(0,0,0,0.7)`,
+              background: "linear-gradient(180deg, rgba(22,18,40,0.96), rgba(10,8,22,0.98))",
+              borderColor: `${color}55`,
+              boxShadow: `0 0 0 1px ${color}28, 0 16px 40px rgba(0,0,0,0.55), 0 0 28px ${color}30`,
             }}
           >
-            <div
-              className="absolute inset-0 opacity-15"
-              style={{
-                background: `radial-gradient(ellipse at 50% -10%, ${color} 0%, transparent 65%)`,
-              }}
-            />
-
             <ConfettiCanvas active={confettiActive} color={color} />
-
-            <div className="relative p-6" style={{ zIndex: 3 }}>
-              <div className="flex items-center justify-between mb-4">
-                <motion.div
-                  initial={{ opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="flex items-center gap-2"
-                >
-                  <div
-                    className="text-[11px] font-bold tracking-widest uppercase px-3 py-1 rounded-full"
-                    style={{
-                      color: color,
-                      background: `${color}18`,
-                      border: `1px solid ${color}40`,
-                    }}
-                  >
-                    🏆 Achievement Unlocked
-                  </div>
-                  {isForCurrentUser && (
-                    <div
-                      className="text-[11px] font-bold tracking-wider uppercase px-2 py-1 rounded-full"
-                      style={{ color: "#FFD700", background: "#FFD70018", border: "1px solid #FFD70040" }}
-                      data-testid="badge-for-you"
-                    >
-                      ✨ For You
-                    </div>
-                  )}
-                </motion.div>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => {
-                      setMuted((m) => !m);
-                      if (muted) playCelebrationSound(false);
-                    }}
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-white/40 hover:text-white/80 hover:bg-white/10 transition-colors"
-                    data-testid="button-toggle-mute"
-                    aria-label={muted ? "Unmute" : "Mute"}
-                  >
-                    {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-                  </button>
-                  <button
-                    onClick={handleDismiss}
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-white/40 hover:text-white/80 hover:bg-white/10 transition-colors"
-                    data-testid="button-dismiss-badge"
-                    aria-label="Dismiss"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-
+            <div className="relative flex items-center gap-3 px-3.5 py-2.5" style={{ zIndex: 3 }}>
               <motion.div
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.12 }}
-                className="mb-4 rounded-xl overflow-hidden border"
-                style={{ borderColor: `${color}35` }}
+                className="relative flex-shrink-0"
+                initial={{ scale: 0.6, rotate: -12 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", stiffness: 380, damping: 18 }}
               >
-                <img
-                  src={celebrationGif}
-                  alt="Celebration"
-                  className="w-full h-36 object-cover"
-                  data-testid="badge-celebration-gif"
-                  onError={(e) => {
-                    const img = e.currentTarget;
-                    // Fallback to a known-good fireworks GIF if CDN/proxy fails.
-                    const fallback = "https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif";
-                    if (!img.dataset.fallback) {
-                      img.dataset.fallback = "1";
-                      img.src = fallback;
-                    } else {
-                      img.style.display = "none";
-                    }
-                  }}
-                />
+                <div className="relative w-11 h-11">
+                  <SparkleRing color={color} />
+                  <Avatar
+                    className="w-11 h-11 ring-2 relative"
+                    style={{ ringColor: color } as any}
+                    data-testid="badge-user-avatar"
+                  >
+                    <AvatarImage src={safeEvent.userAvatar ?? undefined} alt="" />
+                    <AvatarFallback className="text-sm font-bold" style={{ background: `${color}25`, color }}>
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span
+                    className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[11px] z-10"
+                    style={{ background: `${color}28`, border: `1px solid ${color}70` }}
+                  >
+                    {safeEvent.badgeDef.emoji}
+                  </span>
+                </div>
               </motion.div>
 
-              <div className="flex items-center gap-5">
-                <motion.div
-                  className="relative flex-shrink-0"
-                  initial={{ scale: 0, rotate: -20 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.15 }}
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold tracking-[0.16em] uppercase" style={{ color }}>
+                  Nomination{isForCurrentUser ? " · for you" : ""}
+                </p>
+                <p className="text-white font-semibold text-[13px] leading-tight truncate" data-testid="badge-user-name">
+                  {safeEvent.userName}
+                </p>
+                <p className="text-white/70 text-[12px] truncate" data-testid="badge-label">
+                  {safeEvent.badgeDef.emoji} {safeEvent.badgeDef.label}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-0.5 flex-shrink-0">
+                <button
+                  onClick={() => {
+                    setMuted((m) => !m);
+                    if (muted) playCelebrationSound(false);
+                  }}
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-white/40 hover:text-white/80 hover:bg-white/10"
+                  data-testid="button-toggle-mute"
+                  aria-label={muted ? "Unmute" : "Mute"}
                 >
-                  <div className="relative w-20 h-20">
-                    <SparkleRing color={color} />
-
-                    <motion.div
-                      className="absolute inset-0 rounded-full"
-                      style={{ background: `${color}30`, boxShadow: `0 0 0 3px ${color}60` }}
-                      animate={{ boxShadow: [`0 0 0 3px ${color}60`, `0 0 0 8px ${color}30`, `0 0 0 3px ${color}60`] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                    />
-
-                    <Avatar
-                      className="w-20 h-20 ring-2 relative"
-                      style={{ ringColor: color } as any}
-                      data-testid="badge-user-avatar"
-                    >
-                      <AvatarImage src={safeEvent.userAvatar ?? undefined} alt="" />
-                      <AvatarFallback
-                        className="text-xl font-bold"
-                        style={{ background: `${color}25`, color: color }}
-                      >
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-
-                    <motion.div
-                      animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
-                      transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }}
-                      className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-lg z-10"
-                      style={{
-                        background: `${color}22`,
-                        border: `2px solid ${color}70`,
-                        backdropFilter: "blur(4px)",
-                      }}
-                    >
-                      {safeEvent.badgeDef.emoji}
-                    </motion.div>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  className="flex-1 min-w-0"
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.25, duration: 0.4 }}
+                  {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                </button>
+                <button
+                  onClick={handleDismiss}
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-white/40 hover:text-white/80 hover:bg-white/10"
+                  data-testid="button-dismiss-badge"
+                  aria-label="Dismiss"
                 >
-                  <p className="text-white font-bold text-lg leading-tight break-words" data-testid="badge-user-name">
-                    {safeEvent.userName}
-                  </p>
-                  <p className="text-white/55 text-sm mt-0.5">has been awarded</p>
-
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.85 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.4, type: "spring", stiffness: 250 }}
-                    className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-bold"
-                    style={{
-                      background: `${color}20`,
-                      border: `1.5px solid ${color}55`,
-                      color: color,
-                      boxShadow: `0 0 16px ${color}25`,
-                    }}
-                    data-testid="badge-label"
-                  >
-                    <span className="text-base">{safeEvent.badgeDef.emoji}</span>
-                    <span>{safeEvent.badgeDef.label}</span>
-                  </motion.div>
-
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.55 }}
-                    className="text-white/45 text-xs leading-relaxed italic mt-2"
-                    data-testid="badge-quote"
-                  >
-                    "{safeEvent.quote}"
-                  </motion.p>
-                </motion.div>
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
-
             <motion.div
-              className="absolute bottom-0 left-0 h-[3px] rounded-full"
-              style={{ background: `linear-gradient(90deg, ${color}, ${color}80)` }}
+              className="absolute bottom-0 left-0 h-[2px]"
+              style={{ background: `linear-gradient(90deg, ${color}, ${color}70)` }}
               initial={{ width: "100%" }}
               animate={{ width: "0%" }}
               transition={{ duration: AUTO_DISMISS_MS / 1000, ease: "linear" }}
             />
           </div>
         </motion.div>
-        </>
       )}
     </AnimatePresence>
   );

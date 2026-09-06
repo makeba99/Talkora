@@ -6427,7 +6427,7 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
 
 /* the popover that contains the orbit + identity + footer */
 .orbit-popover-content {
-  width: 300px;
+  width: min(340px, calc(100vw - 20px));
   padding: 14px 14px 12px;
   border-radius: 20px;
   border: 1px solid hsl(var(--neu-orange, 252 90% 70%) / 0.28);
@@ -6445,7 +6445,7 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
     0 0 0 1px rgba(255, 255, 255, 0.04) inset,
     0 30px 80px rgba(0, 0, 0, 0.55),
     0 0 60px hsl(var(--neu-orange, 252 90% 70%) / 0.18);
-  overflow: visible;
+  overflow: hidden;
 }
 
 .orbit-tail {
@@ -6513,8 +6513,9 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
 }
 .orbit-apps {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
+  width: 100%;
 }
 .orbit-ring--sheet .orbit-sat {
   position: relative;
@@ -6524,10 +6525,11 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   opacity: 1;
   animation: none;
   width: 100%;
+  min-width: 0;
   flex-direction: row;
   align-items: center;
   gap: 8px;
-  padding: 10px 10px;
+  padding: 10px 8px;
   border-radius: 14px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
@@ -6557,9 +6559,14 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   font-weight: 650;
   letter-spacing: 0.01em;
   text-align: left;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .orbit-ring--sheet .orbit-sat-pin {
   position: static;
+  flex-shrink: 0;
   margin-left: auto;
   opacity: 0.55;
   transform: none;
@@ -6570,8 +6577,7 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   transform: none;
 }
 .orbit-ring--sheet .orbit-sat-pin-corner {
-  position: static;
-  margin-left: 0;
+  display: none;
 }
 
 /* the orbit container */
@@ -6580,6 +6586,12 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   width: 280px;
   height: 280px;
   margin: 0 auto;
+}
+.orbit-ring.orbit-ring--sheet {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  margin: 0;
 }
 .orbit-ring-outer,
 .orbit-ring-inner {
@@ -8449,12 +8461,16 @@ html.neomorphic-light .scroll-jump-btn {
     transform: translateY(-50%) translateX(0);
   }
   .orbit-popover-content {
-    width: 290px;
-    padding: 18px 14px 12px;
+    width: min(320px, calc(100vw - 16px));
+    padding: 14px 12px 12px;
   }
   .orbit-ring {
     width: 250px;
     height: 250px;
+  }
+  .orbit-ring.orbit-ring--sheet {
+    width: 100%;
+    height: auto;
   }
   .orbit-sat-top    { top: calc(50% - 96px); left: 50%; }
   .orbit-sat-right  { top: 50%;              left: calc(50% + 96px); }

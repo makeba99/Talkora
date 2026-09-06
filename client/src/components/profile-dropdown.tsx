@@ -563,7 +563,7 @@ export function ProfileDropdown({
             </div>
 
             <div className="orbit-apps">
-            {!pinned?.messages && (
+            {!pinned?.messages && !cornerPinned?.messages && (
               <button
                 type="button"
                 className="orbit-sat orbit-sat-top"
@@ -696,7 +696,7 @@ export function ProfileDropdown({
               </button>
             )}
 
-            {!pinned?.community && (
+            {!pinned?.community && !cornerPinned?.community && (
               <button
                 type="button"
                 className="orbit-sat orbit-sat-left"

@@ -4434,7 +4434,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         badgeLabel?: string;
         badgeUserName?: string;
       }) => {
-        const durationMs = Math.min(Math.max(Number(data?.durationMs) || 8000, 3000), 20000);
+        const durationMs = Math.min(Math.max(Number(data?.durationMs) || 2800, 1800), 4000);
         const mood = String(data?.mood || "🥳").slice(0, 16);
         const moodMap = data?.moods && typeof data.moods === "object" ? data.moods : null;
         setBadgeCelebration({ key: Date.now(), durationMs });

@@ -74,12 +74,12 @@ function computeAvatarPx(displayCount: number): number {
     displayCount <= 1 ? 108 :
     displayCount === 2 ? 92 :
     displayCount === 3 ? 78 :
-    displayCount === 4 ? 80 :
-    displayCount === 5 ? 68 :
-    displayCount === 6 ? 64 :
-    displayCount <= 8 ? 60 :
-    displayCount <= 10 ? 54 :
-    50;
+    displayCount === 4 ? 70 :
+    displayCount === 5 ? 64 :
+    displayCount === 6 ? 60 :
+    displayCount <= 8 ? 54 :
+    displayCount <= 10 ? 50 :
+    46;
   const vw =
     w >= 1536 ? 1.08 :
     w >= 1280 ? 1.04 :
@@ -944,6 +944,13 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
 
   const cardAlreadyIn = !!isOwner || (!!user && participants.some(p => p.id === user.id));
   const cardIsClosed = !cardAlreadyIn && (isFull || !room.isPublic);
+  const twoRowGrid = displayCount === 4 || displayCount === 6 || displayCount === 8 || displayCount === 10;
+  const cardH = isPremiumAtmosphere
+    ? (twoRowGrid ? 300 : 276)
+    : (twoRowGrid ? 288 : 264);
+  const cardMinH = isPremiumAtmosphere
+    ? (twoRowGrid ? 332 : 308)
+    : (twoRowGrid ? 320 : 296);
 
   return (
     <div
@@ -967,8 +974,8 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           background: isPremiumAtmosphere
             ? "linear-gradient(145deg, rgb(3,6,22) 0%, rgb(6,8,28) 38%, rgb(5,3,20) 72%, rgb(8,4,25) 100%)"
             : "linear-gradient(160deg, rgb(16, 20, 50) 0%, rgb(11, 15, 42) 100%)",
-          minHeight: isPremiumAtmosphere ? 308 : 296,
-          height: isPremiumAtmosphere ? 276 : 264,
+          minHeight: cardMinH,
+          height: cardH,
           boxShadow: [
             "inset 0 1px 0 rgba(255,255,255,0.09)",
             "inset 0 -1px 0 rgba(0,0,0,0.50)",
@@ -1020,7 +1027,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
         <div className="relative z-[4] flex flex-col h-full">
 
           {/* ── Header ── */}
-          <div className="relative z-10 flex items-start justify-between gap-2 px-3 pt-2 pb-2">
+          <div className="relative z-20 flex-shrink-0 flex items-start justify-between gap-2 px-3 pt-2 pb-2.5">
             <div className="flex-1 min-w-0 pr-2">
               {/* Title row with green live dot */}
               <div className="flex items-center gap-1.5 min-w-0">
@@ -1051,7 +1058,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
                 {!room.isPublic && <Lock className="w-3.5 h-3.5 text-white/55 flex-shrink-0" role="img" aria-label="Private room" />}
               </div>
               {/* Sub-row: flag, language, level, mic status, LIVE */}
-              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              <div className="flex items-center gap-1.5 mt-1 flex-nowrap min-w-0">
                 <LanguageFlag language={room.language} />
                 <span className="text-[11px] text-white/70 font-medium">{room.language}</span>
                 <span className="text-white/30 text-[10px]" aria-hidden="true">•</span>
@@ -1166,7 +1173,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             const tightSpacing = displayCount === 7 || displayCount === 8 || displayCount === 11 || displayCount === 12;
             const gridRightPad = gridCols >= 2 ? 40 : 0;
             return (
-          <div className="lobby-profile-body flex-1 flex flex-col justify-center px-3 pt-1.5 pb-1 min-h-0 overflow-visible">
+          <div className="lobby-profile-body flex-1 flex flex-col justify-start px-3 pt-2 pb-1 min-h-0 overflow-hidden">
             <div
               className="lobby-profile-grid"
               data-cols={gridCols}

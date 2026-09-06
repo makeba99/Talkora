@@ -572,8 +572,8 @@ export default function Lobby() {
   // localStorage so it survives reloads.
   // -------------------------------------------------------------------------
   type PinnedKey = "messages" | "notifications" | "themes" | "community" | "orbit";
-  const PIN_STORAGE_KEY = "vextorn:header:pinned:v2";
-  const PIN_STORAGE_LEGACY = "vextorn:header:pinned:v1";
+  const PIN_STORAGE_KEY = "vextorn:header:pinned:v3";
+  const PIN_STORAGE_LEGACY = ["vextorn:header:pinned:v2", "vextorn:header:pinned:v1"];
   const [pinned, setPinned] = useState<Record<PinnedKey, boolean>>(() => {
     const fallback: Record<PinnedKey, boolean> = {
       messages: true,
@@ -584,14 +584,14 @@ export default function Lobby() {
     };
     if (typeof window === "undefined") return fallback;
     try {
-      const v2 = window.localStorage.getItem(PIN_STORAGE_KEY);
-      if (v2) {
-        return { ...fallback, ...JSON.parse(v2) };
-      }
-      const v1 = window.localStorage.getItem(PIN_STORAGE_LEGACY);
-      if (v1) {
-        const parsed = JSON.parse(v1);
-        return { ...fallback, ...parsed, messages: true };
+      const v3 = window.localStorage.getItem(PIN_STORAGE_KEY);
+      if (v3) return { ...fallback, ...JSON.parse(v3) };
+      for (const key of PIN_STORAGE_LEGACY) {
+        const raw = window.localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          return { ...fallback, ...parsed, messages: true };
+        }
       }
     } catch {}
     return fallback;
@@ -616,23 +616,26 @@ export default function Lobby() {
   // independently of the legacy header-pin schema.
   // -------------------------------------------------------------------------
   type CornerKey = PinnedKey | "bookTeacher" | "profile";
-  const CORNER_STORAGE_KEY = "vextorn:corner:pinned:v1";
+  const CORNER_STORAGE_KEY = "vextorn:corner:pinned:v2";
+  const CORNER_STORAGE_LEGACY = "vextorn:corner:pinned:v1";
   const [cornerPinned, setCornerPinned] = useState<Record<CornerKey, boolean>>(() => {
     const fallback: Record<CornerKey, boolean> = {
       messages: false,
       notifications: false,
       themes: false,
-      community: false,
+      community: true,
       orbit: false,
       bookTeacher: false,
       profile: false,
     };
     if (typeof window === "undefined") return fallback;
     try {
-      const raw = window.localStorage.getItem(CORNER_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        return { ...fallback, ...parsed };
+      const v2 = window.localStorage.getItem(CORNER_STORAGE_KEY);
+      if (v2) return { ...fallback, ...JSON.parse(v2) };
+      const v1 = window.localStorage.getItem(CORNER_STORAGE_LEGACY);
+      if (v1) {
+        const parsed = JSON.parse(v1);
+        return { ...fallback, ...parsed, community: true };
       }
     } catch {}
     return fallback;
