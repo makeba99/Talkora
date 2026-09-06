@@ -74,19 +74,20 @@ function computeAvatarPx(displayCount: number): number {
     displayCount <= 1 ? 108 :
     displayCount === 2 ? 92 :
     displayCount === 3 ? 78 :
-    displayCount === 4 ? 58 :
-    displayCount === 5 ? 64 :
-    displayCount === 6 ? 60 :
-    displayCount <= 8 ? 48 :
-    displayCount <= 10 ? 50 :
-    46;
+    displayCount === 4 ? 48 :
+    displayCount === 5 ? 52 :
+    displayCount === 6 ? 50 :
+    displayCount <= 8 ? 40 :
+    displayCount <= 10 ? 42 :
+    40;
   const vw =
     w >= 1536 ? 1.08 :
     w >= 1280 ? 1.04 :
     w >= 1024 ? 1.0 :
     w >= 768 ? 0.96 :
     0.94;
-  return Math.round(byCount * vw);
+  const scale = displayCount >= 4 ? Math.min(vw, 1) : vw;
+  return Math.round(byCount * scale);
 }
 
 /**
@@ -1172,8 +1173,8 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               data-cols={gridCols}
               style={{
                 gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
-                columnGap: tightSpacing ? 8 : 12,
-                rowGap: tightSpacing ? 8 : 10,
+                columnGap: tightSpacing ? 6 : 10,
+                rowGap: tightSpacing ? 6 : 8,
                 paddingRight: gridRightPad,
                 ["--lobby-slot-size" as string]: `${slotSize}px`,
               }}
@@ -1240,7 +1241,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           })()}
 
           {/* ── Footer ── */}
-          <div className="flex items-center gap-2 px-3 pb-2 pt-0">
+          <div className="flex-shrink-0 flex items-center gap-2 px-3 pb-2 pt-1">
             {/* Participant count chip */}
             <div
               className="flex items-center gap-0.5 text-white/60"

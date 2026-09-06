@@ -11343,11 +11343,11 @@ html.neomorphic-light .pinned-socials-link {
   min-width: 0;
   max-width: min(100%, var(--lobby-slot-size, 72px));
 }
-.lobby-profile-grid[data-cols="1"] .lobby-profile-slot { max-width: min(42%, 120px); }
-.lobby-profile-grid[data-cols="2"] .lobby-profile-slot { max-width: min(48%, 104px); }
-.lobby-profile-grid[data-cols="3"] .lobby-profile-slot { max-width: min(100%, 88px); }
+.lobby-profile-grid[data-cols="1"] .lobby-profile-slot { max-width: min(42%, var(--lobby-slot-size, 108px)); }
+.lobby-profile-grid[data-cols="2"] .lobby-profile-slot { max-width: min(48%, var(--lobby-slot-size, 72px)); }
+.lobby-profile-grid[data-cols="3"] .lobby-profile-slot { max-width: min(100%, var(--lobby-slot-size, 72px)); }
 .lobby-profile-grid[data-cols="4"] .lobby-profile-slot,
-.lobby-profile-grid[data-cols="5"] .lobby-profile-slot { max-width: 100%; }
+.lobby-profile-grid[data-cols="5"] .lobby-profile-slot { max-width: min(100%, var(--lobby-slot-size, 72px)); }
 .lobby-profile-slot__btn {
   width: 100%;
   height: auto;
@@ -11541,16 +11541,14 @@ html.neomorphic-light .pinned-socials-link {
   align-items: center;
   justify-content: center;
   align-self: center;
-  gap: 3px;
-  margin-top: 8px;
-  min-height: 14px;
+  gap: 2px;
+  margin-top: 6px;
+  min-height: 12px;
   padding: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
   line-height: 1;
   pointer-events: none;
 }
