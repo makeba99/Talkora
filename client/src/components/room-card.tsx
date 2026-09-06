@@ -959,7 +959,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
       data-testid={`card-room-${room.id}`}
     >
       <div
-        className={`flex flex-col relative overflow-hidden ${isPremiumAtmosphere ? "premium-atmosphere-card" : ""}`}
+        className={`room-card-inner relative overflow-hidden ${isPremiumAtmosphere ? "premium-atmosphere-card" : ""}`}
         style={{
           borderRadius: "24px",
           // Lobby cards always use the dark gradient — the room's interior
@@ -967,8 +967,6 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           background: isPremiumAtmosphere
             ? "linear-gradient(145deg, rgb(3,6,22) 0%, rgb(6,8,28) 38%, rgb(5,3,20) 72%, rgb(8,4,25) 100%)"
             : "linear-gradient(160deg, rgb(16, 20, 50) 0%, rgb(11, 15, 42) 100%)",
-          minHeight: isPremiumAtmosphere ? 368 : 356,
-          height: isPremiumAtmosphere ? 356 : 344,
           boxShadow: [
             "inset 0 1px 0 rgba(255,255,255,0.09)",
             "inset 0 -1px 0 rgba(0,0,0,0.50)",
@@ -977,6 +975,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           ].join(", "),
         }}
       >
+        <div className="room-card-content">
         {isPremiumAtmosphere && (
           <div className="premium-atmosphere-card-effects" aria-hidden="true">
             <span className="premium-atmosphere-orb premium-atmosphere-orb-a" />
@@ -985,42 +984,39 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             <span className="premium-atmosphere-sweep" />
           </div>
         )}
-        {/* GIF / image background on lobby card — applied as CSS background-image (never
-            an LCP candidate) so it doesn't delay the skeleton icon preload. Videos and
-            YouTube links are also rendered here via CardHologramVideo. */}
+        {/* GIF / image background — clipped to the header + participant section,
+            never the footer. CSS background-image so it is not an LCP candidate. */}
         {hologramVideoUrl && (
           isImageMedia(hologramVideoUrl)
             ? (
               <>
                 <div
                   aria-hidden="true"
-                  className="card-image-bg absolute inset-0 z-[2] rounded-[24px] overflow-hidden"
+                  className="room-card-background card-image-bg"
                   style={{
                     backgroundImage: `url('${proxyExternalUrl(hologramVideoUrl)}')`,
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                   }}
                 />
-                {/* Dimming overlay — same gradient CardHologramVideo provides for
-                    non-image media so title/avatar contrast is preserved. */}
                 <div
                   aria-hidden="true"
-                  className="absolute inset-0 z-[3] pointer-events-none rounded-[24px]"
-                  style={{ background: "linear-gradient(to bottom, rgba(2,4,18,0.18) 0%, rgba(2,4,18,0.10) 50%, rgba(2,4,18,0.30) 100%)" }}
+                  className="room-card-background"
+                  style={{ background: "linear-gradient(to bottom, rgba(2,4,18,0.18) 0%, rgba(2,4,18,0.10) 50%, rgba(2,4,18,0.30) 100%)", zIndex: 3, pointerEvents: "none" }}
                 />
               </>
             )
             : (
-              <div className="absolute inset-0 z-[2] rounded-[24px] overflow-hidden">
+              <div className="room-card-background">
                 <CardHologramVideo src={hologramVideoUrl} />
               </div>
             )
         )}
 
-        <div className="relative z-[4] flex flex-col h-full">
+        <div className="relative z-[4] flex flex-col">
 
           {/* ── Header ── */}
-          <div className="relative z-20 flex-shrink-0 flex items-start justify-between gap-2 px-3 pt-2 pb-2.5">
+          <div className="room-card-header relative z-20 flex-shrink-0 flex items-start justify-between gap-2 px-3 pt-1.5 pb-1.5">
             <div className="flex-1 min-w-0 pr-2">
               {/* Title row with green live dot */}
               <div className="flex items-center gap-1.5 min-w-0">
@@ -1097,7 +1093,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           {/* ── YouTube watch-party strip ── shown when the card has a live
               YouTube hologram, so visitors can see who's watching together */}
           {hologramVideoUrl && extractYoutubeId(hologramVideoUrl) && participants.length > 0 && (
-            <div className="px-4 pb-2" data-testid={`youtube-watchers-${room.id}`}>
+            <div className="px-3 pb-1.5" data-testid={`youtube-watchers-${room.id}`}>
               <div
                 className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl"
                 style={{
@@ -1164,17 +1160,18 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           {/* Square profile grid — overflow visible so VIP frames / rims are not clipped. */}
           {(() => {
             const tightSpacing = displayCount === 4 || displayCount === 7 || displayCount === 8 || displayCount === 11 || displayCount === 12;
-            const gridRightPad = gridCols >= 4 ? 36 : 0;
             return (
-          <div className="lobby-profile-body flex-1 flex flex-col justify-center px-3 pt-1 pb-3 min-h-0 overflow-visible">
+          <div
+            className="lobby-profile-body room-card-participants px-2.5 pt-0.5 pb-2 overflow-visible"
+            style={displayCount === 0 ? { minHeight: 48 } : undefined}
+          >
             <div
               className="lobby-profile-grid"
               data-cols={gridCols}
               style={{
                 gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
-                columnGap: tightSpacing ? 8 : 12,
-                rowGap: tightSpacing ? 18 : 20,
-                paddingRight: gridRightPad,
+                columnGap: tightSpacing ? 8 : 10,
+                rowGap: tightSpacing ? 8 : 10,
                 ["--lobby-slot-size" as string]: `${slotSize}px`,
               }}
             >
@@ -1239,37 +1236,36 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             );
           })()}
 
-          {/* ── Footer ── */}
-          <div className="flex-shrink-0 flex items-center gap-2 px-3 pb-2 pt-1">
-            {/* Participant count chip */}
-            <div
-              className="flex items-center gap-0.5 text-white/60"
-              data-testid={`badge-participants-${room.id}`}
-              title={`${participants.length} of ${isUnlimited ? "∞" : room.maxUsers} participants`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span className="text-[11px] font-semibold tabular-nums">
-                {participants.length}{!isUnlimited && `/${room.maxUsers}`}
-              </span>
+        </div>
+        </div>
+
+          <div className="room-card-footer">
+            <div className="room-card-stats">
+              <div
+                className="flex items-center gap-0.5 text-white/60"
+                data-testid={`badge-participants-${room.id}`}
+                title={`${participants.length} of ${isUnlimited ? "∞" : room.maxUsers} participants`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span className="text-[11px] font-semibold tabular-nums">
+                  {participants.length}{!isUnlimited && `/${room.maxUsers}`}
+                </span>
+              </div>
+
+              {isLoggedIn && onVote && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onVote(); }}
+                  className={`flex items-center gap-0.5 transition-colors ${hasVoted ? "text-orange-400" : "text-white/55 hover:text-orange-400"}`}
+                  data-testid={`button-vote-room-${room.id}`}
+                  aria-label={hasVoted ? `Remove vote from ${room.title}` : `Vote for ${room.title}`}
+                  aria-pressed={hasVoted}
+                >
+                  <Flame className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span className="text-[11px] font-semibold">{voteCount}</span>
+                </button>
+              )}
             </div>
 
-            {isLoggedIn && onVote && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onVote(); }}
-                className={`flex items-center gap-0.5 transition-colors ${hasVoted ? "text-orange-400" : "text-white/55 hover:text-orange-400"}`}
-                data-testid={`button-vote-room-${room.id}`}
-                aria-label={hasVoted ? `Remove vote from ${room.title}` : `Vote for ${room.title}`}
-                aria-pressed={hasVoted}
-              >
-                <Flame className="w-3.5 h-3.5" aria-hidden="true" />
-                <span className="text-[11px] font-semibold">{voteCount}</span>
-              </button>
-            )}
-          </div>
-
-          {/* ── Door: absolutely pinned to bottom-right of the card so it
-              never participates in the flex layout and cannot push the
-              participant grid upward or overlap the slots. ── */}
           {(() => {
             const isClosed = cardIsClosed;
             const stateClass = isClosed ? "door-3d-locked" : "";
@@ -1313,11 +1309,9 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               </>
             );
 
-            const wrapStyle: React.CSSProperties = { position: "absolute", bottom: 8, right: 10, zIndex: 10 };
-
             if (!isLoggedIn) {
               return (
-                <a href="/api/login" className={`door-3d-wrap ${stateClass}`} style={wrapStyle}
+                <a href="/api/login" className={`room-card-enter door-3d-wrap ${stateClass}`}
                   aria-label={isClosed ? `Sign in to knock on ${room.title}` : `Sign in to enter ${room.title}`}
                   data-testid={`button-signin-room-${room.id}`}
                   onClick={(e) => e.stopPropagation()}>
@@ -1327,9 +1321,9 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             }
             if (isClosed) {
               return (
-                <div style={{ position: "absolute", bottom: 8, right: 10, zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                <div className="room-card-enter">
                   <div className={`door-3d-wrap ${knockBlocked ? "door-3d-wrap--locked" : stateClass}`}
-                    style={{ position: "relative", opacity: knockBlocked ? 0.5 : 1, cursor: knockBlocked ? "not-allowed" : "pointer" }}
+                    style={{ opacity: knockBlocked ? 0.5 : 1, cursor: knockBlocked ? "not-allowed" : "pointer" }}
                     role="button" tabIndex={knockBlocked ? -1 : 0}
                     aria-disabled={knockMutation.isPending || knockBlocked || undefined}
                     aria-label={knockBlocked ? (knockCd?.banned ? "Permanently blocked from knocking" : `Knock available in ${knockCdLabel}`) : knockMutation.isPending ? `Knocking on ${room.title}…` : `Knock to request entry to ${room.title}`}
@@ -1348,7 +1342,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               );
             }
             return (
-              <div className={`door-3d-wrap ${stateClass}`} style={wrapStyle}
+              <div className={`room-card-enter door-3d-wrap ${stateClass}`}
                 role="button" tabIndex={0}
                 aria-label={cardAlreadyIn ? `Re-enter ${room.title}` : `Enter ${room.title}`}
                 onClick={(e) => { e.stopPropagation(); onJoin(room.id); }}
@@ -1359,7 +1353,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               </div>
             );
           })()}
-        </div>
+          </div>
       </div>
 
       {/* Report Dialog — lazy: only fetched after the user clicks "Report" */}
