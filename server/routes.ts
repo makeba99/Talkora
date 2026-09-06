@@ -2406,15 +2406,34 @@ export async function registerRoutes(
     }
   });
 
+  /** True when the caller has used up the free daily Talking AI allowance. */
+  async function talkingAiQuotaExhausted(req: any): Promise<boolean> {
+    try {
+      const callerId = String((req.user as any)?.id || "");
+      if (!callerId) return true;
+      const callerUser = await storage.getUser(callerId);
+      if (!callerUser) return true;
+      return !!(await checkTalkingAiQuota({ ...callerUser, id: callerId }));
+    } catch {
+      return false;
+    }
+  }
+
   // ── AI Tutor speech-to-text ──────────────────────────────────────────────
   // Transcribes audio captured from the room's own microphone stream. The
   // browser Web Speech API needs a second, independent mic capture, which the
   // platform often refuses while a voice room holds the device — it reports
   // "listening" and returns nothing. Sending the audio here instead keeps the
   // AI hearing the user on mobile Chrome and on browsers with no Web Speech.
-  app.get("/api/ai-tutor/stt-config", isAuthenticated, async (_req, res) => {
+  app.get("/api/ai-tutor/stt-config", isAuthenticated, async (req: any, res) => {
     try {
       const { available, provider } = await sttAvailable();
+      // Someone who has spent their daily Talking AI allowance gets no
+      // transcription either — the browser recognizer is free and the AI
+      // would refuse to answer anyway.
+      if (available && (await talkingAiQuotaExhausted(req))) {
+        return res.json({ available: false, provider: null });
+      }
       res.json({ available, provider });
     } catch {
       res.json({ available: false, provider: null });
@@ -2428,13 +2447,11 @@ export async function registerRoutes(
         return res.status(415).json({ error: "audio body required" });
       }
 
-      const roomId = typeof req.query.roomId === "string" ? req.query.roomId : null;
-      if (roomId) {
-        const session = roomAiTutorState.get(roomId);
-        const callerId = (req.user as any)?.id;
-        if (session && callerId && session.userId !== callerId) {
-          return res.status(403).json({ error: "not-active-session" });
-        }
+      // No room-session check here, unlike TTS: transcription is per listener.
+      // Everyone in the room runs wake-word listening on their own microphone,
+      // and each of them is bounded by their own quota and rate limit.
+      if (await talkingAiQuotaExhausted(req)) {
+        return res.status(403).json({ error: "usage_limit_reached" });
       }
 
       const langParam = typeof req.query.lang === "string" ? req.query.lang.toLowerCase() : "";

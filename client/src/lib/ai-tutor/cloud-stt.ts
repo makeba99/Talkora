@@ -161,6 +161,11 @@ export class CloudSttEngine {
     return this.running;
   }
 
+  /** The stream currently being listened to, so callers can spot a swap. */
+  get attachedStream(): MediaStream | null {
+    return this.stream;
+  }
+
   setLanguage(roomLanguage: string) {
     this.language = whisperLanguage(roomLanguage);
   }
@@ -382,6 +387,11 @@ export class CloudSttEngine {
 
       if (res.status === 501) {
         this.giveUp("no transcription key configured");
+        return;
+      }
+      if (res.status === 403) {
+        // Daily allowance spent, or someone else owns the room's AI session.
+        this.giveUp("transcription not permitted");
         return;
       }
       if (!res.ok) {

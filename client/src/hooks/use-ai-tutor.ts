@@ -651,12 +651,15 @@ export function useAiTutor(deps: AiTutorDeps) {
     if (sttModeRef.current === "cloud") {
       const engine = cloudSessionRef.current;
       if (!engine) return;
-      if (engine.isRunning) {
+      const stream = getMicStreamRef.current?.() ?? null;
+      // Restart on a stream swap: changing the input device replaces the
+      // room's stream, and the old one goes silent.
+      if (engine.isRunning && (!stream || engine.attachedStream === stream)) {
         setVoiceListening(true);
         return;
       }
       void engine
-        .start(getMicStreamRef.current?.() ?? null, { allowOwnMic: true })
+        .start(stream, { allowOwnMic: true })
         .then(ok => {
           setVoiceListening(ok);
           if (ok) addDebug("info", `Mic open — transcribing ${roomLanguageRef.current}`);
@@ -1123,13 +1126,23 @@ export function useAiTutor(deps: AiTutorDeps) {
       if (!engine) return;
       let cancelled = false;
       // allowOwnMic:false — background listening must never raise a
-      // permission prompt; it waits for the room to open the mic and
-      // primeWakeWord() picks it up from there.
-      void engine
-        .start(getMicStreamRef.current?.() ?? null, { allowOwnMic: false })
-        .then(ok => { if (!cancelled) setWakeListening(ok); });
+      // permission prompt of its own. The room opens the microphone at its
+      // own pace (and swaps the stream when the input device changes), so
+      // keep checking rather than giving up on the first miss.
+      const tryStart = () => {
+        if (cancelled) return;
+        const stream = getMicStreamRef.current?.() ?? null;
+        if (!stream) return;
+        if (engine.isRunning && engine.attachedStream === stream) return;
+        void engine
+          .start(stream, { allowOwnMic: false })
+          .then(ok => { if (!cancelled) setWakeListening(ok); });
+      };
+      tryStart();
+      const timer = window.setInterval(tryStart, 2500);
       return () => {
         cancelled = true;
+        window.clearInterval(timer);
         engine.stop();
         setWakeListening(false);
       };
