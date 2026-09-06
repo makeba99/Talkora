@@ -1,4 +1,4 @@
-import { Mic, MicOff, Plus, Crown } from "lucide-react";
+import { Mic, MicOff, Plus, Crown, Heart } from "lucide-react";
 import {
   AvatarFrameOverlay,
   VIP_OVERLAY_FRAMES,
@@ -9,6 +9,25 @@ import { getAvatarRingClass } from "@/lib/avatar-ring";
 import { BADGE_TYPES } from "@shared/constants";
 import { getUserDisplayName, getUserInitials } from "@/lib/utils";
 import type { User, UserBadge } from "@shared/schema";
+
+function formatFollowerCount(n: number): string {
+  if (n >= 1_000_000) {
+    const v = n / 1_000_000;
+    return `${v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)}m`;
+  }
+  if (n >= 1000) {
+    const v = n / 1000;
+    return `${v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)}k`;
+  }
+  return String(n);
+}
+
+function heartTone(n: number): "quiet" | "warm" | "hot" | "gold" {
+  if (n >= 300) return "gold";
+  if (n >= 100) return "hot";
+  if (n >= 1) return "warm";
+  return "quiet";
+}
 
 function buildAvatarSources(url: string | null | undefined): {
   src: string | undefined;
@@ -39,6 +58,7 @@ export function RoomUserProfile({
   isHost = false,
   isSpeaking = false,
   isMuted = false,
+  followerCount,
   showName = false,
 }: {
   participant: User;
@@ -47,6 +67,7 @@ export function RoomUserProfile({
   isHost?: boolean;
   isSpeaking?: boolean;
   isMuted?: boolean;
+  followerCount?: number;
   showName?: boolean;
 }) {
   const fullName = getUserDisplayName(participant);
@@ -58,6 +79,8 @@ export function RoomUserProfile({
   const pipDef = badges[0]
     ? BADGE_TYPES[badges[0].badgeType as keyof typeof BADGE_TYPES]
     : undefined;
+  const showFollowers = typeof followerCount === "number";
+  const tone = heartTone(followerCount ?? 0);
   const ringId = (participant as any).avatarRing as string | null | undefined;
   const ringClass = getAvatarRingClass(ringId);
   const hasRing = !!ringClass;
@@ -66,6 +89,7 @@ export function RoomUserProfile({
     <div
       className="rup"
       data-state={state}
+      data-heart={tone}
       data-overlay={overlayId ? "1" : undefined}
       data-named={showName ? "1" : undefined}
       data-ring={hasRing ? ringId : undefined}
@@ -124,6 +148,16 @@ export function RoomUserProfile({
           <span className="rup__name" title={fullName}>{name}</span>
         )}
       </div>
+      {showFollowers && (
+        <span className="rup__hearts" title={`${followerCount} followers`}>
+          <Heart
+            className="rup__heart"
+            aria-hidden="true"
+            fill={(followerCount ?? 0) > 0 ? "currentColor" : "none"}
+          />
+          <span className="rup__heart-n">{formatFollowerCount(followerCount)}</span>
+        </span>
+      )}
     </div>
   );
 }
@@ -136,6 +170,7 @@ export function RoomUserEmptySlot({ size }: { size: number }) {
           <Plus className="rup__plus" />
         </div>
       </div>
+      <span className="rup__hearts rup__hearts--spacer" aria-hidden="true" />
     </div>
   );
 }
