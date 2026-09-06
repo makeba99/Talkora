@@ -71,23 +71,22 @@ function subscribeVpResize(cb: () => void): () => void {
 function computeAvatarPx(displayCount: number): number {
   const w = _vpWidth;
   const byCount =
-    displayCount <= 1 ? 108 :
-    displayCount === 2 ? 92 :
-    displayCount === 3 ? 78 :
-    displayCount === 4 ? 48 :
-    displayCount === 5 ? 52 :
-    displayCount === 6 ? 50 :
-    displayCount <= 8 ? 40 :
-    displayCount <= 10 ? 42 :
-    40;
+    displayCount <= 1 ? 176 :
+    displayCount === 2 ? 148 :
+    displayCount === 3 ? 122 :
+    displayCount === 4 ? 118 :
+    displayCount === 5 ? 92 :
+    displayCount === 6 ? 86 :
+    displayCount <= 8 ? 72 :
+    displayCount <= 10 ? 62 :
+    58;
   const vw =
     w >= 1536 ? 1.08 :
     w >= 1280 ? 1.04 :
     w >= 1024 ? 1.0 :
     w >= 768 ? 0.96 :
     0.94;
-  const scale = displayCount >= 4 ? Math.min(vw, 1) : vw;
-  return Math.round(byCount * scale);
+  return Math.round(byCount * vw);
 }
 
 /**
@@ -968,8 +967,8 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           background: isPremiumAtmosphere
             ? "linear-gradient(145deg, rgb(3,6,22) 0%, rgb(6,8,28) 38%, rgb(5,3,20) 72%, rgb(8,4,25) 100%)"
             : "linear-gradient(160deg, rgb(16, 20, 50) 0%, rgb(11, 15, 42) 100%)",
-          minHeight: isPremiumAtmosphere ? 308 : 296,
-          height: isPremiumAtmosphere ? 276 : 264,
+          minHeight: isPremiumAtmosphere ? 368 : 356,
+          height: isPremiumAtmosphere ? 356 : 344,
           boxShadow: [
             "inset 0 1px 0 rgba(255,255,255,0.09)",
             "inset 0 -1px 0 rgba(0,0,0,0.50)",
@@ -1165,16 +1164,16 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
           {/* Square profile grid — overflow visible so VIP frames / rims are not clipped. */}
           {(() => {
             const tightSpacing = displayCount === 4 || displayCount === 7 || displayCount === 8 || displayCount === 11 || displayCount === 12;
-            const gridRightPad = gridCols >= 2 ? 40 : 0;
+            const gridRightPad = gridCols >= 4 ? 36 : 0;
             return (
-          <div className="lobby-profile-body flex-1 flex flex-col justify-start px-3 pt-1.5 pb-1 min-h-0 overflow-hidden">
+          <div className="lobby-profile-body flex-1 flex flex-col justify-center px-3 pt-1 pb-3 min-h-0 overflow-visible">
             <div
               className="lobby-profile-grid"
               data-cols={gridCols}
               style={{
                 gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
-                columnGap: tightSpacing ? 6 : 10,
-                rowGap: tightSpacing ? 6 : 8,
+                columnGap: tightSpacing ? 8 : 12,
+                rowGap: tightSpacing ? 18 : 20,
                 paddingRight: gridRightPad,
                 ["--lobby-slot-size" as string]: `${slotSize}px`,
               }}

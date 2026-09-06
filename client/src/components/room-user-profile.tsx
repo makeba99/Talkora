@@ -170,7 +170,7 @@ export function RoomUserEmptySlot({ size }: { size: number }) {
           <Plus className="rup__plus" />
         </div>
       </div>
-      <span className="rup__hearts rup__hearts--spacer" />
+      <span className="rup__hearts rup__hearts--spacer" aria-hidden="true" />
     </div>
   );
 }
