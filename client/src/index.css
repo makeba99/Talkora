@@ -6427,9 +6427,9 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
 
 /* the popover that contains the orbit + identity + footer */
 .orbit-popover-content {
-  width: 320px;
-  padding: 22px 18px 14px;
-  border-radius: 22px;
+  width: 300px;
+  padding: 14px 14px 12px;
+  border-radius: 20px;
   border: 1px solid hsl(var(--neu-orange, 252 90% 70%) / 0.28);
   background:
     radial-gradient(
@@ -6460,6 +6460,118 @@ html.midnight-purple [data-testid^="card-room-"] .neu-avatar-tile {
   transform: rotate(45deg);
   border-radius: 3px;
   pointer-events: none;
+}
+
+/* Compact command sheet — same purple glass, easier tap targets than the old ring */
+.orbit-ring--sheet {
+  width: 100%;
+  height: auto;
+  margin: 0;
+}
+.orbit-ring--sheet .orbit-ring-outer,
+.orbit-ring--sheet .orbit-ring-inner {
+  display: none;
+}
+.orbit-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 2px 10px;
+}
+.orbit-sheet-kicker {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(196, 181, 253, 0.72);
+}
+.orbit-sheet-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.orbit-tool-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+.orbit-tool-btn:hover,
+.orbit-tool-btn.is-active {
+  border-color: hsl(var(--neu-orange, 252 90% 70%) / 0.55);
+  background: hsl(var(--neu-orange, 252 90% 70%) / 0.14);
+  color: hsl(var(--neu-orange-hi, 252 95% 84%));
+}
+.orbit-apps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.orbit-ring--sheet .orbit-sat {
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: none;
+  opacity: 1;
+  animation: none;
+  width: 100%;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+}
+.orbit-ring--sheet .orbit-sat:hover {
+  border-color: hsl(var(--neu-orange, 252 90% 70%) / 0.45);
+  background:
+    linear-gradient(180deg, hsl(var(--neu-orange, 252 90% 70%) / 0.16), rgba(255, 255, 255, 0.03));
+}
+.orbit-ring--sheet .orbit-sat-top,
+.orbit-ring--sheet .orbit-sat-right,
+.orbit-ring--sheet .orbit-sat-bottom,
+.orbit-ring--sheet .orbit-sat-left {
+  top: auto;
+  left: auto;
+}
+.orbit-ring--sheet .orbit-sat-bubble {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 11px;
+}
+.orbit-ring--sheet .orbit-sat-label {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  text-align: left;
+}
+.orbit-ring--sheet .orbit-sat-pin {
+  position: static;
+  margin-left: auto;
+  opacity: 0.55;
+  transform: none;
+}
+.orbit-ring--sheet .orbit-sat:hover .orbit-sat-pin,
+.orbit-ring--sheet .orbit-sat-pin {
+  opacity: 0.7;
+  transform: none;
+}
+.orbit-ring--sheet .orbit-sat-pin-corner {
+  position: static;
+  margin-left: 0;
 }
 
 /* the orbit container */
@@ -11198,13 +11310,12 @@ html.neomorphic-light .pinned-socials-link {
   justify-items: center;
   align-items: start;
   column-gap: clamp(8px, 2.2cqi, 12px);
-  row-gap: clamp(6px, 1.4cqi, 8px);
+  row-gap: clamp(10px, 2cqi, 14px);
 }
 .lobby-profile-slot {
   width: 100%;
   min-width: 0;
   max-width: min(100%, var(--lobby-slot-size, 72px));
-  aspect-ratio: 1 / 1;
 }
 .lobby-profile-grid[data-cols="1"] .lobby-profile-slot { max-width: min(42%, 120px); }
 .lobby-profile-grid[data-cols="2"] .lobby-profile-slot { max-width: min(48%, 104px); }
@@ -11213,7 +11324,7 @@ html.neomorphic-light .pinned-socials-link {
 .lobby-profile-grid[data-cols="5"] .lobby-profile-slot { max-width: 100%; }
 .lobby-profile-slot__btn {
   width: 100%;
-  height: 100%;
+  height: auto;
   display: block;
   background: transparent;
   border: 0;
@@ -11232,8 +11343,10 @@ html.neomorphic-light .pinned-socials-link {
 .rup {
   position: relative;
   width: 100%;
-  height: 100%;
-  display: block;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   overflow: visible;
   background: none;
 }
@@ -11338,27 +11451,27 @@ html.neomorphic-light .pinned-socials-link {
   pointer-events: none;
 }
 .rup__hearts {
-  position: absolute;
-  left: 50%;
-  bottom: 6px;
-  z-index: 8;
-  transform: translateX(-50%);
+  position: relative;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  align-self: center;
   gap: 3px;
-  padding: 3px 8px 3px 6px;
-  border-radius: 999px;
-  background: rgba(12, 10, 22, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  margin-top: 5px;
+  min-height: 16px;
+  padding: 0 2px;
+  border-radius: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   line-height: 1;
   pointer-events: none;
 }
-.rup[data-named="1"] .rup__hearts {
-  bottom: 22px;
+.rup__hearts--spacer {
+  visibility: hidden;
 }
 .rup__heart {
   width: 9px;

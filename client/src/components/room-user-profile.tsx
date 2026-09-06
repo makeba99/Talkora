@@ -139,20 +139,20 @@ export function RoomUserProfile({
             {pipDef.emoji}
           </span>
         )}
-        {showFollowers && (
-          <span className="rup__hearts" title={`${followerCount} followers`}>
-            <Heart
-              className="rup__heart"
-              aria-hidden="true"
-              fill={(followerCount ?? 0) > 0 ? "currentColor" : "none"}
-            />
-            <span className="rup__heart-n">{formatFollowerCount(followerCount)}</span>
-          </span>
-        )}
         {showName && (
           <span className="rup__name" title={fullName}>{name}</span>
         )}
       </div>
+      {showFollowers && (
+        <span className="rup__hearts" title={`${followerCount} followers`}>
+          <Heart
+            className="rup__heart"
+            aria-hidden="true"
+            fill={(followerCount ?? 0) > 0 ? "currentColor" : "none"}
+          />
+          <span className="rup__heart-n">{formatFollowerCount(followerCount)}</span>
+        </span>
+      )}
     </div>
   );
 }
@@ -165,6 +165,7 @@ export function RoomUserEmptySlot({ size }: { size: number }) {
           <Plus className="rup__plus" />
         </div>
       </div>
+      <span className="rup__hearts rup__hearts--spacer" />
     </div>
   );
 }

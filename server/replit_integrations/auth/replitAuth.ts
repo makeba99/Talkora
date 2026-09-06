@@ -37,7 +37,12 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  const useGoogle = !!process.env.GOOGLE_CLIENT_ID;
+  const googleClientId = process.env.GOOGLE_CLIENT_ID?.trim();
+  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+  const useGoogle = !!(googleClientId && googleClientSecret);
+  if (process.env.GOOGLE_CLIENT_ID && !googleClientSecret) {
+    console.error("[auth] GOOGLE_CLIENT_SECRET is missing — Google sign-in will fail with Invalid Credentials.");
+  }
 
   if (useGoogle) {
     const { Strategy: GoogleStrategy } = await import("passport-google-oauth20");
@@ -77,42 +82,56 @@ export async function setupAuth(app: Express) {
     });
 
     const getCallbackURL = (req: any) => {
-      if (process.env.CALLBACK_URL) return process.env.CALLBACK_URL;
+      const configured = process.env.CALLBACK_URL?.trim();
+      if (configured) return configured.replace(/\/$/, "");
       const proto = req.headers["x-forwarded-proto"] || req.protocol;
       const host = req.headers["x-forwarded-host"] || req.headers.host;
       return `${proto}://${host}/api/auth/callback`;
     };
 
+    const registeredGoogle = new Set<string>();
+    const strategyNameFor = (callbackURL: string) => {
+      const name = `google:${callbackURL}`;
+      if (!registeredGoogle.has(name)) {
+        passport.use(
+          name,
+          new GoogleStrategy(
+            { clientID: googleClientId!, clientSecret: googleClientSecret!, callbackURL },
+            googleVerify,
+          ),
+        );
+        registeredGoogle.add(name);
+      }
+      return name;
+    };
+
+    const finishGoogleLogin = (req: any, res: any, next: any) => {
+      const callbackURL = getCallbackURL(req);
+      const name = strategyNameFor(callbackURL);
+      passport.authenticate(name, (err: any, user: any) => {
+        if (err || !user) {
+          console.error("[auth] Google sign-in failed:", err?.message || "no user", err?.oauthError || "");
+          return res.redirect("/?auth=failed");
+        }
+        req.login(user, (loginErr: any) => {
+          if (loginErr) {
+            console.error("[auth] Session login failed:", loginErr?.message || loginErr);
+            return res.redirect("/?auth=failed");
+          }
+          return res.redirect("/");
+        });
+      })(req, res, next);
+    };
+
     app.get("/api/login", (req, res, next) => {
       const callbackURL = getCallbackURL(req);
       console.log("[auth] Google OAuth callbackURL:", callbackURL);
-      const strategy = new GoogleStrategy(
-        { clientID: process.env.GOOGLE_CLIENT_ID!, clientSecret: process.env.GOOGLE_CLIENT_SECRET!, callbackURL },
-        googleVerify
-      );
-      passport.use(strategy);
-      passport.authenticate("google", { scope: ["profile", "email"] })(req, res, next);
+      const name = strategyNameFor(callbackURL);
+      passport.authenticate(name, { scope: ["profile", "email"] })(req, res, next);
     });
 
-    app.get("/api/auth/callback", (req, res, next) => {
-      const callbackURL = getCallbackURL(req);
-      const strategy = new GoogleStrategy(
-        { clientID: process.env.GOOGLE_CLIENT_ID!, clientSecret: process.env.GOOGLE_CLIENT_SECRET!, callbackURL },
-        googleVerify
-      );
-      passport.use(strategy);
-      passport.authenticate("google", { successRedirect: "/", failureRedirect: "/api/login" })(req, res, next);
-    });
-
-    app.get("/api/callback", (req, res, next) => {
-      const callbackURL = getCallbackURL(req);
-      const strategy = new GoogleStrategy(
-        { clientID: process.env.GOOGLE_CLIENT_ID!, clientSecret: process.env.GOOGLE_CLIENT_SECRET!, callbackURL },
-        googleVerify
-      );
-      passport.use(strategy);
-      passport.authenticate("google", { successRedirect: "/", failureRedirect: "/api/login" })(req, res, next);
-    });
+    app.get("/api/auth/callback", finishGoogleLogin);
+    app.get("/api/callback", finishGoogleLogin);
 
     app.get("/api/logout", (req, res) => {
       req.logout(() => res.redirect("/"));

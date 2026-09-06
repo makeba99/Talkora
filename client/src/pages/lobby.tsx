@@ -490,7 +490,14 @@ export default function Lobby() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const vip = params.get("vip");
-    if (vip === "thanks") {
+    if (params.get("auth") === "failed") {
+      toast({
+        title: "Sign in failed",
+        description: "Google could not complete sign-in. Try again, or check that GOOGLE_CLIENT_SECRET and the OAuth callback URL match in Railway and Google Cloud.",
+        variant: "destructive",
+      });
+      window.history.replaceState({}, "", window.location.pathname + window.location.hash);
+    } else if (vip === "thanks") {
       toast({
         title: "Thank you!",
         description: "PayPal is confirming your payment. VIP usually unlocks within a minute — refresh if it is not there yet.",
@@ -565,10 +572,11 @@ export default function Lobby() {
   // localStorage so it survives reloads.
   // -------------------------------------------------------------------------
   type PinnedKey = "messages" | "notifications" | "themes" | "community" | "orbit";
-  const PIN_STORAGE_KEY = "vextorn:header:pinned:v1";
+  const PIN_STORAGE_KEY = "vextorn:header:pinned:v2";
+  const PIN_STORAGE_LEGACY = "vextorn:header:pinned:v1";
   const [pinned, setPinned] = useState<Record<PinnedKey, boolean>>(() => {
     const fallback: Record<PinnedKey, boolean> = {
-      messages: false,
+      messages: true,
       notifications: false,
       themes: false,
       community: false,
@@ -576,10 +584,14 @@ export default function Lobby() {
     };
     if (typeof window === "undefined") return fallback;
     try {
-      const raw = window.localStorage.getItem(PIN_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        return { ...fallback, ...parsed };
+      const v2 = window.localStorage.getItem(PIN_STORAGE_KEY);
+      if (v2) {
+        return { ...fallback, ...JSON.parse(v2) };
+      }
+      const v1 = window.localStorage.getItem(PIN_STORAGE_LEGACY);
+      if (v1) {
+        const parsed = JSON.parse(v1);
+        return { ...fallback, ...parsed, messages: true };
       }
     } catch {}
     return fallback;

@@ -21,7 +21,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Settings, LogOut, Camera, ChevronDown, Check, ZoomIn, Ban, X, Bell, BellRing, BellOff, EyeOff, Eye, Award, MessageCircle, Users as UsersIcon, Palette, LayoutGrid, Pin, Anchor, Volume2, VolumeX, Zap, ZapOff, Linkedin } from "lucide-react";
+import { User, Settings, LogOut, Camera, ChevronDown, Check, ZoomIn, Ban, X, Bell, BellRing, BellOff, EyeOff, Eye, Award, MessageCircle, Users as UsersIcon, Palette, Pin, Anchor, Volume2, VolumeX, Zap, ZapOff, Linkedin } from "lucide-react";
 import { isSoundEnabled, setSoundEnabled, onSoundEnabledChange, sfxToggle } from "@/lib/sound-fx";
 import { isBoostMode, setBoostMode, onBoostModeChange } from "@/lib/perf-bus";
 import { SiInstagram, SiFacebook } from "react-icons/si";
@@ -521,51 +521,48 @@ export function ProfileDropdown({
               orbit out of the avatar pill into a standalone header chip.
               In "profile-only" mode the ring is hidden entirely. */}
           {mode !== "profile-only" && (
-          <div className="orbit-ring" data-testid="orbit-ring">
-            <span className="orbit-ring-outer" aria-hidden="true" />
-            <span className="orbit-ring-inner" aria-hidden="true" />
-
-            {/* center: collapse / "all apps" — also pinnable so the orbit
-                can live as its own header chip, separated from the profile. */}
-            <button
-              type="button"
-              className="orbit-center"
-              onClick={() => setOrbitOpen(false)}
-              data-testid="button-orbit-center"
-              title="Close menu"
-              aria-label="Close menu"
-            >
-              <LayoutGrid className="w-5 h-5" />
-              {onTogglePin && (
-                <span
-                  role="button"
-                  tabIndex={0}
-                  className="orbit-sat-pin orbit-center-pin"
-                  onClick={(e) => { e.stopPropagation(); onTogglePin?.("orbit"); }}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onTogglePin?.("orbit"); } }}
-                  data-testid="button-pin-orbit"
-                  aria-label={pinned?.orbit ? "Move Orbit back into profile" : "Pin Orbit as a separate header button"}
-                  title={pinned?.orbit ? "Move back into profile" : "Pin orbit to header"}
+          <div className="orbit-ring orbit-ring--sheet" data-testid="orbit-ring">
+            <div className="orbit-sheet-head">
+              <p className="orbit-sheet-kicker">Quick actions</p>
+              <div className="orbit-sheet-tools">
+                {onTogglePin && (
+                  <button
+                    type="button"
+                    className="orbit-tool-btn"
+                    onClick={() => onTogglePin("orbit")}
+                    data-testid="button-pin-orbit"
+                    aria-label={pinned?.orbit ? "Move Orbit back into profile" : "Pin Orbit as a separate header button"}
+                    title={pinned?.orbit ? "Move back into profile" : "Pin menu to header"}
+                  >
+                    <Pin className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {onToggleCornerPin && (
+                  <button
+                    type="button"
+                    className={`orbit-tool-btn ${cornerPinned?.orbit ? "is-active" : ""}`}
+                    onClick={() => onToggleCornerPin("orbit")}
+                    data-testid="button-corner-pin-orbit"
+                    aria-label={cornerPinned?.orbit ? "Unpin Orbit from corner" : "Pin Orbit to corner"}
+                    title={cornerPinned?.orbit ? "Unpin from corner" : "Pin to corner"}
+                  >
+                    <Anchor className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="orbit-tool-btn"
+                  onClick={() => setOrbitOpen(false)}
+                  data-testid="button-orbit-center"
+                  title="Close menu"
+                  aria-label="Close menu"
                 >
-                  <Pin className="w-2.5 h-2.5" />
-                </span>
-              )}
-              {onToggleCornerPin && (
-                <span
-                  role="button"
-                  tabIndex={0}
-                  className={`orbit-sat-pin orbit-sat-pin-corner orbit-center-pin-corner ${cornerPinned?.orbit ? "is-active" : ""}`}
-                  onClick={(e) => { e.stopPropagation(); onToggleCornerPin?.("orbit"); }}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onToggleCornerPin?.("orbit"); } }}
-                  data-testid="button-corner-pin-orbit"
-                  aria-label={cornerPinned?.orbit ? "Unpin Orbit from corner" : "Pin Orbit to corner"}
-                  title={cornerPinned?.orbit ? "Unpin from corner" : "Pin to corner"}
-                >
-                  <Anchor className="w-2.5 h-2.5" />
-                </span>
-              )}
-            </button>
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
 
+            <div className="orbit-apps">
             {!pinned?.messages && (
               <button
                 type="button"
@@ -739,6 +736,7 @@ export function ProfileDropdown({
                 )}
               </button>
             )}
+            </div>
           </div>
           )}
 
