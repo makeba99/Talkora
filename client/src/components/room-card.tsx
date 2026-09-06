@@ -1013,7 +1013,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             )
         )}
 
-        <div className="relative z-[4] flex flex-col">
+        <div className="room-card-body">
 
           {/* ── Header ── */}
           <div className="room-card-header relative z-20 flex-shrink-0 flex items-start justify-between gap-2 px-3 pt-1.5 pb-1.5">
@@ -1162,7 +1162,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             const tightSpacing = displayCount === 4 || displayCount === 7 || displayCount === 8 || displayCount === 11 || displayCount === 12;
             return (
           <div
-            className="lobby-profile-body room-card-participants px-2.5 pt-0.5 pb-2 overflow-visible"
+            className="lobby-profile-body room-card-participants px-2 pt-0.5 pb-2 overflow-visible"
             style={displayCount === 0 ? { minHeight: 48 } : undefined}
           >
             <div
@@ -1170,8 +1170,8 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               data-cols={gridCols}
               style={{
                 gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
-                columnGap: tightSpacing ? 8 : 10,
-                rowGap: tightSpacing ? 8 : 10,
+                columnGap: tightSpacing ? 8 : 12,
+                rowGap: tightSpacing ? 10 : 12,
                 ["--lobby-slot-size" as string]: `${slotSize}px`,
               }}
             >
@@ -1236,35 +1236,36 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
             );
           })()}
 
-        </div>
+          </div>
         </div>
 
-          <div className="room-card-footer">
-            <div className="room-card-stats">
-              <div
-                className="flex items-center gap-0.5 text-white/60"
-                data-testid={`badge-participants-${room.id}`}
-                title={`${participants.length} of ${isUnlimited ? "∞" : room.maxUsers} participants`}
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span className="text-[11px] font-semibold tabular-nums">
-                  {participants.length}{!isUnlimited && `/${room.maxUsers}`}
-                </span>
-              </div>
-
-              {isLoggedIn && onVote && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onVote(); }}
-                  className={`flex items-center gap-0.5 transition-colors ${hasVoted ? "text-orange-400" : "text-white/55 hover:text-orange-400"}`}
-                  data-testid={`button-vote-room-${room.id}`}
-                  aria-label={hasVoted ? `Remove vote from ${room.title}` : `Vote for ${room.title}`}
-                  aria-pressed={hasVoted}
-                >
-                  <Flame className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span className="text-[11px] font-semibold">{voteCount}</span>
-                </button>
-              )}
+        {/* ── Footer: its own surface below the room background ── */}
+        <div className="room-card-footer">
+          <div className="room-card-stats">
+            <div
+              className="flex items-center gap-0.5 text-white/60"
+              data-testid={`badge-participants-${room.id}`}
+              title={`${participants.length} of ${isUnlimited ? "∞" : room.maxUsers} participants`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-semibold tabular-nums">
+                {participants.length}{!isUnlimited && `/${room.maxUsers}`}
+              </span>
             </div>
+
+            {isLoggedIn && onVote && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onVote(); }}
+                className={`flex items-center gap-0.5 transition-colors ${hasVoted ? "text-orange-400" : "text-white/55 hover:text-orange-400"}`}
+                data-testid={`button-vote-room-${room.id}`}
+                aria-label={hasVoted ? `Remove vote from ${room.title}` : `Vote for ${room.title}`}
+                aria-pressed={hasVoted}
+              >
+                <Flame className="w-3.5 h-3.5" aria-hidden="true" />
+                <span className="text-[11px] font-semibold">{voteCount}</span>
+              </button>
+            )}
+          </div>
 
           {(() => {
             const isClosed = cardIsClosed;
@@ -1353,7 +1354,7 @@ function RoomCardImpl({ room, participants, onJoin, onOpenDm, isOwner, isLoggedI
               </div>
             );
           })()}
-          </div>
+        </div>
       </div>
 
       {/* Report Dialog — lazy: only fetched after the user clicks "Report" */}

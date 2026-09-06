@@ -11955,19 +11955,39 @@ html.neomorphic-light button.lobby-profile-slot__btn {
 .room-card {
   content-visibility: auto;
   contain-intrinsic-size: auto 280px;
+  /* Content-driven height. The card no longer carries a fixed height, so a
+     row is only as tall as the tallest card in it instead of a hard 356px. */
+  display: flex;
 }
 .room-card-inner {
   display: flex;
   flex-direction: column;
-  height: auto;
+  flex: 1 1 auto;
+  width: 100%;
   min-height: 0;
 }
+/* Header + participants: the only section the room background covers. */
 .room-card-content {
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.room-card-body {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+.room-card-participants {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
   min-height: 0;
 }
 .room-card-background {
@@ -12006,8 +12026,14 @@ html.neomorphic-light button.lobby-profile-slot__btn {
   min-width: 44px;
   min-height: 44px;
 }
-.room-card-enter .door-3d-wrap {
-  gap: 2px;
+/* In the compact footer the door caption sits beside the door instead of
+   under it, so the footer stays one door tall (~44px) instead of ~70px.
+   The door artwork itself is untouched. */
+.room-card-enter .door-3d-wrap,
+.room-card-enter.door-3d-wrap {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
 }
 .room-card-enter .door-caption {
   margin-top: 0;
