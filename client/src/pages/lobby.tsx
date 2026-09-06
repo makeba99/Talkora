@@ -82,12 +82,21 @@ import {
   BASE_SAMPLE_PARTICIPANTS,
   BASE_SAMPLE_VOTE_COUNTS,
   SAMPLE_FOLLOWER_COUNTS,
-  SAMPLE_SPEAKER_META,
   ALL_SAMPLE_USERS,
-  SAMPLE_PEOPLE,
 } from "@/lib/sample-data";
 
 type DiscoveryFilter = "rooms" | "top-speakers" | "famous-users";
+type DiscoveryPersonRow = {
+  user: User;
+  followerCount: number;
+  commentCount: number;
+  voteCount: number;
+  hostedRoomCount: number;
+  currentRoomId: string | null;
+  languages: string[];
+  famousScore: number;
+  speakerScore: number;
+};
 type LobbyAnnouncement = Announcement & { viewedAt?: string | null; dismissedAt?: string | null };
 
 function getUserName(person: User) {
@@ -220,7 +229,7 @@ function PeopleDiscoveryCard({
     .slice(0, 2)
     .toUpperCase();
 
-  const totalVotes = voteCount + (hasVoted ? 1 : 0);
+  const totalVotes = voteCount;
 
   return (
     <article
@@ -498,7 +507,6 @@ export default function Lobby() {
   const [searchQuery, setSearchQuery] = useState("");
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
   const [activeDiscovery, setActiveDiscovery] = useState<DiscoveryFilter>("rooms");
-  const [speakerVotes, setSpeakerVotes] = useState<Set<string>>(new Set());
   const [dmUserId, setDmUserId] = useState<string | null>(null);
   const [dmUnreadCounts, setDmUnreadCounts] = useState<Record<string, number>>({});
   const [commentTargetUser, setCommentTargetUser] = useState<{ user: any; name: string } | null>(null);
@@ -927,6 +935,7 @@ export default function Lobby() {
     },
     onSuccess: () => {
       refetchVotes();
+      queryClient.invalidateQueries({ queryKey: ["/api/discovery/people"] });
     },
   });
 
@@ -944,6 +953,21 @@ export default function Lobby() {
     /* Bumped from 15s → 45s. The full users list rarely changes between
      * lobby visits — saving 4 calls/min at this single endpoint. */
     refetchInterval: 10 * 60 * 1000,
+  });
+
+  const { data: discoveryPeople = [], isPending: discoveryLoading } = useQuery<DiscoveryPersonRow[]>({
+    queryKey: ["/api/discovery/people"],
+    queryFn: async () => {
+      try {
+        const res = await apiRequest("GET", "/api/discovery/people");
+        const data = await res.json();
+        return Array.isArray(data?.people) ? data.people : [];
+      } catch {
+        return [];
+      }
+    },
+    staleTime: 60_000,
+    refetchInterval: 2 * 60 * 1000,
   });
 
   const { data: usersCurrentRooms = {} } = useQuery<Record<string, string>>({
@@ -1065,6 +1089,7 @@ export default function Lobby() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/follows/following", user?.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/follows/counts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/discovery/people"] });
       toast({ title: "Follow list updated" });
       // Auto-subscribe to both notification types when following a new user
       if (!variables.isFollowing && user?.id) {
@@ -1501,53 +1526,68 @@ export default function Lobby() {
     [following]
   );
 
-  // PERF: memoize merged people list — sample data is static, allUsers only
-  // changes when a user logs in/out, not on every presence update.
-  const mergedPeople = useMemo(() => {
-    const realUserIds = new Set(allUsers.map((u) => u.id));
-    const sampleToMerge = SAMPLE_PEOPLE.filter((u) => !realUserIds.has(u.id));
-    return [...allUsers, ...sampleToMerge];
-  }, [allUsers]);
+  const discoveryById = useMemo(() => {
+    const map = new Map<string, DiscoveryPersonRow>();
+    for (const row of discoveryPeople) map.set(row.user.id, row);
+    return map;
+  }, [discoveryPeople]);
+
+  const mergedPeople = useMemo(
+    () => discoveryPeople.map((row) => row.user as User),
+    [discoveryPeople],
+  );
 
   const getSpeakerFollowers = (id: string) =>
-    followerCounts[id] ?? SAMPLE_FOLLOWER_COUNTS[id] ?? 0;
-  // getPresenceLabel and getPresenceClass are module-level helpers (above).
+    discoveryById.get(id)?.followerCount ?? followerCounts[id] ?? 0;
   const getSpeakerOnline = (p: User) =>
-    onlineUsers.has(p.id) || p.status === "online" || (SAMPLE_SPEAKER_META[p.id]?.isOnline ?? false);
+    onlineUsers.has(p.id) || p.status === "online";
 
-  // PERF: memoize the people list. Most critically, short-circuit when the
-  // rooms view is active (the default) — the sort over 30 users never needs to
-  // run during the LCP load, cutting TBT meaningfully on slow devices.
   const filteredPeople = useMemo(() => {
     if (activeDiscovery === "rooms") return [];
     const lsq = searchQuery.toLowerCase();
     const ranked = mergedPeople
       .filter((person) => {
-        const meta = SAMPLE_SPEAKER_META[person.id];
-        const searchable = `${getUserName(person)} ${person.email || ""} ${(person as any).bio || ""} ${meta?.bio || ""} ${(meta?.languages || []).join(" ")}`.toLowerCase();
+        const row = discoveryById.get(person.id);
+        const searchable = `${getUserName(person)} ${person.bio || ""} ${(row?.languages || []).join(" ")}`.toLowerCase();
         return searchable.includes(lsq);
       })
       .sort((a, b) => {
-        const aFollowers = followerCounts[a.id] ?? SAMPLE_FOLLOWER_COUNTS[a.id] ?? 0;
-        const bFollowers = followerCounts[b.id] ?? SAMPLE_FOLLOWER_COUNTS[b.id] ?? 0;
-        const aOnline = onlineUsers.has(a.id) || a.status === "online" || (SAMPLE_SPEAKER_META[a.id]?.isOnline ?? false);
-        const bOnline = onlineUsers.has(b.id) || b.status === "online" || (SAMPLE_SPEAKER_META[b.id]?.isOnline ?? false);
-        const aInRoom = usersCurrentRooms[a.id] ? 1 : 0;
-        const bInRoom = usersCurrentRooms[b.id] ? 1 : 0;
+        const aRow = discoveryById.get(a.id);
+        const bRow = discoveryById.get(b.id);
+        const aFollowers = aRow?.followerCount ?? followerCounts[a.id] ?? 0;
+        const bFollowers = bRow?.followerCount ?? followerCounts[b.id] ?? 0;
+        const aOnline = onlineUsers.has(a.id) || a.status === "online";
+        const bOnline = onlineUsers.has(b.id) || b.status === "online";
+        const aInRoom = usersCurrentRooms[a.id] || aRow?.currentRoomId ? 1 : 0;
+        const bInRoom = usersCurrentRooms[b.id] || bRow?.currentRoomId ? 1 : 0;
+        const aVotes = aRow?.voteCount ?? 0;
+        const bVotes = bRow?.voteCount ?? 0;
 
         if (activeDiscovery === "top-speakers") {
-          return Number(bOnline) - Number(aOnline) || bInRoom - aInRoom || bFollowers - aFollowers || getUserName(a).localeCompare(getUserName(b));
+          return (
+            (bRow?.speakerScore ?? 0) - (aRow?.speakerScore ?? 0) ||
+            bInRoom - aInRoom ||
+            Number(bOnline) - Number(aOnline) ||
+            bVotes - aVotes ||
+            bFollowers - aFollowers ||
+            getUserName(a).localeCompare(getUserName(b))
+          );
         }
 
-        return bFollowers - aFollowers || Number(bOnline) - Number(aOnline) || getUserName(a).localeCompare(getUserName(b));
+        return (
+          (bRow?.famousScore ?? 0) - (aRow?.famousScore ?? 0) ||
+          bFollowers - aFollowers ||
+          (bRow?.commentCount ?? 0) - (aRow?.commentCount ?? 0) ||
+          vipRank(b.vipTier) - vipRank(a.vipTier) ||
+          Number(bOnline) - Number(aOnline) ||
+          getUserName(a).localeCompare(getUserName(b))
+        );
       });
 
-    // Always include the authenticated user in people discovery so they can
-    // see themselves even when they fall outside the top-10 slice.
     const me = user ? ranked.find((p) => p.id === user.id) || mergedPeople.find((p) => p.id === user.id) : undefined;
     const others = ranked.filter((p) => p.id !== user?.id).slice(0, me ? 9 : 10);
     return me ? [me, ...others] : others;
-  }, [mergedPeople, searchQuery, activeDiscovery, followerCounts, onlineUsers, usersCurrentRooms, user]);
+  }, [mergedPeople, discoveryById, searchQuery, activeDiscovery, followerCounts, onlineUsers, usersCurrentRooms, user]);
 
   // PERF: memoize language counts and tag list — these only change when the
   // rooms list itself changes, not on every participant/presence update.
@@ -1583,11 +1623,7 @@ export default function Lobby() {
     : [];
   const suggestPeople = sq
     ? mergedPeople
-        .filter((p) => {
-          const name = getUserName(p).toLowerCase();
-          const email = (p.email || "").toLowerCase();
-          return name.includes(sq) || email.includes(sq);
-        })
+        .filter((p) => getUserName(p).toLowerCase().includes(sq))
         .slice(0, 4)
     : [];
   const hasSuggestions =
@@ -2337,26 +2373,35 @@ export default function Lobby() {
                     {activeDiscovery === "top-speakers" ? "Top speakers to track" : "Famous users to follow"}
                   </h2>
                   <p className="text-sm text-white/60">
-                    Follow people to track them, then talk when they are online or inside a room.
+                    {activeDiscovery === "top-speakers"
+                      ? "Ranked from live rooms, votes on rooms they host, and real followers — not demo profiles."
+                      : "Ranked from real followers, profile comments, and VIP standing — not placeholder accounts."}
                   </p>
                 </div>
                 <span className="text-xs text-white/60 flex items-center gap-1" data-testid="text-people-discovery-count">
                   {filteredPeople.length} people
                 </span>
               </div>
-              {filteredPeople.length === 0 ? (
+              {discoveryLoading ? (
+                <div className="flex gap-4 overflow-x-auto app-scrollbar pb-2" data-testid="list-people-discovery-loading">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-[280px] w-[268px] flex-shrink-0 rounded-2xl" />
+                  ))}
+                </div>
+              ) : filteredPeople.length === 0 ? (
                 <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-6 text-center text-sm text-white/65" data-testid="text-no-discovery-users">
-                  No people found. Try a different search.
+                  {searchQuery.trim()
+                    ? "No people found. Try a different search."
+                    : "No members to show yet. Real profiles appear here once people join Vextorn."}
                 </div>
               ) : (
                 <div className="flex gap-4 overflow-x-auto app-scrollbar pb-2" data-testid="list-people-discovery">
                   {filteredPeople.map((person) => {
-                    const isSamplePerson = person.id.startsWith("sample-user-");
-                    const meta = SAMPLE_SPEAKER_META[person.id];
+                    const row = discoveryById.get(person.id);
                     const isOnline = getSpeakerOnline(person);
-                    const currentRoomId = usersCurrentRooms[person.id];
+                    const currentRoomId = usersCurrentRooms[person.id] || row?.currentRoomId || undefined;
                     const isFollowing = followingIds.has(person.id);
-                    const hasVoted = speakerVotes.has(person.id);
+                    const hasVoted = !!(currentRoomId && voteData?.userVotes?.[currentRoomId]);
                     return (
                       <div
                         key={person.id}
@@ -2370,11 +2415,11 @@ export default function Lobby() {
                         isFollowing={isFollowing}
                         isCurrentUser={!!user && person.id === user.id}
                         isPending={followMutation.isPending}
-                        voteCount={meta?.voteCount ?? 0}
-                        commentCount={meta?.commentCount ?? 0}
+                        voteCount={row?.voteCount ?? 0}
+                        commentCount={row?.commentCount ?? 0}
                         hasVoted={hasVoted}
-                        bio={meta?.bio ?? (person as any).bio}
-                        languages={meta?.languages ?? []}
+                        bio={person.bio ?? undefined}
+                        languages={row?.languages ?? []}
                         notifPrefs={notifPrefsData?.[person.id] ?? null}
                         onSetNotifPrefs={(notifyRoomJoin: boolean, notifyDm: boolean) => {
                           if (!user) { toast({ title: "Sign in to manage notifications", description: "Create an account to adjust notification settings." }); return; }
@@ -2388,13 +2433,11 @@ export default function Lobby() {
                         }}
                         onVote={() => {
                           if (!user) { toast({ title: "Sign in to vote", description: "Create an account to vote for speakers." }); return; }
-                          setSpeakerVotes((prev) => {
-                            const next = new Set(prev);
-                            if (next.has(person.id)) next.delete(person.id);
-                            else next.add(person.id);
-                            return next;
-                          });
-                          toast({ title: hasVoted ? "Vote removed" : "Voted! 🔥" });
+                          if (!currentRoomId) {
+                            toast({ title: "They're not live", description: "Vote when this speaker is in a room — votes count on the live room." });
+                            return;
+                          }
+                          voteMutation.mutate({ roomId: currentRoomId, hasVoted });
                         }}
                         onComment={() => {
                           setCommentTargetUser({ user: person, name: getUserName(person) });
@@ -2406,8 +2449,7 @@ export default function Lobby() {
                             handleJoinRoom(currentRoomId);
                             return;
                           }
-                          if (!isSamplePerson) openDm(person.id);
-                          else toast({ title: "This is a demo user", description: "Sign in and meet real language learners!" });
+                          openDm(person.id);
                         }}
                       />
                       </div>
@@ -2573,7 +2615,10 @@ export default function Lobby() {
           <CommentThreadDialog
             targetUser={commentTargetUser.user}
             targetUserName={commentTargetUser.name}
-            onClose={() => setCommentTargetUser(null)}
+            onClose={() => {
+              setCommentTargetUser(null);
+              queryClient.invalidateQueries({ queryKey: ["/api/discovery/people"] });
+            }}
           />
         </Suspense>
       )}

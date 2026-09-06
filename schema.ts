@@ -59,6 +59,7 @@ export interface IStorage {
   createNotification(data: { userId: string; fromUserId: string; type: string }): Promise<Notification>;
   getNotifications(userId: string): Promise<Notification[]>;
   markNotificationsRead(userId: string): Promise<void>;
+  markNotificationRead(userId: string, id: string): Promise<void>;
 
   createBlock(block: InsertBlock): Promise<Block>;
   deleteBlock(blockerId: string, blockedId: string): Promise<void>;
@@ -264,6 +265,13 @@ export class DatabaseStorage implements IStorage {
       .update(notifications)
       .set({ read: true })
       .where(eq(notifications.userId, userId));
+  }
+
+  async markNotificationRead(userId: string, id: string): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ read: true })
+      .where(and(eq(notifications.userId, userId), eq(notifications.id, id)));
   }
 
   async createBlock(block: InsertBlock): Promise<Block> {

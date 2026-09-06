@@ -4540,6 +4540,75 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/discovery/people", async (_req, res) => {
+    try {
+      const all = await storage.getAllUsers();
+      const ids = all.map((u) => u.id);
+      const [followerCounts, commentCounts, hostStats, badgesByUser] = await Promise.all([
+        storage.getFollowerCounts(ids),
+        storage.getCommentCounts(ids),
+        storage.getHostRoomStats(),
+        storage.getBadgesForUsers(ids),
+      ]);
+
+      const currentRoomByUser: Record<string, string> = {};
+      for (const [roomId, parts] of roomParticipants.entries()) {
+        for (const uid of parts.keys()) {
+          if (!currentRoomByUser[uid]) currentRoomByUser[uid] = roomId;
+        }
+      }
+
+      const people = all.map((u) => {
+        const followers = followerCounts[u.id] ?? 0;
+        const comments = commentCounts[u.id] ?? 0;
+        const hosted = hostStats[u.id]?.hostedRooms ?? 0;
+        const roomVotes = hostStats[u.id]?.roomVotes ?? 0;
+        const languages = hostStats[u.id]?.languages ?? [];
+        const inRoom = currentRoomByUser[u.id] ? 1 : 0;
+        const online = onlineUsers.has(u.id) || u.status === "online" ? 1 : 0;
+        const badgeCount = badgesByUser[u.id]?.length ?? 0;
+        const vip = vipRank(u.vipTier);
+        const famousScore = followers * 20 + comments * 6 + vip * 80 + badgeCount * 15 + Math.min(roomVotes, 40);
+        const speakerScore = inRoom * 1000 + online * 180 + roomVotes * 15 + hosted * 8 + comments * 3 + followers * 2 + vip * 10;
+        return {
+          user: {
+            id: u.id,
+            firstName: u.firstName,
+            lastName: u.lastName,
+            displayName: u.displayName,
+            profileImageUrl: u.profileImageUrl,
+            bio: u.bio,
+            avatarRing: u.avatarRing,
+            flairBadge: u.flairBadge,
+            profileDecoration: u.profileDecoration,
+            profileAnimation: u.profileAnimation,
+            status: u.status,
+            role: u.role,
+            vipTier: u.vipTier,
+            titleColor: u.titleColor,
+            showBadge: u.showBadge,
+            showStatusBio: u.showStatusBio,
+            showVipLabel: u.showVipLabel,
+            followVisibility: u.followVisibility,
+            createdAt: u.createdAt,
+          },
+          followerCount: followers,
+          commentCount: comments,
+          voteCount: roomVotes,
+          hostedRoomCount: hosted,
+          currentRoomId: currentRoomByUser[u.id] ?? null,
+          languages,
+          famousScore,
+          speakerScore,
+        };
+      });
+
+      res.json({ people });
+    } catch {
+      res.json({ people: [] });
+    }
+  });
+
   app.get("/api/users/:id", isAuthenticated, async (req, res) => {
     try {
       const user = await storage.getUser(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id);
@@ -7346,7 +7415,9 @@ export async function registerRoutes(
   app.post("/api/notifications/read", isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).id;
-      await storage.markNotificationsRead(userId);
+      const id = typeof req.body?.id === "string" ? req.body.id : null;
+      if (id) await storage.markNotificationRead(userId, id);
+      else await storage.markNotificationsRead(userId);
       res.json({ ok: true });
     } catch (err: any) {
       res.status(500).json({ message: err.message });

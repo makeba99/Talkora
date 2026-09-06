@@ -114,6 +114,8 @@ export interface IStorage {
   getFollowing(userId: string): Promise<Follow[]>;
   getFollowers(userId: string): Promise<Follow[]>;
   getFollowerCounts(userIds: string[]): Promise<Record<string, number>>;
+  getCommentCounts(userIds: string[]): Promise<Record<string, number>>;
+  getHostRoomStats(): Promise<Record<string, { hostedRooms: number; roomVotes: number; languages: string[] }>>;
 
   createRoomMessage(msg: InsertRoomMessage): Promise<RoomMessage>;
   getRoomMessages(roomId: string): Promise<RoomMessage[]>;
@@ -121,6 +123,7 @@ export interface IStorage {
   createNotification(data: { userId: string; fromUserId: string; type: string }): Promise<Notification>;
   getNotifications(userId: string): Promise<Notification[]>;
   markNotificationsRead(userId: string): Promise<void>;
+  markNotificationRead(userId: string, id: string): Promise<void>;
 
   createBlock(block: InsertBlock): Promise<Block>;
   deleteBlock(blockerId: string, blockedId: string): Promise<void>;
@@ -645,6 +648,38 @@ export class DatabaseStorage implements IStorage {
     return counts;
   }
 
+  async getCommentCounts(userIds: string[]): Promise<Record<string, number>> {
+    if (userIds.length === 0) return {};
+    const result = await db
+      .select({ targetUserId: userComments.targetUserId, count: sql<number>`count(*)::int` })
+      .from(userComments)
+      .where(inArray(userComments.targetUserId, userIds))
+      .groupBy(userComments.targetUserId);
+    const counts: Record<string, number> = {};
+    for (const uid of userIds) counts[uid] = 0;
+    for (const r of result) counts[r.targetUserId] = r.count;
+    return counts;
+  }
+
+  async getHostRoomStats(): Promise<Record<string, { hostedRooms: number; roomVotes: number; languages: string[] }>> {
+    const allRooms = await this.getAllRooms();
+    if (allRooms.length === 0) return {};
+    const voteCounts = await this.getVoteCounts(allRooms.map((room) => room.id));
+    const stats: Record<string, { hostedRooms: number; roomVotes: number; languages: string[] }> = {};
+    for (const room of allRooms) {
+      if (!stats[room.ownerId]) {
+        stats[room.ownerId] = { hostedRooms: 0, roomVotes: 0, languages: [] };
+      }
+      const entry = stats[room.ownerId];
+      entry.hostedRooms += 1;
+      entry.roomVotes += voteCounts[room.id] ?? 0;
+      if (room.language && room.language !== "All" && !entry.languages.includes(room.language)) {
+        entry.languages.push(room.language);
+      }
+    }
+    return stats;
+  }
+
   async createRoomMessage(msg: InsertRoomMessage): Promise<RoomMessage> {
     const [message] = await db.insert(roomMessages).values(msg).returning();
     return message;
@@ -676,6 +711,13 @@ export class DatabaseStorage implements IStorage {
       .update(notifications)
       .set({ read: true })
       .where(eq(notifications.userId, userId));
+  }
+
+  async markNotificationRead(userId: string, id: string): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ read: true })
+      .where(and(eq(notifications.userId, userId), eq(notifications.id, id)));
   }
 
   async createBlock(block: InsertBlock): Promise<Block> {

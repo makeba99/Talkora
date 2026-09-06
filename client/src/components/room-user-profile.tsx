@@ -139,12 +139,6 @@ export function RoomUserProfile({
             {pipDef.emoji}
           </span>
         )}
-      </div>
-
-      <div className="rup__under">
-        {showName && (
-          <span className="rup__name" title={fullName}>{name}</span>
-        )}
         {showFollowers && (
           <span className="rup__hearts" title={`${followerCount} followers`}>
             <Heart
@@ -156,6 +150,9 @@ export function RoomUserProfile({
           </span>
         )}
       </div>
+      {showName && (
+        <span className="rup__name" title={fullName}>{name}</span>
+      )}
     </div>
   );
 }
@@ -168,7 +165,6 @@ export function RoomUserEmptySlot({ size }: { size: number }) {
           <Plus className="rup__plus" />
         </div>
       </div>
-      <div className="rup__under rup__under--ghost" />
     </div>
   );
 }

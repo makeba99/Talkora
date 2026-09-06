@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -35,6 +36,7 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
   const { user } = useAuth();
   const { socket } = useSocket();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ["/api/notifications"],
@@ -84,6 +86,28 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
       queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
     },
   });
+
+  const markOneReadMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("POST", "/api/notifications/read", { id });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+    },
+  });
+
+  const openNotification = (notif: Notification) => {
+    if (!notif.read) markOneReadMutation.mutate(notif.id);
+    onOpenChange?.(false);
+    if (notif.type === "follow") {
+      navigate("/");
+      return;
+    }
+    if (notif.type.startsWith("join_request:")) {
+      const roomId = notif.type.slice("join_request:".length);
+      if (roomId) navigate(`/room/${roomId}`);
+    }
+  };
 
   const unreadNotifCount = notifications.filter((n) => !n.read).length;
   const unreadCount = unreadNotifCount + pendingRequests.length;
@@ -364,9 +388,11 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
                 const icon = getNotificationIcon(notif);
                 const isBadge = notif.type.startsWith("badge_awarded:");
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={notif.id}
-                    className={`flex items-center gap-3 p-2 rounded-md ${!notif.read ? (notif.type.startsWith("security_") ? "bg-red-500/8" : notif.type.startsWith("join_request:") ? "bg-amber-500/8" : "bg-primary/5") : ""}`}
+                    onClick={() => openNotification(notif)}
+                    className={`w-full text-left flex items-center gap-3 p-2 rounded-md hover:bg-white/5 transition-colors cursor-pointer ${!notif.read ? (notif.type.startsWith("security_") ? "bg-red-500/8" : notif.type.startsWith("join_request:") ? "bg-amber-500/8" : "bg-primary/5") : ""}`}
                     data-testid={`notification-${notif.id}`}
                   >
                     {icon ? (
@@ -392,7 +418,7 @@ export function NotificationsDropdown({ open: controlledOpen, onOpenChange, hide
                         {formatTime(notif.createdAt)}
                       </p>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>

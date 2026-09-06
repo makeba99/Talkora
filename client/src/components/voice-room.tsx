@@ -2953,6 +2953,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
   }, [dmUserId]);
 
   const sidePanelTabRef = useRef(sidePanelTab);
+  const sidePanelOpenRef = useRef(sidePanelOpen);
+  const mobileSheetOpenRef = useRef(mobileSheetOpen);
   const ytSyncTimeRef = useRef<number>(0);
   const ytBufferTimerRef = useRef<number | null>(null);
   const youtubeStartedByRef = useRef<string | null>(null);
@@ -3168,11 +3170,15 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
 
   useEffect(() => {
     sidePanelTabRef.current = sidePanelTab;
-    if (sidePanelTab === "chat") {
+    sidePanelOpenRef.current = sidePanelOpen;
+    mobileSheetOpenRef.current = mobileSheetOpen;
+    const desktop = typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
+    const chatOnScreen = sidePanelTab === "chat" && (desktop ? sidePanelOpen : mobileSheetOpen);
+    if (chatOnScreen) {
       setUnreadChatBadge(0);
       setPrivateUnreadCount(0);
     }
-  }, [sidePanelTab]);
+  }, [sidePanelTab, sidePanelOpen, mobileSheetOpen]);
 
   useEffect(() => {
     localStorage.setItem("connect2talk-chat-color", chatMessageColor);
@@ -4583,7 +4589,11 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         if (prev.some((m) => m.id === msg.id)) return prev;
         return [...prev, { ...msg, reactions: msg.reactions || {} }];
       });
-      if (sidePanelTabRef.current !== "chat" && (msg as any).type !== "system" && msg.userId !== user?.id) {
+      const desktop = typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
+      const chatVisible =
+        sidePanelTabRef.current === "chat" &&
+        (desktop ? sidePanelOpenRef.current : mobileSheetOpenRef.current);
+      if (!chatVisible && (msg as any).type !== "system" && msg.userId !== user?.id) {
         setUnreadChatBadge((prev) => prev + 1);
       }
       // Increment browser-tab unread count when the tab is backgrounded
@@ -6274,7 +6284,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     fullDragStartRef.current = { mouseX: e.clientX, mouseY: e.clientY, offsetX: fullPlayerDragOffset.x, offsetY: fullPlayerDragOffset.y };
   };
 
-  const toggleMute = () => {
+  const toggleMute = async () => {
     // If the host has restricted talking and we're trying to UNMUTE, block.
     // Re-muting is always allowed (going silent never violates a restriction).
     if (isMuted && !canUseTalkControls) {
@@ -6286,7 +6296,40 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     if (audioContextRef.current?.state === "suspended") {
       audioContextRef.current.resume().catch(() => {});
     }
-    const newMuted = !isMuted;
+
+    if (isMuted && !localStream.current) {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        toast({ title: "Microphone unavailable", description: "This browser does not support microphone access.", variant: "destructive" });
+        return;
+      }
+      try {
+        let stream: MediaStream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: getAudioConstraints() });
+        } catch (err: any) {
+          if (selectedAudioDeviceIdRef.current !== "default" && (err?.name === "OverconstrainedError" || err?.name === "NotFoundError")) {
+            selectedAudioDeviceIdRef.current = "default";
+            setSelectedAudioDeviceId("default");
+            stream = await navigator.mediaDevices.getUserMedia({ audio: getAudioConstraints("default") });
+          } else {
+            throw err;
+          }
+        }
+        await applyLocalAudioStream(stream, true);
+        await updateMicPermissionStatus();
+      } catch (err: any) {
+        setMicError(true);
+        setShowMicHelp(true);
+        toast({
+          title: err?.name === "NotAllowedError" ? "Microphone is blocked" : "Could not open microphone",
+          description: "Allow the mic in the address bar, then tap Unmute again.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    const newMuted = !isMutedRef.current;
     if (localStream.current) {
       localStream.current.getAudioTracks().forEach((track) => {
         track.enabled = !newMuted;
@@ -6373,6 +6416,26 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       setMicSwitching(false);
     }
   };
+
+  const toggleMuteRef = useRef(toggleMute);
+  toggleMuteRef.current = toggleMute;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.repeat) return;
+      const el = e.target as HTMLElement | null;
+      if (!el) return;
+      const tag = el.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || el.isContentEditable) return;
+      if (el.closest('[role="dialog"], [role="menu"], [role="listbox"]')) return;
+      if (e.code === "Space") {
+        e.preventDefault();
+        toggleMuteRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const toggleHand = () => {
     setHandRaised(!handRaised);
@@ -6610,9 +6673,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
           <div className="relative group">
             <button
               onClick={toggleMute}
-              disabled={micError || (isMuted && !canUseTalkControls)}
+              disabled={isMuted && !canUseTalkControls}
               data-testid="button-toggle-mute"
-              title={(isMuted && !canUseTalkControls) ? talkLockReason : (isMuted ? "Unmute mic" : "Mute mic")}
+              title={(isMuted && !canUseTalkControls) ? talkLockReason : (isMuted ? "Unmute mic (Space)" : "Mute mic (Space)")}
               className={`${btnBase} disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:scale-100`}
               style={isMuted ? ghostStyle : micLiveStyle}
             >
@@ -11230,7 +11293,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   }
                 }
               }}
-              placeholder={pasteUploading ? "Uploading image..." : isChatBlocked ? chatBlockReason : isTroll ? "🧌 Troll mode — 50 chars max, 10s cooldown…" : privateChatToId === "public" ? "Message the room…" : "Private message…"}
+              placeholder={pasteUploading ? "Uploading image..." : isChatBlocked ? chatBlockReason : isTroll ? "🧌 Troll mode — 50 chars max, 10s cooldown…" : privateChatToId === "public" ? "Message the room… Enter to send" : "Private message… Enter to send"}
               disabled={pasteUploading || isChatBlocked}
               className="room-composer"
               data-whisper={privateChatToId !== "public"}
@@ -15032,11 +15095,12 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   <button
                     onClick={() => {
                       const isMobile = window.innerWidth < 768;
+                      if (unreadChatBadge > 0 || privateUnreadCount > 0) setSidePanelTab("chat");
                       if (isMobile) { setMobileSheetOpen(!mobileSheetOpen); }
                       else { setSidePanelOpen(!sidePanelOpen); }
                     }}
                     data-testid="button-panel-social"
-                    title="Social Panel"
+                    title={sidePanelOpen || mobileSheetOpen ? "Hide chat panel" : "Open chat"}
                     className="room-header-pill-btn"
                     data-active={sidePanelOpen}
                   >

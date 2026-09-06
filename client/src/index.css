@@ -11213,12 +11213,13 @@ html.neomorphic-light .pinned-socials-link {
 .lobby-profile-slot__btn {
   width: 100%;
   display: block;
-  background: none;
+  background: transparent;
   border: 0;
   padding: 0;
   margin: 0;
   cursor: pointer;
-  border-radius: 18px;
+  border-radius: 0;
+  overflow: visible;
   -webkit-tap-highlight-color: transparent;
 }
 .lobby-profile-slot__btn:focus-visible {
@@ -11233,12 +11234,17 @@ html.neomorphic-light .pinned-socials-link {
   flex-direction: column;
   align-items: center;
   overflow: visible;
-  isolation: isolate;
+  background: none;
+}
+.rup:has(.rup__hearts) {
+  padding-bottom: 11px;
 }
 .rup__stage {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
+  isolation: isolate;
+  background: none;
 }
 .rup__deco,
 .rup__spark {
@@ -11297,21 +11303,10 @@ html.neomorphic-light .pinned-socials-link {
   color: rgba(255, 255, 255, 0.72);
   background: linear-gradient(160deg, #24182e, #12101c);
 }
-.rup__under {
-  width: 100%;
-  margin-top: 5px;
-  min-height: 28px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  pointer-events: none;
-}
-.rup__under--ghost {
-  visibility: hidden;
-}
 .rup__name {
+  display: block;
   max-width: 100%;
+  margin-top: 12px;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.01em;
@@ -11319,19 +11314,27 @@ html.neomorphic-light .pinned-socials-link {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
   line-height: 1.15;
+  background: none;
 }
 .rup__hearts {
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  z-index: 8;
+  transform: translateX(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 3px;
-  padding: 1px 7px 2px;
+  padding: 3px 8px 3px 7px;
   border-radius: 999px;
-  background: rgba(8, 6, 16, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #1a1526;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
   line-height: 1;
+  pointer-events: none;
 }
 .rup__heart {
   width: 9px;
@@ -11414,7 +11417,6 @@ html.neomorphic-light .pinned-socials-link {
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: none;
 }
-.rup--empty .rup__under { min-height: 28px; }
 .rup__plus {
   width: 30%;
   height: 30%;
