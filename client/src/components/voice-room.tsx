@@ -2442,6 +2442,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     activeYoutubeId: null,
     showYoutube: false,
     onWakeOpenPicker: () => setAiPersonaPickerOpen(true),
+    // The raw capture, not the processed one: its track stays live while the
+    // user is muted to the room, so the AI keeps hearing them either way.
+    getAiMicStream: () => rawMicStreamRef.current ?? localStream.current,
   });
 
   // Backward-compatible aliases so all existing JSX keeps working unchanged
@@ -17823,6 +17826,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     <div className="text-[9px] font-mono leading-relaxed mb-1 rounded px-2 py-1"
                       style={{ background: "rgba(0,180,255,0.07)", color: "rgba(180,230,255,0.60)" }}>
                       mic:{aiListening ? "on" : "off"}
+                      {" · "}stt:{voiceState.sttMode}
                       {" · "}speak:{aiTutorSpeaking ? "on" : "off"}
                       {" · "}loading:{aiTutorLoading ? "on" : "off"}
                       {" · "}yt:{(!!activeYoutubeId && showYoutube) ? "active⚠" : "idle"}

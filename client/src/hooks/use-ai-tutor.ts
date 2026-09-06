@@ -19,7 +19,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { extractSentences } from "@/lib/ai-tutor/tts";
 import { createTts, type TtsLike } from "@/lib/ai-tutor/tts-factory";
-import { SttEngine, WakeWordDetector, FILLER_ONLY_PATTERN, stripLeadingAgentCall, type WakeMatch } from "@/lib/ai-tutor/stt";
+import {
+  SttEngine,
+  WakeWordDetector,
+  FILLER_ONLY_PATTERN,
+  hasSpeechRecognition,
+  matchWakePhrase,
+  stripLeadingAgentCall,
+  type WakeMatch,
+} from "@/lib/ai-tutor/stt";
+import {
+  CloudSttEngine,
+  fetchCloudSttAvailability,
+  hasCloudSttSupport,
+} from "@/lib/ai-tutor/cloud-stt";
 import type { Viseme } from "@/lib/ai-tutor/lipsync";
 import { streamTokens, fetchBufferedReply } from "@/lib/ai-tutor/stream";
 import {
@@ -46,6 +59,29 @@ export interface AiTutorDeps {
   showYoutube: boolean;
   /** "hey AI" with no name — open the Maya/Miles picker. */
   onWakeOpenPicker?: () => void;
+  /**
+   * The room's raw microphone stream. Cloud transcription listens to this
+   * instead of opening a second capture of the device, which is what stops
+   * the browser recognizer from hearing anything inside a voice room.
+   */
+  getAiMicStream?: () => MediaStream | null;
+}
+
+/** Words shared between a transcript and the AI's own speech, 0-1. */
+function speechOverlap(transcript: string, spoken: string): number {
+  // Punctuation is stripped per word rather than by character class so the
+  // comparison works in every script the room languages cover.
+  const words = (s: string) =>
+    s
+      .toLowerCase()
+      .split(/\s+/)
+      .map(w => w.replace(/[.,!?;:"'`()\[\]{}…—–-]/g, ""))
+      .filter(Boolean);
+  const heard = words(transcript);
+  if (heard.length === 0) return 0;
+  const said = new Set(words(spoken));
+  if (said.size === 0) return 0;
+  return heard.filter((w) => said.has(w)).length / heard.length;
 }
 
 const FEMALE_INTROS = [
@@ -122,7 +158,7 @@ function loadSavedAiSettings(): AiTutorSettings {
 }
 
 export function useAiTutor(deps: AiTutorDeps) {
-  const { socket, roomId, roomLanguage, userId, username, activeYoutubeId, showYoutube, onWakeOpenPicker } = deps;
+  const { socket, roomId, roomLanguage, userId, username, activeYoutubeId, showYoutube, onWakeOpenPicker, getAiMicStream } = deps;
 
   // ── AI State ─────────────────────────────────────────────────────────────
   const [aiActive, setAiActive] = useState(false);
@@ -152,6 +188,8 @@ export function useAiTutor(deps: AiTutorDeps) {
   const [voiceBargeInActive, setVoiceBargeInActive] = useState(false);
   const [micError, setMicError] = useState<string | null>(null);
   const [wakeListening, setWakeListening] = useState(false);
+  /** Which recognizer is live: the browser's, or server transcription. */
+  const [sttMode, setSttMode] = useState<"browser" | "cloud">("browser");
 
   // ── Lipsync State ─────────────────────────────────────────────────────────
   const [currentViseme, setCurrentViseme] = useState<Viseme>("rest");
@@ -170,6 +208,20 @@ export function useAiTutor(deps: AiTutorDeps) {
   const queueProcessingRef = useRef(false);
   // ── Wake word detector ref ────────────────────────────────────────────────
   const wakeWordRef = useRef<WakeWordDetector | null>(null);
+  // ── Cloud transcription ───────────────────────────────────────────────────
+  // Preferred whenever the server has a transcription key: it listens to the
+  // room's own microphone stream, so it keeps working where the browser
+  // recognizer goes deaf (mobile Chrome, iOS Safari, Firefox).
+  const cloudSessionRef = useRef<CloudSttEngine | null>(null);
+  const cloudWakeRef = useRef<CloudSttEngine | null>(null);
+  const sttModeRef = useRef<"browser" | "cloud">("browser");
+  /** Recent AI speech, used to tell the user's voice from speaker echo. */
+  const lastSpokenRef = useRef("");
+  const ttsStartedAtRef = useRef(0);
+  const getMicStreamRef = useRef<(() => MediaStream | null) | undefined>(undefined);
+  const handleWakeRef = useRef<((match: WakeMatch) => void) | null>(null);
+  const startMicRef = useRef<(() => void) | null>(null);
+  const roomLanguageRef = useRef(roomLanguage);
   // Stable refs so the wake callback never has a stale closure
   const toggleAiTutorRef = useRef<(() => void) | null>(null);
   const startWithPersonaRef = useRef<((voice: VoicePersona, pName: string) => void) | null>(null);
@@ -184,6 +236,7 @@ export function useAiTutor(deps: AiTutorDeps) {
   const serverTtsProviderRef = useRef<string>("unknown");
 
   // Keep refs in sync with state
+  useEffect(() => { getMicStreamRef.current = getAiMicStream; }, [getAiMicStream]);
   useEffect(() => { activeRef.current = aiActive; }, [aiActive]);
   useEffect(() => { speakingRef.current = aiSpeaking; }, [aiSpeaking]);
   useEffect(() => { loadingRef.current = aiLoading; }, [aiLoading]);
@@ -255,12 +308,29 @@ export function useAiTutor(deps: AiTutorDeps) {
   // engine. Either way the contract is identical.
   const ttsRef = useRef<TtsLike | null>(null);
 
+  /**
+   * Speak as the AI. Keeps a rolling copy of the words so cloud transcription
+   * can recognise the AI's own voice coming back through the speakers instead
+   * of answering itself.
+   */
+  const speakAi = useCallback((text: string) => {
+    const trimmed = (text || "").trim();
+    if (!trimmed) return;
+    lastSpokenRef.current = `${lastSpokenRef.current} ${trimmed}`
+      .split(/\s+/)
+      .slice(-80)
+      .join(" ");
+    ttsRef.current?.enqueue(trimmed);
+  }, []);
+
   const onTtsStart = useCallback(() => {
     setAiSpeaking(true);
     speakingRef.current = true;
+    ttsStartedAtRef.current = Date.now();
     socket?.emit("room:ai-tutor-speaking", { roomId, userId, speaking: true });
-    // Start barge-in detector when AI begins speaking
-    sttRef.current?.startBargeIn();
+    // Start barge-in detector when AI begins speaking. Cloud transcription
+    // stays on the whole time, so it needs no separate recognizer.
+    if (sttModeRef.current === "browser") sttRef.current?.startBargeIn();
     setVoiceBargeInActive(true);
   }, [socket, roomId, userId]);
 
@@ -273,7 +343,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     // 180ms delay — lets room echo fade while keeping the turnaround snappy.
     // Reduced from 300ms to minimize perceived dead-air between AI response and mic ready.
     if (activeRef.current && !loadingRef.current) {
-      setTimeout(() => sttRef.current?.startListening(), 180);
+      setTimeout(() => startMicRef.current?.(), 180);
     }
   }, [socket, roomId, userId]);
 
@@ -327,7 +397,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     // Reduced from 400ms so the user can speak again almost immediately.
     setTimeout(() => {
       if (activeRef.current && !speakingRef.current && !loadingRef.current) {
-        sttRef.current?.startListening();
+        startMicRef.current?.();
       }
     }, 220);
   }, [addDebug]);
@@ -337,11 +407,11 @@ export function useAiTutor(deps: AiTutorDeps) {
     // Ignore fragments shorter than 3 characters — almost always echo artifacts
     if (trimmed.length < 3) return;
     // Bare agent name while already in session — stay listening.
-    if (/^(maya|maia|mya|miles|myles|eva|evelyn|dude|afi(?:\s*k)?|afik|ai)$/i.test(trimmed)) {
+    if (/^(maya|maia|mya|mia|may|miles|myles|eva|evelyn|dude|afi(?:\s*k)?|afik|ai)$/i.test(trimmed)) {
       addDebug("info", `Addressed as ${trimmed} — already listening`);
       setTimeout(() => {
         if (activeRef.current && !speakingRef.current && !loadingRef.current) {
-          sttRef.current?.startListening();
+          startMicRef.current?.();
         }
       }, 200);
       return;
@@ -351,7 +421,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       addDebug("info", `Filler filtered: "${trimmed}" — restarting mic`);
       setTimeout(() => {
         if (activeRef.current && !speakingRef.current && !loadingRef.current) {
-          sttRef.current?.startListening();
+          startMicRef.current?.();
         }
       }, 200);
       return;
@@ -368,7 +438,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       setVoiceListening(false);
       interruptAiRef.current?.();
       const prompt = CLARIFICATION_PROMPTS[Math.floor(Math.random() * CLARIFICATION_PROMPTS.length)];
-      ttsRef.current?.enqueue(prompt);
+      speakAi(prompt);
       return;
     }
 
@@ -378,7 +448,45 @@ export function useAiTutor(deps: AiTutorDeps) {
     interruptAiRef.current?.();
     // Use ref to avoid stale closure — sendAiMessage changes when aiConversation changes
     sendAiMessageRef.current?.(trimmed);
-  }, [addDebug]);
+  }, [addDebug, speakAi]);
+
+  // ── Cloud transcription callbacks ─────────────────────────────────────────
+  /**
+   * A phrase transcribed from the room's microphone during a session.
+   *
+   * Cloud transcription never stops for the AI's own speech, so this is also
+   * where echo is filtered: whatever the speakers play comes back through the
+   * mic, and without this guard the AI answers itself in a loop.
+   */
+  const onCloudTranscript = useCallback((text: string) => {
+    setVoiceInterimText(null);
+    const trimmed = text.trim();
+    if (!trimmed || !activeRef.current) return;
+    const words = trimmed.split(/\s+/).filter(Boolean);
+
+    if (speakingRef.current) {
+      // Stricter while the AI talks: echo cancellation is imperfect, and
+      // cutting the AI off because it heard itself is worse than missing a
+      // barge-in the user can simply repeat.
+      const withinGrace = Date.now() - ttsStartedAtRef.current < 1400;
+      const isEcho = speechOverlap(trimmed, lastSpokenRef.current) >= 0.4;
+      if (withinGrace || words.length < 3 || isEcho) return;
+      addDebug("info", "Barge-in detected — interrupting AI.");
+      setVoiceBargeInActive(false);
+      interruptAiRef.current?.();
+    } else if (loadingRef.current) {
+      addDebug("info", `Heard "${trimmed.slice(0, 40)}" while the reply was loading — ignored`);
+      return;
+    } else if (words.length > 2 && speechOverlap(trimmed, lastSpokenRef.current) >= 0.75) {
+      addDebug("info", "Dropped an echo of the AI's own reply.");
+      return;
+    }
+
+    onFinalTranscript(trimmed);
+  }, [addDebug, onFinalTranscript]);
+
+  const onCloudTranscriptRef = useRef(onCloudTranscript);
+  useEffect(() => { onCloudTranscriptRef.current = onCloudTranscript; }, [onCloudTranscript]);
 
   useEffect(() => {
     sttRef.current = new SttEngine(
@@ -400,18 +508,18 @@ export function useAiTutor(deps: AiTutorDeps) {
           // Speak a concise, actionable recovery prompt — short so it doesn't
           // talk over the user trying to fix the issue.
           if (/denied/i.test(msg)) {
-            ttsRef.current?.enqueue("I can't hear you. You can type in the chat instead.");
+            speakAi("I can't hear you. You can type in the chat instead.");
           } else if (msg === "network") {
-            ttsRef.current?.enqueue("Connection issue — check your network and try again.");
+            speakAi("Connection issue — check your network and try again.");
           } else if (msg === "audio-capture") {
-            ttsRef.current?.enqueue("Can't access the mic. Type in the chat, or close other apps using the mic.");
+            speakAi("Can't access the mic. Type in the chat, or close other apps using the mic.");
           } else if (/recognition-error:/i.test(msg)) {
             const REPEAT_PROMPTS = [
               "Didn't catch that — try again?",
               "Say it one more time?",
               "Come again?",
             ];
-            ttsRef.current?.enqueue(REPEAT_PROMPTS[Math.floor(Math.random() * REPEAT_PROMPTS.length)]);
+            speakAi(REPEAT_PROMPTS[Math.floor(Math.random() * REPEAT_PROMPTS.length)]);
           }
         },
         onNoSpeechExtended: () => {
@@ -426,7 +534,7 @@ export function useAiTutor(deps: AiTutorDeps) {
           const pick = SILENCE_REMINDERS[Math.floor(Math.random() * SILENCE_REMINDERS.length)];
           addDebug("info", "Extended silence — speaking reminder");
           sttRef.current?.resetNoSpeechCount();
-          ttsRef.current?.enqueue(pick);
+          speakAi(pick);
         },
       },
       {
@@ -438,12 +546,141 @@ export function useAiTutor(deps: AiTutorDeps) {
     );
     sttRef.current.setLanguage(roomLanguage);
     return () => sttRef.current?.stopAll();
-  }, [roomLanguage, onBargeIn, onFinalTranscript, addDebug]);
+  }, [roomLanguage, onBargeIn, onFinalTranscript, addDebug, speakAi]);
 
   // Update STT language when room language changes
   useEffect(() => {
+    roomLanguageRef.current = roomLanguage;
     sttRef.current?.setLanguage(roomLanguage);
+    cloudSessionRef.current?.setLanguage(roomLanguage);
+    cloudWakeRef.current?.setLanguage(roomLanguage);
   }, [roomLanguage]);
+
+  /** Give up on cloud transcription and go back to the browser recognizer. */
+  const fallBackToBrowserStt = useCallback((reason: string) => {
+    if (sttModeRef.current === "browser") return;
+    sttModeRef.current = "browser";
+    cloudSessionRef.current?.stop();
+    cloudWakeRef.current?.stop();
+    setWakeListening(false);
+    setSttMode("browser");
+    addDebug("warn", `Server transcription unavailable (${reason}).`);
+    if (!hasSpeechRecognition) {
+      setMicError("This browser can't transcribe speech. Type to the AI in the chat instead.");
+      if (activeRef.current) setAiChatPanelOpen(true);
+    }
+  }, [addDebug]);
+
+  const fallBackToBrowserSttRef = useRef(fallBackToBrowserStt);
+  useEffect(() => { fallBackToBrowserSttRef.current = fallBackToBrowserStt; }, [fallBackToBrowserStt]);
+
+  // ── Cloud transcription engines ───────────────────────────────────────────
+  // One engine for an active session, one for background wake-word listening.
+  // Only ever one of them runs, and both read the room's existing mic stream.
+  useEffect(() => {
+    const session = new CloudSttEngine(
+      {
+        onSpeechStart: () => {
+          if (!speakingRef.current && !loadingRef.current) setVoiceInterimText("…");
+        },
+        onTranscript: text => onCloudTranscriptRef.current?.(text),
+        onNotice: msg => addDebug("warn", `Transcription: ${msg}`),
+        onUnavailable: reason => fallBackToBrowserSttRef.current?.(reason),
+      },
+      { roomId, maxRequestsPerMinute: 90 },
+    );
+    const wake = new CloudSttEngine(
+      {
+        onTranscript: text => {
+          if (activeRef.current) return;
+          const match = matchWakePhrase(text);
+          if (!match) return;
+          handleWakeRef.current?.(match);
+        },
+        onNotice: () => {},
+        onUnavailable: reason => fallBackToBrowserSttRef.current?.(reason),
+      },
+      // Wake listening runs for as long as the room is open, so it is capped
+      // tighter: the name is always at the front of the phrase, so only the
+      // first couple of seconds of any utterance is ever transcribed.
+      { roomId, maxRequestsPerMinute: 24, minSpeechMs: 400, maxSpeechMs: 2600, overflow: "firstOnly" },
+    );
+    session.setLanguage(roomLanguageRef.current);
+    wake.setLanguage(roomLanguageRef.current);
+    cloudSessionRef.current = session;
+    cloudWakeRef.current = wake;
+    return () => {
+      session.stop();
+      wake.stop();
+      cloudSessionRef.current = null;
+      cloudWakeRef.current = null;
+    };
+  }, [roomId, addDebug]);
+
+  // Prefer server transcription whenever a key is configured. The browser
+  // recognizer needs a second microphone capture, which a voice room usually
+  // denies — that is what leaves it reporting "Listening…" while hearing
+  // nothing at all.
+  useEffect(() => {
+    if (!hasCloudSttSupport) {
+      if (!hasSpeechRecognition) {
+        setMicError("This browser can't transcribe speech. Type to the AI in the chat instead.");
+      }
+      return;
+    }
+    let cancelled = false;
+    fetchCloudSttAvailability().then(available => {
+      if (cancelled) return;
+      if (!available) {
+        if (!hasSpeechRecognition) {
+          setMicError("This browser can't transcribe speech. Type to the AI in the chat instead.");
+        }
+        addDebug("warn", "No server transcription key — using browser speech recognition.");
+        return;
+      }
+      sttModeRef.current = "cloud";
+      setSttMode("cloud");
+      addDebug("info", "Listening through server transcription (works with the room mic).");
+    });
+    return () => { cancelled = true; };
+  }, [addDebug]);
+
+  // ── Microphone control — dispatches to whichever engine is in use ─────────
+  const startMic = useCallback(() => {
+    if (!activeRef.current) return;
+    if (sttModeRef.current === "cloud") {
+      const engine = cloudSessionRef.current;
+      if (!engine) return;
+      if (engine.isRunning) {
+        setVoiceListening(true);
+        return;
+      }
+      void engine
+        .start(getMicStreamRef.current?.() ?? null, { allowOwnMic: true })
+        .then(ok => {
+          setVoiceListening(ok);
+          if (ok) addDebug("info", `Mic open — transcribing ${roomLanguageRef.current}`);
+        });
+      return;
+    }
+    sttRef.current?.startListening();
+  }, [addDebug]);
+
+  useEffect(() => { startMicRef.current = startMic; }, [startMic]);
+
+  /** Pause between turns. Cloud transcription keeps its graph alive and
+   *  simply ignores what it hears while a reply is in flight. */
+  const pauseMic = useCallback(() => {
+    if (sttModeRef.current === "cloud") return;
+    sttRef.current?.stopListening();
+  }, []);
+
+  const stopMicAll = useCallback(() => {
+    sttRef.current?.stopAll();
+    cloudSessionRef.current?.stop();
+    setVoiceListening(false);
+    setVoiceInterimText(null);
+  }, []);
 
   // ── Interrupt ─────────────────────────────────────────────────────────────
   const interruptAi = useCallback(() => {
@@ -525,7 +762,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     const RECEIPT_CUES = ["Mm.", "Mm-hmm.", "Right.", "Yeah.", "Okay."];
     const playReceiptCue = Math.random() < 0.35;
     if (playReceiptCue) {
-      ttsRef.current?.enqueue(RECEIPT_CUES[Math.floor(Math.random() * RECEIPT_CUES.length)]);
+      speakAi(RECEIPT_CUES[Math.floor(Math.random() * RECEIPT_CUES.length)]);
       addDebug("info", "Receipt cue played — immediate ACK");
     }
 
@@ -543,13 +780,13 @@ export function useAiTutor(deps: AiTutorDeps) {
     ];
     const thinkingTimer = setTimeout(() => {
       if (!firstTokenFired && !playReceiptCue && !abort.signal.aborted && activeRef.current && !speakingRef.current) {
-        ttsRef.current?.enqueue(THINKING_PHRASES[Math.floor(Math.random() * THINKING_PHRASES.length)]);
+        speakAi(THINKING_PHRASES[Math.floor(Math.random() * THINKING_PHRASES.length)]);
         addDebug("info", `Thinking phrase spoken — first token delayed >${Date.now() - t0}ms`);
       }
     }, 500);
 
     // Stop primary listening while streaming
-    sttRef.current?.stopListening();
+    pauseMic();
 
     try {
       const gotTokens = await streamTokens(
@@ -581,14 +818,14 @@ export function useAiTutor(deps: AiTutorDeps) {
             // Flush complete sentences to TTS immediately (speak before full response)
             const [sentences, remainder] = extractSentences(sentenceBuffer);
             sentenceBuffer = remainder;
-            sentences.forEach(s => ttsRef.current?.enqueue(s));
+            sentences.forEach(s => speakAi(s));
           },
           onMeta: event => {
             if (event === "switching_to_backup") addDebug("warn", "Primary AI unavailable — switching to backup.");
           },
           onDone: (model, latencyMs) => {
             addDebug("info", `Stream complete in ${latencyMs}ms · model: ${model}`);
-            if (sentenceBuffer.trim()) ttsRef.current?.enqueue(sentenceBuffer.trim());
+            if (sentenceBuffer.trim()) speakAi(sentenceBuffer.trim());
             sentenceBuffer = "";
             if (fullReply.trim()) {
               setAiLastBroadcast(fullReply);
@@ -636,7 +873,7 @@ export function useAiTutor(deps: AiTutorDeps) {
         setAiConversation(prev => [...prev, fbMsg]);
         setAiLastBroadcast(fallback.reply);
         socket?.emit("room:ai-tutor-message", { roomId, userId, text: fallback.reply, voice: aiSettings.voice, voiceId: aiSettings.voiceId, speed: aiSettings.speed, avatarId: aiSettings.avatarId });
-        ttsRef.current?.enqueue(fallback.reply);
+        speakAi(fallback.reply);
       } else {
         const errDetail = (fallback as any)?.error || err?.message || "";
         const needsKey = /not configured|missing_api|OPENAI|GROQ|no_openai|503|brain/i.test(String(errDetail));
@@ -657,7 +894,7 @@ export function useAiTutor(deps: AiTutorDeps) {
             errVoiceId,
             serverTtsProviderRef.current || "edge",
           );
-          ttsRef.current?.enqueue(errText);
+          speakAi(errText);
         } catch { /* ignore */ }
         addDebug("error", `All AI calls failed: ${errDetail || "unknown"}`);
       }
@@ -670,7 +907,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       // Safety: if TTS never fires onEnd (empty response), restart listening anyway
       setTimeout(() => {
         if (activeRef.current && !speakingRef.current && !loadingRef.current) {
-          sttRef.current?.startListening();
+          startMicRef.current?.();
         }
         // Auto-drain queue — process next queued question if any
         if (aiQueueRef.current.length > 0) {
@@ -678,7 +915,7 @@ export function useAiTutor(deps: AiTutorDeps) {
         }
       }, 1000);
     }
-  }, [aiConversation, aiSettings, roomLanguage, activeYoutubeId, showYoutube, roomId, userId, socket, addDebug, interruptAi, processNextQueued]);
+  }, [aiConversation, aiSettings, roomLanguage, activeYoutubeId, showYoutube, roomId, userId, socket, addDebug, interruptAi, processNextQueued, pauseMic, speakAi]);
 
   // Keep latest-version refs in sync so STT callbacks never call a stale closure
   useEffect(() => { sendAiMessageRef.current = sendAiMessage; }, [sendAiMessage]);
@@ -705,7 +942,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     // voice never switched. Now we always honour the user's new pick.
     if (aiActive) {
       try { ttsRef.current?.cancel(); } catch {}
-      try { sttRef.current?.stopAll(); } catch {}
+      try { stopMicAll(); } catch {}
       try { abortRef.current?.abort(); } catch {}
       socket?.emit("room:ai-tutor-stop", { roomId, userId });
       // Local state reset — mirrors the stop branch of toggleAiTutor
@@ -758,9 +995,9 @@ export function useAiTutor(deps: AiTutorDeps) {
     const intro = intros[Math.floor(Math.random() * intros.length)];
     const introMsg: ConversationEntry = { id: `a-intro-${Date.now()}`, role: "ai", text: intro };
     setAiConversation([introMsg]);
-    setTimeout(() => ttsRef.current?.enqueue(intro), 10);
+    setTimeout(() => speakAi(intro), 10);
     addDebug("info", `Session started with persona: ${pName} (${voice})`);
-  }, [aiActive, socket, roomId, userId, username, aiSettings, addDebug]);
+  }, [aiActive, socket, roomId, userId, username, aiSettings, addDebug, stopMicAll, speakAi]);
 
   // ── Keep toggleAiTutorRef in sync (wake callback uses this to avoid stale closure) ──
   // Must be placed AFTER toggleAiTutor is defined below.
@@ -785,13 +1022,13 @@ export function useAiTutor(deps: AiTutorDeps) {
       const intro = intros[Math.floor(Math.random() * intros.length)];
       const introMsg: ConversationEntry = { id: `a-intro-${Date.now()}`, role: "ai", text: intro };
       setAiConversation([introMsg]);
-      setTimeout(() => ttsRef.current?.enqueue(intro), 10);
+      setTimeout(() => speakAi(intro), 10);
     } else {
       // Stop session — unlock persona and drain queue
       personaLockedRef.current = false;
       aiQueueRef.current = [];
       queueProcessingRef.current = false;
-      sttRef.current?.stopAll();
+      stopMicAll();
       ttsRef.current?.cancel();
       abortRef.current?.abort();
       socket?.emit("room:ai-tutor-stop", { roomId, userId });
@@ -809,7 +1046,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       setAiTranscriptExpanded(false);
       setPersonaName("AI Tutor");
     }
-  }, [aiActive, socket, roomId, userId, username, aiSettings]);
+  }, [aiActive, socket, roomId, userId, username, aiSettings, stopMicAll, speakAi]);
 
   // Keep the wake callback's ref current every time toggleAiTutor is recreated
   useEffect(() => { toggleAiTutorRef.current = toggleAiTutor; }, [toggleAiTutor]);
@@ -830,29 +1067,35 @@ export function useAiTutor(deps: AiTutorDeps) {
     engine.enqueue(text);
   }, []);
 
-  // ── Wake word detector — lifecycle ───────────────────────────────────────
-  // Created once. Starts passively when AI is inactive so users can say
-  // "hey AI" / "Maya" / "Miles" to activate hands-free.
-  // Stops as soon as AI becomes active (primary STT takes over the mic).
+  // ── Wake word ─────────────────────────────────────────────────────────────
+  // Listens passively while the AI is inactive so "hey Maya" / "hey Miles" /
+  // "hey AI" starts a session hands-free. Whichever recognizer is in use stops
+  // as soon as the session begins, so the two never share the microphone.
+  const handleWake = useCallback((match: WakeMatch) => {
+    const { persona, afterText } = match;
+    addDebug("info", `Wake word detected (${persona})${afterText ? ` — "${afterText}"` : ""}`);
+    cloudWakeRef.current?.stop();
+    setWakeListening(false);
+    if (persona === "miles") {
+      startWithPersonaRef.current?.("Male", "Miles");
+    } else if (persona === "eva") {
+      startWithPersonaRef.current?.("Eva", "Eva");
+    } else {
+      startWithPersonaRef.current?.("Female", "Maya");
+    }
+    const leftover = afterText && !/^(i|aye|eye|ai|a\.i\.?)$/i.test(afterText) ? afterText : "";
+    if (leftover) {
+      setTimeout(() => {
+        sendAiMessageRef.current?.(leftover);
+      }, 1100);
+    }
+  }, [addDebug]);
+
+  useEffect(() => { handleWakeRef.current = handleWake; }, [handleWake]);
+
   useEffect(() => {
     const detector = new WakeWordDetector(
-      (match: WakeMatch) => {
-        const { persona, afterText } = match;
-        addDebug("info", `Wake word detected (${persona})${afterText ? ` — "${afterText}"` : ""}`);
-        if (persona === "miles") {
-          startWithPersonaRef.current?.("Male", "Miles");
-        } else if (persona === "eva") {
-          startWithPersonaRef.current?.("Eva", "Eva");
-        } else {
-          startWithPersonaRef.current?.("Female", "Maya");
-        }
-        const leftover = afterText && !/^(i|aye|eye|ai|a\.i\.?)$/i.test(afterText) ? afterText : "";
-        if (leftover) {
-          setTimeout(() => {
-            sendAiMessageRef.current?.(leftover);
-          }, 1100);
-        }
-      },
+      (match: WakeMatch) => handleWakeRef.current?.(match),
       (listening: boolean) => setWakeListening(listening)
     );
     wakeWordRef.current = detector;
@@ -866,17 +1109,45 @@ export function useAiTutor(deps: AiTutorDeps) {
   // toggleAiTutorRef is assigned below after the function is defined (see the
   // useEffect that depends on [toggleAiTutor]).  The placeholder keeps ESLint happy.
 
-  // Start / stop the wake word detector based on AI active state and user preference
+  // Start / stop wake listening based on AI active state and user preference
   useEffect(() => {
     if (aiActive || !aiSettings.wakeWordEnabled || !aiRoomEnabled) {
       wakeWordRef.current?.stop();
+      cloudWakeRef.current?.stop();
+      setWakeListening(false);
       return;
     }
+    if (sttMode === "cloud") {
+      wakeWordRef.current?.stop();
+      const engine = cloudWakeRef.current;
+      if (!engine) return;
+      let cancelled = false;
+      // allowOwnMic:false — background listening must never raise a
+      // permission prompt; it waits for the room to open the mic and
+      // primeWakeWord() picks it up from there.
+      void engine
+        .start(getMicStreamRef.current?.() ?? null, { allowOwnMic: false })
+        .then(ok => { if (!cancelled) setWakeListening(ok); });
+      return () => {
+        cancelled = true;
+        engine.stop();
+        setWakeListening(false);
+      };
+    }
+    cloudWakeRef.current?.stop();
     wakeWordRef.current?.start();
-  }, [aiActive, aiSettings.wakeWordEnabled, aiRoomEnabled]);
+  }, [aiActive, aiSettings.wakeWordEnabled, aiRoomEnabled, sttMode]);
 
   const primeWakeWord = useCallback(() => {
     if (aiActive || !aiSettings.wakeWordEnabled || !aiRoomEnabled) return;
+    if (sttModeRef.current === "cloud") {
+      const engine = cloudWakeRef.current;
+      if (!engine) return;
+      void engine
+        .start(getMicStreamRef.current?.() ?? null, { allowOwnMic: false })
+        .then(ok => setWakeListening(ok));
+      return;
+    }
     wakeWordRef.current?.restart();
   }, [aiActive, aiSettings.wakeWordEnabled, aiRoomEnabled]);
 
@@ -893,15 +1164,19 @@ export function useAiTutor(deps: AiTutorDeps) {
   useEffect(() => {
     if (aiActive) {
       activeRef.current = true;
+      // Whichever recognizer is not in use must be silent, so the two never
+      // compete for the microphone.
+      if (sttMode === "cloud") sttRef.current?.stopAll();
+      else cloudSessionRef.current?.stop();
       // 100ms — gives the intro TTS a single tick to start before the mic opens
       setTimeout(() => {
-        if (activeRef.current && !speakingRef.current) sttRef.current?.startListening();
+        if (activeRef.current && !speakingRef.current) startMicRef.current?.();
       }, 100);
     } else {
       activeRef.current = false;
-      sttRef.current?.stopAll();
+      stopMicAll();
     }
-  }, [aiActive]);
+  }, [aiActive, sttMode, stopMicAll]);
 
   // ── Socket event handlers ─────────────────────────────────────────────────
   useEffect(() => {
@@ -992,6 +1267,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     bargeInActive: voiceBargeInActive,
     micError,
     wakeListening,
+    sttMode,
   };
 
   const mediaState: MediaState = {

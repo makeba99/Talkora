@@ -30,7 +30,7 @@ import {
 import webpush from "web-push";
 import { sendPushCampaign, previewPushAudience } from "./push-service";
 import { externalCache } from "./cache";
-import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, aiTutorRateLimiter, messageRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
+import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, aiTutorRateLimiter, aiSttRateLimiter, messageRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
 import { setCleanupContext, getCleanupStats, runCleanupNow } from "./cleanup";
 import { getAiTutorConfig, setAiTutorConfig, maskConfig, mergeIncoming, sanitizeKey, voiceConfigPublic, resolveBrainEndpoint, type AiTutorConfig } from "./ai-config";
 import {
@@ -69,6 +69,37 @@ import {
   incrementTalkingAiUsage,
   normalizeAiHistory,
 } from "./entitlements-runtime";
+import { MAX_STT_BYTES, sttAvailable, transcribeSpeech } from "./ai-stt";
+
+/**
+ * Collect a raw (non-JSON) request body up to maxBytes, or null when the
+ * client sends more than that. Used for audio uploads, which the global
+ * express.json() parser leaves untouched.
+ */
+function readRequestBody(req: any, maxBytes: number): Promise<Buffer | null> {
+  return new Promise((resolve) => {
+    const chunks: Buffer[] = [];
+    let total = 0;
+    let settled = false;
+    const finish = (value: Buffer | null) => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
+    req.on("data", (chunk: Buffer) => {
+      total += chunk.length;
+      if (total > maxBytes) {
+        finish(null);
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("end", () => finish(Buffer.concat(chunks)));
+    req.on("error", () => finish(null));
+    req.on("aborted", () => finish(null));
+  });
+}
 
 const onlineUsers = new Set<string>();
 const roomParticipants = new Map<string, Map<string, User>>();
@@ -2372,6 +2403,67 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("[AI Tutor TTS] Unexpected:", err);
       res.status(500).json({ error: "tts-server-error" });
+    }
+  });
+
+  // ── AI Tutor speech-to-text ──────────────────────────────────────────────
+  // Transcribes audio captured from the room's own microphone stream. The
+  // browser Web Speech API needs a second, independent mic capture, which the
+  // platform often refuses while a voice room holds the device — it reports
+  // "listening" and returns nothing. Sending the audio here instead keeps the
+  // AI hearing the user on mobile Chrome and on browsers with no Web Speech.
+  app.get("/api/ai-tutor/stt-config", isAuthenticated, async (_req, res) => {
+    try {
+      const { available, provider } = await sttAvailable();
+      res.json({ available, provider });
+    } catch {
+      res.json({ available: false, provider: null });
+    }
+  });
+
+  app.post("/api/ai-tutor/transcribe", isAuthenticated, aiSttRateLimiter, async (req: any, res) => {
+    try {
+      const mimeType = String(req.headers["content-type"] || "").split(";")[0].trim() || "audio/wav";
+      if (!/^audio\//i.test(mimeType) && mimeType !== "application/octet-stream") {
+        return res.status(415).json({ error: "audio body required" });
+      }
+
+      const roomId = typeof req.query.roomId === "string" ? req.query.roomId : null;
+      if (roomId) {
+        const session = roomAiTutorState.get(roomId);
+        const callerId = (req.user as any)?.id;
+        if (session && callerId && session.userId !== callerId) {
+          return res.status(403).json({ error: "not-active-session" });
+        }
+      }
+
+      const langParam = typeof req.query.lang === "string" ? req.query.lang.toLowerCase() : "";
+      const language = /^[a-z]{2}$/.test(langParam) ? langParam : null;
+
+      const audio = await readRequestBody(req, MAX_STT_BYTES);
+      if (!audio) {
+        return res.status(413).json({ error: "audio too large" });
+      }
+      // Under ~4 KB of 16 kHz mono PCM is a fraction of a second — no words in it.
+      if (audio.length < 4000) {
+        return res.json({ text: "" });
+      }
+
+      const result = await transcribeSpeech(audio, mimeType, language);
+      if (!result.ok) {
+        if (result.status === 501) {
+          return res.status(501).json({ error: "no-stt-key" });
+        }
+        console.error("[AI Tutor STT] Provider error:", result.status, result.error);
+        return res.status(result.status && result.status < 500 ? result.status : 502).json({
+          error: result.error || "transcription-failed",
+        });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ text: result.text || "", provider: result.provider, model: result.model });
+    } catch (err: any) {
+      console.error("[AI Tutor STT] Unexpected:", err);
+      res.status(500).json({ error: "stt-server-error" });
     }
   });
 

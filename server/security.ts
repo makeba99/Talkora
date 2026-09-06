@@ -138,6 +138,30 @@ export const aiTutorRateLimiter = rateLimit({
   },
 });
 
+// Speech-to-text runs once per spoken phrase, so a normal back-and-forth
+// conversation issues far more calls than the chat/TTS endpoints. Whisper
+// transcription is cheap enough (fractions of a cent per phrase) that a
+// higher ceiling is safe; it still stops a runaway client from looping.
+export const aiSttRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: sessionKey,
+  handler: async (req: Request, res: Response) => {
+    await logSecurityEvent({
+      userId: (req as any).user?.id ?? null,
+      eventType: "rate_limit_exceeded",
+      severity: "medium",
+      description: `AI Tutor speech-to-text rate limit exceeded on ${req.path}`,
+      requestPath: req.path,
+    });
+    res.status(429).json({
+      message: "Too much speech at once. Please wait a moment.",
+    });
+  },
+});
+
 // Direct-message send endpoint: limit to 60 messages per minute per session
 // to prevent spam floods without impacting real-time conversation.
 export const messageRateLimiter = rateLimit({

@@ -67,6 +67,8 @@ export interface VoiceState {
   bargeInActive: boolean;
   micError: string | null;
   wakeListening: boolean;
+  /** "cloud" = server transcription of the room mic, "browser" = Web Speech. */
+  sttMode: "browser" | "cloud";
 }
 
 export interface MediaState {
