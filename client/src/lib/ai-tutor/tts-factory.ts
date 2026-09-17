@@ -1,8 +1,8 @@
 /**
- * TTS factory — ALL three personas (Female/Afi K, Male/Lebroski, Eva/Lebroskiu)
- * route through ElevenLabs via EvaTtsEngine. EvaTtsEngine automatically falls
- * back to browser SpeechSynthesis when ElevenLabs is unreachable or unconfigured,
- * so users always hear something — but the target is always ElevenLabs.
+ * TTS factory — Maya, Miles, and Eva all speak through the server
+ * (`/api/ai-tutor/tts` → Sesame CSM-1B / Edge / OpenAI).
+ * Browser SpeechSynthesis is last-resort only (admin provider = browser, or
+ * every cloud voice failed).
  */
 
 import { TtsEngine, type TtsCallbacks } from "./tts";
