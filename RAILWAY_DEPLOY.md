@@ -34,6 +34,9 @@ Use the table below — copy the values from your Replit Secrets panel for the s
 |---|---|
 | `ELEVENLABS_API_KEY` | AI Tutor "Eva" voice |
 | `OPENAI_API_KEY` | AI Tutor text responses |
+| `HF_TOKEN` | Hugging Face token for Sesame CSM-1B (`AI_VOICE_PROVIDER=sesame`) |
+| `AI_VOICE_PROVIDER` | `edge` (default), `openai`, `browser`, or `sesame` |
+| `AI_VOICE_SESAME_SPACE` | Optional Space id/url (default `sesame/csm-1b`) |
 | `TENOR_API_KEY` | GIF search (has free public fallback) |
 | `GOOGLE_CLIENT_ID` | Google OAuth login |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth login |
@@ -42,6 +45,10 @@ Use the table below — copy the values from your Replit Secrets panel for the s
 Push to your GitHub main branch — Railway builds and deploys automatically.
 The start command (`npm run db:push && node dist/index.cjs`) runs DB migrations
 before the server starts, so your schema is always up to date.
+
+Sesame CSM-1B voice generation can take 30–90s on the public Hugging Face Space.
+If Talking Partner voice times out, raise the Railway service HTTP timeout or
+point `AI_VOICE_SESAME_SPACE` at a duplicated/self-hosted Space.
 
 ### 5. Verify
 - Visit your Railway domain — you should see the Vextorn lobby

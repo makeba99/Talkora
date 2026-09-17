@@ -47,7 +47,7 @@ type AiTutorConfigPublic = {
     warnThresholdPct: number;
   };
   voice: {
-    provider: "openai" | "edge" | "browser";
+    provider: "openai" | "edge" | "browser" | "sesame";
     primaryKeyMasked: string;
     secondaryKeyMasked: string;
     hasPrimary: boolean;
@@ -102,6 +102,14 @@ const OPENAI_VOICES = [
   { value: "echo", label: "Echo (male)" },
   { value: "onyx", label: "Onyx (deep male — recommended)" },
   { value: "fable", label: "Fable (British)" },
+];
+const SESAME_SPEAKERS = [
+  { value: "conversational_a", label: "conversational_a (Maya default)" },
+  { value: "conversational_b", label: "conversational_b (Miles default)" },
+  { value: "read_speech_a", label: "read_speech_a" },
+  { value: "read_speech_b", label: "read_speech_b" },
+  { value: "read_speech_c", label: "read_speech_c" },
+  { value: "read_speech_d", label: "read_speech_d" },
 ];
 const EDGE_VOICES_FEMALE = [
   { value: "en-US-AvaNeural", label: "Ava (US — recommended)" },
@@ -2265,7 +2273,7 @@ function AiTutorTab() {
   const [brainModel, setBrainModel] = useState("openai/gpt-oss-20b");
   const [brainWarn, setBrainWarn] = useState(80);
 
-  const [voiceProvider, setVoiceProvider] = useState<"openai" | "edge" | "browser">("edge");
+  const [voiceProvider, setVoiceProvider] = useState<"openai" | "edge" | "browser" | "sesame">("edge");
   const [voicePrimaryKey, setVoicePrimaryKey] = useState("");
   const [voiceSecondaryKey, setVoiceSecondaryKey] = useState("");
   const [voiceModel, setVoiceModel] = useState("tts-1-hd");
@@ -2340,8 +2348,8 @@ function AiTutorTab() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/admin/ai-config"] }),
   });
 
-  async function runKeyTest(kind: "brain" | "voice", slot: "primary" | "secondary") {
-    const testId = `${kind}-${slot}`;
+  async function runKeyTest(kind: "brain" | "voice" | "sesame", slot: "primary" | "secondary") {
+    const testId = kind === "sesame" ? "voice-primary" : `${kind}-${slot}`;
     setTesting(testId);
     try {
       const override =
@@ -2354,7 +2362,7 @@ function AiTutorTab() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           kind,
-          slot,
+          slot: kind === "sesame" ? "primary" : slot,
           key: override || undefined,
         }),
       });
@@ -2416,9 +2424,9 @@ function AiTutorTab() {
               {statusDot(data?.hasKeys?.brainPrimary || data?.hasKeys?.brainSecondary ? "HEALTHY" : "ERROR")}
               Brain: {data?.hasKeys?.brainPrimary || data?.hasKeys?.brainSecondary ? `${cfg?.brain.provider || "—"} ready` : "key required"}
             </span>
-            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${cfg?.voice.provider === "edge" || cfg?.voice.provider === "browser" || data?.hasKeys?.voicePrimary ? "border-emerald-500/40 text-emerald-300 bg-emerald-500/10" : "border-amber-500/40 text-amber-300 bg-amber-500/10"}`}>
-              {statusDot(cfg?.voice.provider === "edge" || cfg?.voice.provider === "browser" || data?.hasKeys?.voicePrimary ? "HEALTHY" : "WARNING")}
-              Voice: {cfg?.voice.provider === "edge" ? "Edge neural (free)" : cfg?.voice.provider === "browser" ? "Browser" : data?.hasKeys?.voicePrimary ? "OpenAI ready" : "not configured"}
+            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${cfg?.voice.provider === "edge" || cfg?.voice.provider === "browser" || cfg?.voice.provider === "sesame" || data?.hasKeys?.voicePrimary ? "border-emerald-500/40 text-emerald-300 bg-emerald-500/10" : "border-amber-500/40 text-amber-300 bg-amber-500/10"}`}>
+              {statusDot(cfg?.voice.provider === "edge" || cfg?.voice.provider === "browser" || cfg?.voice.provider === "sesame" || data?.hasKeys?.voicePrimary ? "HEALTHY" : "WARNING")}
+              Voice: {cfg?.voice.provider === "edge" ? "Edge neural (free)" : cfg?.voice.provider === "browser" ? "Browser" : cfg?.voice.provider === "sesame" ? "Sesame CSM-1B" : data?.hasKeys?.voicePrimary ? "OpenAI ready" : "not configured"}
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -2640,7 +2648,7 @@ function AiTutorTab() {
                 <Select
                   value={voiceProvider}
                   onValueChange={(v) => {
-                    const p = v as "openai" | "edge" | "browser";
+                    const p = v as "openai" | "edge" | "browser" | "sesame";
                     setVoiceProvider(p);
                     if (p === "edge") {
                       setFemaleVoice("en-US-AvaNeural");
@@ -2648,6 +2656,9 @@ function AiTutorTab() {
                     } else if (p === "openai") {
                       setFemaleVoice("nova");
                       setMaleVoice("onyx");
+                    } else if (p === "sesame") {
+                      setFemaleVoice("conversational_a");
+                      setMaleVoice("conversational_b");
                     }
                   }}
                 >
@@ -2656,6 +2667,7 @@ function AiTutorTab() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="edge">Edge neural (free, natural)</SelectItem>
+                    <SelectItem value="sesame">Sesame CSM-1B (Hugging Face)</SelectItem>
                     <SelectItem value="browser">Browser (free, device voices)</SelectItem>
                     <SelectItem value="openai">OpenAI TTS (paid)</SelectItem>
                   </SelectContent>
@@ -2667,6 +2679,52 @@ function AiTutorTab() {
                   Uses the device&apos;s built-in voices. Quality varies by OS/browser.
                   Prefer Edge neural for consistent natural speech.
                 </div>
+              ) : voiceProvider === "sesame" ? (
+                <>
+                  <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-muted-foreground">
+                    Sesame CSM-1B via the Hugging Face Space API (<code>/infer</code>). Token stays server-side as <code>HF_TOKEN</code>.
+                    Hosted Space latency is not guaranteed — Edge is used automatically if generation fails.
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label>Maya voice (speaker A)</Label>
+                      <Select value={femaleVoice} onValueChange={setFemaleVoice}>
+                        <SelectTrigger data-testid="select-voice-female">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SESAME_SPEAKERS.map((v) => (
+                            <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Miles voice (speaker B)</Label>
+                      <Select value={maleVoice} onValueChange={setMaleVoice}>
+                        <SelectTrigger data-testid="select-voice-male">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SESAME_SPEAKERS.map((v) => (
+                            <SelectItem key={v.value} value={v.value}>{v.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={testing === "voice-primary"}
+                    onClick={() => runKeyTest("sesame", "primary")}
+                    data-testid="button-test-voice-sesame"
+                  >
+                    {testing === "voice-primary" ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Play className="h-3.5 w-3.5 mr-1" />}
+                    Test Sesame Voice
+                  </Button>
+                </>
               ) : voiceProvider === "edge" ? (
                 <>
                   <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs text-muted-foreground">
@@ -3852,6 +3910,7 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
 const PLATFORM_FEATURES = [
   { id: "voiceEffects",  label: "Voice Effects",        description: "Voice presets & pitch modulation inside rooms",  Icon: AudioLines,   color: "cyan"   },
   { id: "aiTutor",       label: "AI Tutor",             description: "Eva / Afik AI tutor panel inside rooms",         Icon: BrainCircuit, color: "amber"  },
+  { id: "talkingPartner",label: "AI Talking Partner",   description: "Dedicated /talk voice conversation with Maya or Miles", Icon: AudioLines, color: "cyan" },
   { id: "screenShare",   label: "Screen Share",         description: "Screen sharing capability in voice rooms",       Icon: Monitor,      color: "blue"   },
   { id: "youtubeWatch",  label: "YouTube Watch",        description: "YouTube watch-together side panel",              Icon: Youtube,      color: "red"    },
   { id: "movieParty",    label: "Movie Party",          description: "Archive.org movie watch party panel",            Icon: Film,         color: "violet" },

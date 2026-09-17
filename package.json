@@ -8,9 +8,11 @@
     "build": "node --import tsx/esm script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
+    "test": "vitest run",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
+    "@gradio/client": "^2.6.0",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@radix-ui/react-accordion": "^1.2.4",
@@ -125,7 +127,8 @@
     "postcss": "^8.4.47",
     "sharp": "^0.34.5",
     "tailwindcss": "^3.4.17",
-    "typescript": "5.6.3"
+    "typescript": "5.6.3",
+    "vitest": "^3.2.4"
   },
   "overrides": {
     "drizzle-kit": {

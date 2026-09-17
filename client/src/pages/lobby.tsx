@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, BellOff, Palette, Users as UsersIcon, PinOff, Anchor, ArrowRight, LayoutGrid, Hammer } from "lucide-react";
+import { Search, Mic, ChevronUp, ChevronDown, LogIn, Crown, ShieldCheck, Users, Heart, MessageCircle, Radio, Flame, MessageSquare, Globe, X, Bell, BellOff, Palette, Users as UsersIcon, PinOff, Anchor, ArrowRight, LayoutGrid, Hammer, AudioLines } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RoomCard } from "@/components/room-card";
 import { VipSupportButton } from "@/components/vip-support-button";
@@ -481,6 +481,11 @@ export default function Lobby() {
       "Join real-time audio rooms by language and level. Practice speaking and meet people worldwide.",
   });
   const { user } = useAuth();
+  const { data: platformFeatures } = useQuery<Record<string, boolean>>({
+    queryKey: ["/api/features/active"],
+    enabled: !!user,
+  });
+  const talkingPartnerEnabled = platformFeatures?.talkingPartner !== false;
   const { socket } = useSocket();
   const { toast } = useToast();
   useLowBandwidthHint();
@@ -1690,6 +1695,18 @@ export default function Lobby() {
           <nav aria-label="Site navigation" className="flex items-center gap-1 flex-shrink-0">
             {user ? (
               <>
+                {talkingPartnerEnabled && (
+                  <button
+                    onClick={() => navigate("/talk")}
+                    className="header-pro-btn inline-flex items-center h-9 px-3.5 rounded-full text-[12px] font-semibold"
+                    data-testid="button-talking-partner"
+                    title="AI Talking Partner"
+                    aria-label="AI Talking Partner"
+                  >
+                    <AudioLines className="w-4 h-4 sm:mr-1.5 text-cyan-300" />
+                    <span className="hidden sm:inline">Talk</span>
+                  </button>
+                )}
                 <VipSupportButton />
                 {isAdminUser && (
                   <button

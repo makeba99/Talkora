@@ -269,7 +269,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       .then((cfg: { provider: string; voiceId: string | null; maleVoiceId?: string | null } | null) => {
         if (!cfg) return;
         serverTtsProviderRef.current = cfg.provider || "unknown";
-        const cloud = cfg.provider === "openai" || cfg.provider === "elevenlabs" || cfg.provider === "edge";
+        const cloud = cfg.provider === "openai" || cfg.provider === "elevenlabs" || cfg.provider === "edge" || cfg.provider === "sesame";
         if (cloud && cfg.voiceId) {
           serverVoiceIdRef.current = cfg.voiceId;
         }

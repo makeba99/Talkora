@@ -70,6 +70,10 @@ import {
   normalizeAiHistory,
 } from "./entitlements-runtime";
 import { MAX_STT_BYTES, sttAvailable, transcribeSpeech } from "./ai-stt";
+import { TALKING_PARTNERS } from "@shared/talking-partners";
+import { detectRepetitiveHistory, isDuplicateReply, lastAssistantText } from "./ai-anti-repeat";
+import { buildTalkingPartnerSystemPrompt, isTalkingPartnerRequest, partnerFromSettings } from "./talking-partner-prompt";
+import { getSesameProvider } from "./voice";
 
 /**
  * Collect a raw (non-JSON) request body up to maxBytes, or null when the
@@ -2117,6 +2121,13 @@ export async function registerRoutes(
         return res.status(429).json(quota);
       }
 
+      if (isTalkingPartnerRequest(settings)) {
+        const flags = await storage.getEffectiveFeatures(callerId);
+        if (flags.talkingPartner === false && !isPlatformAdmin(callerUser)) {
+          return res.status(403).json({ error: "talking_partner_disabled", message: "AI Talking Partner is currently disabled." });
+        }
+      }
+
       // Only block if ANOTHER user owns an active AI session in this room.
       // Allow if no session is registered (e.g. after server restart, socket re-connect pending).
       if (roomId) {
@@ -2140,21 +2151,7 @@ export async function registerRoutes(
         .filter((m) => m.role === 'assistant')
         .slice(-4)
         .map((m) => (m.content || '').toLowerCase().trim());
-       const normalizeReply = (value: string) =>
-         value.toLowerCase().replace(/[^a-z0-9\s]/gi, '').replace(/\s+/g, ' ').trim();
-       const replySimilarity = (a: string, b: string) => {
-         const aWords = new Set(normalizeReply(a).split(' ').filter(Boolean));
-         const bWords = new Set(normalizeReply(b).split(' ').filter(Boolean));
-         if (!aWords.size || !bWords.size) return 0;
-         const overlap = Array.from(aWords).filter(word => bWords.has(word)).length;
-         return overlap / Math.max(aWords.size, bWords.size);
-       };
-       const isRepetitive = recentAiReplies.length >= 2 &&
-         recentAiReplies.some((reply, index) =>
-           recentAiReplies.slice(index + 1).some(other =>
-             reply === other || replySimilarity(reply, other) >= 0.78
-           )
-         );
+       const isRepetitive = detectRepetitiveHistory(recentAiReplies);
        const recentReplyBlock = recentAiReplies.length
          ? `RECENT ASSISTANT REPLIES (use as banned phrasing; do not repeat their wording or generic question pattern): ${recentAiReplies.map((reply) => `"${reply}"`).join(" | ")}`
          : '';
@@ -2175,6 +2172,9 @@ export async function registerRoutes(
         : '';
 
       const jsonInstruction = `Reply ONLY in JSON: {"reply":"...","correction":"..."|null,"correctionFixed":"..."|null}`;
+
+      const talkingPartner = isTalkingPartnerRequest(settings);
+      const partner = talkingPartner ? partnerFromSettings(settings) : null;
 
       const afiKPersonalityLine = isAfiK ? [
         `YOU ARE "Afi K" (pronounced "Afi Key") — a funny, friendly, openly flirty character with a warm, attractive accented voice.`,
@@ -2205,7 +2205,16 @@ export async function registerRoutes(
         `If they're learning ${language}, help them the way a patient native speaker would — naturally, not formally.`,
       ].join(' ') : '';
 
-      const systemPrompt = [
+      const systemPrompt = talkingPartner && partner
+        ? buildTalkingPartnerSystemPrompt({
+            partner,
+            language,
+            correctionMode,
+            recentReplyBlock,
+            antiRepeatLine,
+            jsonInstruction,
+          })
+        : [
         isAfiK
           ? `You are Afi K — a fun, flirty, voice-first AI avatar living inside a voice room. You also help users practice ${language} when they want.`
           : isEva
@@ -2270,7 +2279,27 @@ export async function registerRoutes(
         });
       }
 
-      const parsed = parseAiResponse(aiResult.raw || aiResult.content);
+      let parsed = parseAiResponse(aiResult.raw || aiResult.content);
+      const previousReply = lastAssistantText(normalizedHistory);
+      if (parsed.reply && previousReply && isDuplicateReply(parsed.reply, previousReply, 0.9)) {
+        const regen = await generateAIResponse({
+          messages: [
+            { role: "system", content: systemPrompt + " CRITICAL: Your previous draft repeated earlier wording. Write a completely different reply that references a specific detail from the user's last message." },
+            ...normalizedHistory,
+            { role: "user", content: message },
+          ],
+          temperature: 0.95,
+          maxTokens: 160,
+          responseFormat: { type: "json_object" },
+        });
+        if (regen.ok) {
+          const again = parseAiResponse(regen.raw || regen.content);
+          if (again.reply && !isDuplicateReply(again.reply, previousReply, 0.9)) {
+            parsed = again;
+          }
+        }
+      }
+
       const latencyMs = Date.now() - startTime;
       if (parsed.reply) {
         await incrementTalkingAiUsage(callerId);
@@ -2327,6 +2356,14 @@ export async function registerRoutes(
         });
         return;
       }
+      if (provider === "sesame") {
+        res.json({
+          provider: "sesame",
+          voiceId: publicCfg.voiceId || null,
+          maleVoiceId: publicCfg.maleVoiceId || null,
+        });
+        return;
+      }
       // "edge" and "openai" both go through /api/ai-tutor/tts (server audio)
       res.json({
         provider: provider === "edge" ? "edge" : "openai",
@@ -2341,15 +2378,31 @@ export async function registerRoutes(
   app.get("/api/ai-tutor/tts/health", isAuthenticated, async (_req, res) => {
     try {
       const cfg = await getAiTutorConfig();
+      if (cfg.voice.provider === "sesame") {
+        const h = await getSesameProvider().health();
+        return res.json({ ...h, provider: "sesame", lastError: getSesameProvider().lastError });
+      }
       const key = sanitizeKey(cfg.voice.primaryKey) || sanitizeKey(cfg.voice.secondaryKey);
       if (!key) {
-        return res.json({ available: false, reachable: false, provider: "browser" });
+        return res.json({ available: false, reachable: false, provider: cfg.voice.provider || "browser" });
       }
       const h = await openAiTtsHealth(key);
       return res.json({ ...h, provider: "openai" });
     } catch {
       res.json({ available: false, reachable: false });
     }
+  });
+
+  app.get("/api/talking-partners", isAuthenticated, async (_req, res) => {
+    res.json({
+      partners: TALKING_PARTNERS.map((p) => ({
+        id: p.id,
+        name: p.name,
+        gender: p.gender,
+        personality: p.personality,
+        purpose: p.purpose,
+      })),
+    });
   });
 
   // Synthesize a single sentence via OpenAI TTS (primary→secondary voice keys).
@@ -2520,6 +2573,14 @@ export async function registerRoutes(
         return res.end();
       }
 
+      if (isTalkingPartnerRequest(settings)) {
+        const flags = await storage.getEffectiveFeatures(callerId);
+        if (flags.talkingPartner === false && !isPlatformAdmin(callerUser)) {
+          sendEvent({ error: "AI Talking Partner is currently disabled.", code: "talking_partner_disabled" });
+          return res.end();
+        }
+      }
+
       // Only block if ANOTHER user owns an active AI session in this room.
       // Allow if no session is registered (e.g. after server restart, socket re-connect pending).
       if (roomId) {
@@ -2542,21 +2603,7 @@ export async function registerRoutes(
        const recentAiReplies = normalizedHistory
         .filter((m) => m.role === 'assistant').slice(-4)
         .map((m) => (m.content || '').toLowerCase().trim());
-       const normalizeReply = (value: string) =>
-         value.toLowerCase().replace(/[^a-z0-9\s]/gi, '').replace(/\s+/g, ' ').trim();
-       const replySimilarity = (a: string, b: string) => {
-         const aWords = new Set(normalizeReply(a).split(' ').filter(Boolean));
-         const bWords = new Set(normalizeReply(b).split(' ').filter(Boolean));
-         if (!aWords.size || !bWords.size) return 0;
-         return Array.from(aWords).filter(word => bWords.has(word)).length /
-           Math.max(aWords.size, bWords.size);
-       };
-       const isRepetitive = recentAiReplies.length >= 2 &&
-         recentAiReplies.some((reply, index) =>
-           recentAiReplies.slice(index + 1).some(other =>
-             reply === other || replySimilarity(reply, other) >= 0.78
-           )
-         );
+       const isRepetitive = detectRepetitiveHistory(recentAiReplies);
        const recentReplyBlock = recentAiReplies.length
          ? `RECENT ASSISTANT REPLIES (use as banned phrasing; do not repeat their wording or generic question pattern): ${recentAiReplies.map((reply) => `"${reply}"`).join(" | ")}`
          : '';
@@ -2599,7 +2646,19 @@ export async function registerRoutes(
         `If they're learning ${language}, help them the way a patient native speaker would — naturally, not formally.`,
       ].join(' ') : '';
 
-      const systemPrompt = [
+      const talkingPartner = isTalkingPartnerRequest(settings);
+      const partner = talkingPartner ? partnerFromSettings(settings) : null;
+
+      const systemPrompt = talkingPartner && partner
+        ? buildTalkingPartnerSystemPrompt({
+            partner,
+            language,
+            correctionMode,
+            recentReplyBlock,
+            antiRepeatLine,
+            jsonInstruction: `Reply in plain spoken text only — no JSON, no markdown, no lists.`,
+          })
+        : [
         isAfiK
           ? `You are Afi K — a fun, flirty, voice-first AI avatar living inside a voice room. You also help users practice ${language} when they want.`
           : isEva
@@ -7361,8 +7420,22 @@ export async function registerRoutes(
   app.post("/api/admin/ai-config/test", isAuthenticated, isSuperAdmin, async (req: any, res) => {
     try {
       const { kind, slot, key } = req.body || {};
-      if (kind !== "brain" && kind !== "voice") {
-        return res.status(400).json({ ok: false, error: 'kind must be "brain" or "voice"' });
+      if (kind !== "brain" && kind !== "voice" && kind !== "sesame") {
+        return res.status(400).json({ ok: false, error: 'kind must be "brain", "voice", or "sesame"' });
+      }
+      if (kind === "sesame") {
+        const result = await testVoiceKey("primary");
+        if (result.ok && result.audio) {
+          res.setHeader("Content-Type", result.contentType || "audio/wav");
+          res.setHeader("Cache-Control", "no-store");
+          res.setHeader("Content-Encoding", "identity");
+          return res.send(Buffer.from(result.audio));
+        }
+        return res.status(result.ok ? 200 : 400).json({
+          ok: result.ok,
+          message: result.message,
+          status: result.status,
+        });
       }
       if (slot !== "primary" && slot !== "secondary") {
         return res.status(400).json({ ok: false, error: 'slot must be "primary" or "secondary"' });
@@ -8224,7 +8297,7 @@ export async function registerRoutes(
 
   // ── Platform Feature Flags ─────────────────────────────────────────────────
   const PLATFORM_FEATURE_IDS = [
-    "voiceEffects","aiTutor","screenShare","youtubeWatch","movieParty","games","gifPicker","readTogether",
+    "voiceEffects","aiTutor","talkingPartner","screenShare","youtubeWatch","movieParty","games","gifPicker","readTogether",
   ] as const;
 
   app.get("/api/admin/features", isAuthenticated, isSuperAdmin, async (_req, res) => {

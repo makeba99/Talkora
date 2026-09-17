@@ -23,6 +23,7 @@ const SocketLayer = lazy(() =>
 );
 
 const Lobby = lazy(() => import("@/pages/lobby"));
+const TalkingPartnerPage = lazy(() => import("@/pages/talking-partner"));
 const RoomPage = lazy(() => import("@/pages/room"));
 const DmPage = lazy(() => import("@/pages/dm"));
 const AdminPage = lazy(() => import("@/pages/admin"));
@@ -266,6 +267,7 @@ function AppContent() {
       <Suspense fallback={<LobbyShell />}>
         <Switch>
           <Route path="/" component={Lobby} />
+          <Route path="/talk" component={TalkingPartnerPage} />
           <Route path="/about" component={AboutPage} />
           <Route path="/faq" component={FaqPage} />
           <Route path="/contact" component={ContactPage} />
