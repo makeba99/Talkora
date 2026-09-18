@@ -5,6 +5,8 @@ export type VoiceSynthesizeRequest = {
   /** Reserved for self-hosted CSM next-turn context. Unused by the hosted Space. */
   conversationContext?: string[];
   signal?: AbortSignal;
+  /** Admin tests skip the GPU-quota cooldown so a new HF_TOKEN can be retried immediately. */
+  bypassSkip?: boolean;
 };
 
 export type VoiceSynthesizeResult = {

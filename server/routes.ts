@@ -38,6 +38,7 @@ import {
   generateSpeech,
   testBrainKey,
   testVoiceKey,
+  testSesameVoice,
   getProviderStatusSnapshot,
   listAiAlerts,
   markAiAlertsRead,
@@ -7371,7 +7372,7 @@ export async function registerRoutes(
         return res.status(400).json({ ok: false, error: 'kind must be "brain", "voice", or "sesame"' });
       }
       if (kind === "sesame") {
-        const result = await testVoiceKey("primary");
+        const result = await testSesameVoice();
         if (result.ok && result.audio) {
           res.setHeader("Content-Type", result.contentType || "audio/wav");
           res.setHeader("Cache-Control", "no-store");
@@ -7382,6 +7383,7 @@ export async function registerRoutes(
           ok: result.ok,
           message: result.message,
           status: result.status,
+          hasHfToken: result.hasHfToken,
         });
       }
       if (slot !== "primary" && slot !== "secondary") {

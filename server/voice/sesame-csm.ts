@@ -12,8 +12,10 @@ import {
 } from "./types";
 import {
   buildSesameInferPayload,
+  classifySesameError,
   fileUrlFromPredict,
   resolveSesameSpeaker,
+  sesameErrorText,
   sesameHfToken,
   sesameSpaceId,
   unwrapPredictData,
@@ -53,7 +55,10 @@ function fail(status: number, error: string, voiceUsed: string): VoiceSynthesize
 async function defaultConnect(space: string, opts: { token?: string }): Promise<GradioLike> {
   const token = opts.token;
   const clientOpts: Record<string, unknown> = {};
-  if (token) clientOpts.token = token;
+  if (token) {
+    clientOpts.token = token;
+    clientOpts.headers = { Authorization: `Bearer ${token}` };
+  }
   return Client.connect(space, clientOpts as any);
 }
 
@@ -94,9 +99,26 @@ async function loadSpeakerPrompt(
 }
 
 function wrapAudioPrompt(audio: unknown, handleFile: (url: string) => unknown): unknown {
+  if (audio && typeof audio === "object") {
+    const meta = (audio as { meta?: { _type?: string } }).meta;
+    if (meta?._type === "gradio.FileData") return audio;
+  }
   const url = fileUrlFromPredict(audio);
   if (url) return handleFile(url);
   return audio;
+}
+
+async function verifyHfToken(token: string): Promise<"ok" | "unauthorized" | "unknown"> {
+  try {
+    const res = await fetch("https://huggingface.co/api/whoami-v2", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) return "ok";
+    if (res.status === 401 || res.status === 403) return "unauthorized";
+    return "unknown";
+  } catch {
+    return "unknown";
+  }
 }
 
 export class SesameCsmProvider implements VoiceProvider {
@@ -143,9 +165,16 @@ export class SesameCsmProvider implements VoiceProvider {
       this.lastError = "HF_TOKEN not configured";
       return fail(503, "sesame-no-token", speakerA);
     }
-    if (usingLiveSpace && Date.now() < skipSesameUntil) {
+    if (usingLiveSpace && !req.bypassSkip && Date.now() < skipSesameUntil) {
       this.lastError = "sesame temporarily skipped after GPU quota error";
       return fail(503, "sesame-skipped", speakerA);
+    }
+    if (usingLiveSpace && token) {
+      const auth = await verifyHfToken(token);
+      if (auth === "unauthorized") {
+        this.lastError = "Hugging Face rejected HF_TOKEN (401/403)";
+        return fail(401, "sesame-unauthorized", speakerA);
+      }
     }
 
     const controller = new AbortController();
@@ -210,20 +239,18 @@ export class SesameCsmProvider implements VoiceProvider {
       };
     } catch (err: any) {
       const aborted = err?.name === "AbortError" || controller.signal.aborted;
-      this.lastError = err?.message || "sesame-failed";
+      this.lastError = sesameErrorText(err) || err?.message || "sesame-failed";
       console.error("[sesame-csm] synthesize failed:", this.lastError);
-      // Hosted sesame/csm-1b ZeroGPU often rejects with
-      // "requested GPU duration (180s) is larger than the maximum allowed".
-      const userSafe =
-        /gpu duration/i.test(this.lastError)
-          ? "sesame-gpu-quota"
-          : aborted
-            ? "sesame-timeout"
-            : "sesame-failed";
-      if (usingLiveSpace && (userSafe === "sesame-gpu-quota" || userSafe === "sesame-timeout")) {
+      const classified = aborted
+        ? { code: "sesame-timeout", status: 504 }
+        : classifySesameError(err);
+      if (
+        usingLiveSpace &&
+        (classified.code === "sesame-gpu-quota" || classified.code === "sesame-timeout")
+      ) {
         markSesameUnavailable();
       }
-      return fail(aborted ? 504 : 502, userSafe, speakerA);
+      return fail(classified.status, classified.code, speakerA);
     } finally {
       clearTimeout(timer);
       req.signal?.removeEventListener("abort", onAbort);
