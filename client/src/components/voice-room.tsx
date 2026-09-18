@@ -2989,9 +2989,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     if (typeof window === "undefined") return;
     (window as any).__vextornOnEvaTtsError = (msg: string) => {
       toast({
-        title: "AI voice unavailable",
+        title: "Voice skip",
         description: msg,
-        variant: "destructive",
       });
     };
     return () => {

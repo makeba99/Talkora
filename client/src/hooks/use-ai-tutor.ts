@@ -17,7 +17,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { extractCompleteSentences, sanitizeSpokenTutorLine } from "@shared/spoken-tutor-line";
+import { extractCompleteSentences, isTutorSystemErrorLine, sanitizeSpokenTutorLine } from "@shared/spoken-tutor-line";
 import { createTts, type TtsLike } from "@/lib/ai-tutor/tts-factory";
 import { primeEvaAudio, warmupEvaTts } from "@/lib/ai-tutor/eva-tts";
 import {
@@ -732,6 +732,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     // streaming bubbles so the model never sees blank assistant rows.
     const historyForApi = aiConversation
       .filter((m) => typeof m.text === "string" && m.text.trim().length > 0)
+      .filter((m) => !isTutorSystemErrorLine(m.text))
       .slice(-12);
     setAiConversation(prev => [...prev, userMsg]);
     setAiLoading(true);
@@ -845,26 +846,33 @@ export function useAiTutor(deps: AiTutorDeps) {
         speakAi(fallback.reply);
       } else {
         const errDetail = (fallback as any)?.error || err?.message || "";
+        const quota = /usage limit|vip for unlimited|free talking ai limit/i.test(String(errDetail));
         const needsKey = /not configured|missing_api|OPENAI|GROQ|no_openai|503|brain/i.test(String(errDetail));
-        const errText = needsKey
-          ? "My brain is offline — an admin needs to set a Groq or OpenAI API key in Admin → AI Tutor."
-          : "Talking AI is unavailable right now. Please try again in a moment.";
-        const fbMsg: ConversationEntry = { id: `a-${Date.now()}`, role: "ai", text: errText };
-        setAiConversation(prev => [...prev, fbMsg]);
-        // Speak error with the configured provider (Edge/OpenAI), not sticky browser.
-        try {
-          const errVoiceId =
-            aiSettings.voice === "Male"
-              ? (serverMaleVoiceIdRef.current || aiSettings.voiceId)
-              : (serverVoiceIdRef.current || aiSettings.voiceId);
-          ttsRef.current?.configure(
-            aiSettings.voice,
-            aiSettings.speed,
-            errVoiceId,
-            serverTtsProviderRef.current || "edge",
-          );
-          speakAi(errText);
-        } catch { /* ignore */ }
+        const errText = quota
+          ? "That's all the free Talking AI for today. VIP keeps the conversation going."
+          : needsKey
+            ? "My brain is offline — an admin needs to set a Groq or OpenAI API key in Admin → AI Tutor."
+            : null;
+        if (errText) {
+          const lastAi = [...aiConversation].reverse().find((m) => m.role === "ai")?.text || "";
+          if (lastAi !== errText) {
+            const fbMsg: ConversationEntry = { id: `a-${Date.now()}`, role: "ai", text: errText };
+            setAiConversation(prev => [...prev, fbMsg]);
+            try {
+              const errVoiceId =
+                aiSettings.voice === "Male"
+                  ? (serverMaleVoiceIdRef.current || aiSettings.voiceId)
+                  : (serverVoiceIdRef.current || aiSettings.voiceId);
+              ttsRef.current?.configure(
+                aiSettings.voice,
+                aiSettings.speed,
+                errVoiceId,
+                serverTtsProviderRef.current || "edge",
+              );
+              speakAi(errText);
+            } catch { /* ignore */ }
+          }
+        }
         addDebug("error", `All AI calls failed: ${errDetail || "unknown"}`);
       }
     } finally {

@@ -213,17 +213,29 @@ export class EvaTtsEngine {
     return this.fallback;
   }
 
+  private lastUnavailableToastAt = 0;
+
   private engageFallback(reason: string, queuedItem?: QueueItem) {
+    if (queuedItem && /abort/i.test(reason)) return;
     if (!this.allowBrowserFallback) {
-      this.queue = [];
+      // Skip the failed line and keep speaking the rest — do not dump the queue
+      // or loop an "unavailable" toast after a few GPU blips.
       this.currentAbort = null;
-      this.active = false;
-      this.callbacks.onViseme?.("rest");
-      this.callbacks.onEnd();
-      if (typeof window !== "undefined" && (window as any).__vextornOnEvaTtsError) {
-        (window as any).__vextornOnEvaTtsError(
-          `Configured AI voice unavailable (${reason}).`,
-        );
+      const now = Date.now();
+      if (now - this.lastUnavailableToastAt > 20_000) {
+        this.lastUnavailableToastAt = now;
+        if (typeof window !== "undefined" && (window as any).__vextornOnEvaTtsError) {
+          (window as any).__vextornOnEvaTtsError(
+            `Voice blip (${reason}) — continuing with the next line.`,
+          );
+        }
+      }
+      if (this.queue.length > 0) {
+        void this.playNext();
+      } else {
+        this.active = false;
+        this.callbacks.onViseme?.("rest");
+        this.callbacks.onEnd();
       }
       return;
     }
@@ -255,7 +267,7 @@ export class EvaTtsEngine {
 
   private async fetchTtsBytes(item: QueueItem): Promise<{ data: ArrayBuffer; type: string }> {
     let lastReason = "tts-failed";
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < 3; attempt++) {
       const res = await fetch("/api/ai-tutor/tts", {
         method: "POST",
         credentials: "include",
@@ -290,7 +302,7 @@ export class EvaTtsEngine {
             : `HTTP ${res.status}`;
         if (item.abort.signal.aborted) throw new DOMException("aborted", "AbortError");
         if (res.status === 429 || res.status >= 500) {
-          await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+          await new Promise((r) => setTimeout(r, 700 * (attempt + 1)));
           continue;
         }
         break;
@@ -321,7 +333,7 @@ export class EvaTtsEngine {
 
     this.active = true;
     this.currentAbort = item.abort;
-    this.queue.slice(0, 2).forEach((q) => this.prefetch(q));
+    this.queue.slice(0, 1).forEach((q) => this.prefetch(q));
 
     try {
       this.prefetch(item);

@@ -14,11 +14,19 @@ export const SPOKEN_AUDIO_STYLE =
 
 /** Maya-only: relaxed thoughtful cadence, vowel linger, pause before the insight. */
 export const MAYA_SPOKEN_STYLE =
-  "MAYA TEMPO: You are Maya. Prioritize a relaxed, thoughtful tempo over speed. Linger on warm vowels in words like so, really, feel, love, mean. Keep emotional moments softer and quieter in wording. Put the key insight in its own last sentence so there is a small breath before it. First sentence: a gentle human reaction. Second sentence: the insight, unhurried. Never rush.";
+  "MAYA TEMPO: You are Maya. Prioritize a relaxed, thoughtful tempo over speed. Linger on warm vowels. Keep emotional moments softer. When it fits, put a key insight after a breath. Do not use the same opener or sentence shape as your last replies. Never start two turns with the same Oh wow / Aww / Haha. Each reply must name a new concrete detail from what the user just said. Never rush. Never say you are unavailable.";
+
+/** Status/error lines that must never be stored as tutor history or spoken. */
+export function isTutorSystemErrorLine(text: string): boolean {
+  return /talking ai is unavailable|brain is offline|free talking ai limit|that's all the free talking|usage limit reached|please try again in a moment|configured ai voice unavailable|ai voice unavailable|voice blip/i.test(
+    String(text || ""),
+  );
+}
 
 export function sanitizeSpokenTutorLine(text: string): string | null {
   let t = String(text || "").replace(/\s+/g, " ").trim();
   if (!t) return null;
+  if (isTutorSystemErrorLine(t)) return null;
   for (let i = 0; i < 4; i++) {
     const stripped = t.replace(LEADING_FILLER, "").replace(LEADING_STALL, "").trim();
     if (stripped === t) break;

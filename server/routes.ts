@@ -72,7 +72,7 @@ import {
   normalizeAiHistory,
 } from "./entitlements-runtime";
 import { MAX_STT_BYTES, sttAvailable, transcribeSpeech } from "./ai-stt";
-import { detectRepetitiveHistory, isDuplicateReply, lastAssistantText } from "./ai-anti-repeat";
+import { detectRepetitiveHistory, matchesAnyPriorReply } from "./ai-anti-repeat";
 import { getSesameProvider } from "./voice";
 import { sesameHasPaidGpu } from "./voice/sesame-payload";
 
@@ -2235,7 +2235,7 @@ export async function registerRoutes(
           ? `Lean into grammar and structure, but keep it warm and encouraging — never lecture.`
           : `Keep it conversational. React like a real person would — curiosity, humor, or a quick take.`,
         `Speak naturally. Avoid markdown, bullet lists, and academic-style explanations.`,
-        `Never start with empty assistant-speak like "Of course!" or "Certainly!". Real reactions are good: "Oh wow,", "Haha,", "Aww,", "Oh no," — then a full sentence about what they said.`,
+        `Never start with empty assistant-speak like "Of course!" or "Certainly!". Warm reactions are fine when they fit — not every turn, and never the same opener twice.`,
         `Never ask more than one question at a time. Often zero questions is better.`,
          `Never repeat phrasing from previous turns. If the conversation loops, take a new angle. The recent assistant replies are already in the conversation; treat them as banned wording and do not reuse their sentence structure.`,
          recentReplyBlock,
@@ -2267,11 +2267,11 @@ export async function registerRoutes(
       }
 
       let parsed = parseAiResponse(aiResult.raw || aiResult.content);
-      const previousReply = lastAssistantText(normalizedHistory);
-      if (parsed.reply && previousReply && isDuplicateReply(parsed.reply, previousReply, 0.9)) {
+      const priorReplies = normalizedHistory.filter((m) => m.role === "assistant").map((m) => m.content).slice(-4);
+      if (parsed.reply && matchesAnyPriorReply(parsed.reply, priorReplies, 0.72)) {
         const regen = await generateAIResponse({
           messages: [
-            { role: "system", content: systemPrompt + " CRITICAL: Your previous draft repeated earlier wording. Write a completely different reply that references a specific detail from the user's last message." },
+            { role: "system", content: systemPrompt + " CRITICAL: Your previous draft repeated earlier wording. Write a completely different reply. Quote a specific new detail from the user's last message. Do not reuse your last openers." },
             ...normalizedHistory,
             { role: "user", content: message },
           ],
@@ -2281,7 +2281,7 @@ export async function registerRoutes(
         });
         if (regen.ok) {
           const again = parseAiResponse(regen.raw || regen.content);
-          if (again.reply && !isDuplicateReply(again.reply, previousReply, 0.9)) {
+          if (again.reply && !matchesAnyPriorReply(again.reply, priorReplies, 0.72)) {
             parsed = again;
           }
         }
@@ -2646,9 +2646,7 @@ export async function registerRoutes(
           ? `Lean into grammar and structure, but keep it warm and encouraging — never lecture.`
           : `Keep it conversational and reactive — respond to what the user actually said, like a real person would.`,
         `Speak naturally. Avoid markdown, bullet lists, and academic-style explanations.`,
-        (isEva || isLebroski)
-          ? `Never start with empty assistant-speak like "Of course!" or "Certainly!". Real reactions are good: "Oh wow,", "Haha,", "Aww," — then a full sentence.`
-          : `Never start with empty assistant-speak like "Of course!" or "Certainly!". Real reactions are good: "Oh wow,", "Haha,", "Aww," — then a full sentence.`,
+        `Never start with empty assistant-speak like "Of course!" or "Certainly!". Warm reactions are fine when they fit — not every turn, and never the same opener twice.`,
         `Never ask more than one question at a time. Often zero questions is better.`,
          `Never repeat phrasing from previous turns. If the conversation loops, pivot to a fresh angle. Treat recent assistant replies in the conversation as banned wording.`,
          recentReplyBlock,
@@ -2663,6 +2661,35 @@ export async function registerRoutes(
         ...normalizedHistory,
         { role: 'user', content: message },
       ];
+      const priorReplies = normalizedHistory.filter((m) => m.role === "assistant").map((m) => m.content).slice(-4);
+      const uniqueBufferedReply = async () => {
+        const extra =
+          " CRITICAL: Write a completely different reply from recent assistant turns. Quote a specific new detail from the user's last message. Never say you are unavailable.";
+        let result = await generateAIResponse({
+          messages: [
+            { role: "system", content: systemPrompt + extra },
+            ...normalizedHistory,
+            { role: "user", content: message },
+          ],
+          temperature: 0.95,
+          maxTokens: 160,
+        });
+        if (result.ok && result.content && matchesAnyPriorReply(result.content, priorReplies, 0.72)) {
+          const regen = await generateAIResponse({
+            messages: [
+              { role: "system", content: systemPrompt + extra + " Do not reuse your last openers or sentence shape." },
+              ...normalizedHistory,
+              { role: "user", content: message },
+            ],
+            temperature: 0.98,
+            maxTokens: 160,
+          });
+          if (regen.ok && regen.content && !matchesAnyPriorReply(regen.content, priorReplies, 0.72)) {
+            result = regen;
+          }
+        }
+        return result;
+      };
 
       const streamTokens = async (provider: string, model: string, baseUrl: string, key: string): Promise<boolean> => {
         try {
@@ -2728,6 +2755,21 @@ export async function registerRoutes(
         return res.end();
       }
 
+      if (isRepetitive) {
+        const unique = await uniqueBufferedReply();
+        if (unique.ok && unique.content?.trim()) {
+          sendEvent({ token: unique.content });
+          await incrementTalkingAiUsage(callerId);
+          sendEvent({
+            done: true,
+            model: unique.model || cfg.brain.model,
+            latencyMs: Date.now() - startTime,
+            unique: true,
+          });
+          return res.end();
+        }
+      }
+
       for (const { key, slot } of brainKeys) {
         const endpoint = resolveBrainEndpoint(key, cfg);
         const model = endpoint.model;
@@ -2745,11 +2787,7 @@ export async function registerRoutes(
         sendEvent({ done: true, model: usedModel, latencyMs: Date.now() - startTime });
       } else {
         // Streaming failed on both keys — fall back to non-stream completion and emit as tokens.
-        const aiResult = await generateAIResponse({
-          messages,
-          temperature,
-          maxTokens: 160,
-        });
+        const aiResult = await uniqueBufferedReply();
         if (aiResult.ok && aiResult.content?.trim()) {
           sendEvent({ token: aiResult.content });
           await incrementTalkingAiUsage(callerId);

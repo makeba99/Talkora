@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { detectRepetitiveHistory, isDuplicateReply, lastAssistantText } from "./ai-anti-repeat";
+import {
+  detectRepetitiveHistory,
+  isDuplicateReply,
+  isTutorSystemErrorLine,
+  lastAssistantText,
+  matchesAnyPriorReply,
+} from "./ai-anti-repeat";
 
 describe("anti-repeat", () => {
   it("detects identical and near-duplicate replies", () => {
@@ -26,5 +32,21 @@ describe("anti-repeat", () => {
         { role: "user", content: "paris" },
       ]),
     ).toBe("Hey!");
+  });
+
+  it("flags a reply that matches any of the last few turns", () => {
+    expect(
+      matchesAnyPriorReply("Nice! What did you like most about Paris?", [
+        "How was the flight?",
+        "Nice what did you like most about paris",
+      ]),
+    ).toBe(true);
+    expect(matchesAnyPriorReply("The food was amazing.", ["How was the flight?"])).toBe(false);
+  });
+
+  it("treats status lines as system errors, not tutor speech", () => {
+    expect(isTutorSystemErrorLine("Talking AI is unavailable right now. Please try again in a moment.")).toBe(true);
+    expect(isTutorSystemErrorLine("Configured AI voice unavailable")).toBe(true);
+    expect(isTutorSystemErrorLine("Oh wow, that sounds amazing.")).toBe(false);
   });
 });

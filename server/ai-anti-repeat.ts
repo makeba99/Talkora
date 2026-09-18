@@ -32,3 +32,9 @@ export function lastAssistantText(history: Array<{ role: string; content: string
   }
   return "";
 }
+
+export { isTutorSystemErrorLine } from "@shared/spoken-tutor-line";
+
+export function matchesAnyPriorReply(candidate: string, prior: string[], threshold = 0.72): boolean {
+  return prior.some((p) => isDuplicateReply(candidate, p, threshold));
+}
