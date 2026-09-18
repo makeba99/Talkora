@@ -58,10 +58,15 @@ function makeBreathWav(durationMs = 280, sampleRate = 22050): Blob {
   return new Blob([out], { type: "audio/wav" });
 }
 
-let breathObjectUrl: string | null = null;
-function breathWavUrl(): string {
-  if (!breathObjectUrl) breathObjectUrl = URL.createObjectURL(makeBreathWav());
-  return breathObjectUrl;
+let mayaBreathUrl: string | null = null;
+let milesBreathUrl: string | null = null;
+function breathWavUrl(thoughtfulMaya: boolean): string {
+  if (thoughtfulMaya) {
+    if (!mayaBreathUrl) mayaBreathUrl = URL.createObjectURL(makeBreathWav(420, 22050));
+    return mayaBreathUrl;
+  }
+  if (!milesBreathUrl) milesBreathUrl = URL.createObjectURL(makeBreathWav(260, 22050));
+  return milesBreathUrl;
 }
 
 let primedAudio: HTMLAudioElement | null = null;
@@ -258,7 +263,7 @@ export class EvaTtsEngine {
         body: JSON.stringify({
           text: item.text,
           voice: this.voice,
-          speed: this.speed,
+          speed: this.voice === "Male" ? this.speed : Math.min(0.93, this.speed > 1 ? 0.92 : this.speed),
           language: this.language,
           voiceId: this.voiceId,
         }),
@@ -359,7 +364,8 @@ export class EvaTtsEngine {
     if (signal?.aborted || this.queue.length === 0) return Promise.resolve();
     return new Promise((resolve) => {
       const audio = ensurePrimedAudio();
-      const url = breathWavUrl();
+      const thoughtfulMaya = this.voice !== "Male";
+      const url = breathWavUrl(thoughtfulMaya);
       const done = () => {
         audio.onended = null;
         audio.onerror = null;
@@ -369,12 +375,12 @@ export class EvaTtsEngine {
       try {
         audio.pause();
       } catch {}
-      audio.volume = 0.42;
+      audio.volume = thoughtfulMaya ? 0.28 : 0.42;
       audio.playbackRate = 1;
       audio.src = url;
       audio.onended = done;
       audio.onerror = done;
-      const t = window.setTimeout(done, 420);
+      const t = window.setTimeout(done, thoughtfulMaya ? 620 : 400);
       signal?.addEventListener("abort", () => {
         window.clearTimeout(t);
         try { audio.pause(); } catch {}
@@ -397,9 +403,12 @@ export class EvaTtsEngine {
     } catch {}
     audio.preload = "auto";
     audio.setAttribute("playsinline", "true");
-    audio.volume = 1;
+    audio.volume = this.voice === "Male" ? 1 : 0.86;
     audio.src = url;
-    audio.playbackRate = Math.max(1.16, Math.min(1.32, this.speed || 1.24));
+    audio.playbackRate =
+      this.voice === "Male"
+        ? Math.max(1.12, Math.min(1.28, this.speed || 1.18))
+        : Math.max(0.88, Math.min(0.96, 0.92));
     this.htmlAudio = audio;
     this.startFakeVisemeLoop();
 

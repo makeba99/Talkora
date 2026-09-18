@@ -86,10 +86,10 @@ function speechOverlap(transcript: string, spoken: string): number {
 }
 
 const FEMALE_INTROS = [
-  "Hey, I'm Maya. Oh it's so good to hear you — what's on your mind?",
-  "Hi there. I'm Maya. Tell me anything — I'm listening.",
-  "Hey you, I'm Maya. Haha, take your time — what do you wanna talk about?",
-  "Hi, I'm Maya. Whenever you're ready, just start talking.",
+  "Hey. I'm Maya. Take your time — I'm right here.",
+  "Hi. I'm Maya. What's on your mind?",
+  "Hey you. I'm Maya. Whenever you're ready.",
+  "Hi there. I'm Maya. I'm listening.",
 ];
 
 const MALE_INTROS = [

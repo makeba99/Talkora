@@ -612,14 +612,19 @@ export async function generateSpeech(opts: {
   const model = cfg.voice.model || "tts-1-hd";
   const text = opts.text.trim();
   const speakSpeed = Number.isFinite(opts.speed) ? Number(opts.speed) : 1.24;
-  const edgeRate = `${speakSpeed >= 1 ? "+" : ""}${Math.round((Math.max(0.95, Math.min(1.35, speakSpeed)) - 1) * 100)}%`;
+  const mayaThoughtful = !isMale;
+  const ttsSpeed = mayaThoughtful ? Math.min(0.94, Math.max(0.86, speakSpeed > 1 ? 0.92 : speakSpeed)) : speakSpeed;
+  const edgeRate = mayaThoughtful
+    ? "-12%"
+    : `${ttsSpeed >= 1 ? "+" : ""}${Math.round((Math.max(0.95, Math.min(1.35, ttsSpeed)) - 1) * 100)}%`;
+  const edgeVoiceOpts = mayaThoughtful ? { pitch: "-2Hz", volume: "-6%" } : undefined;
   if (!text) {
     return { ok: false, status: 400, contentType: "", error: "empty text", usedSlot: null, failover: false, voiceUsed: voiceName };
   }
 
   const edgeFallbackResult = async (reason: string) => {
     const edgeVoice = resolveEdgeVoiceId(configured, isMale ? "male" : "female");
-    const result = await edgeSynthesize(text, edgeVoice, edgeRate);
+    const result = await edgeSynthesize(text, edgeVoice, edgeRate, edgeVoiceOpts);
     if (result.ok && result.body) {
       console.warn(`[ai-provider] ${reason} — using free Edge neural TTS`);
       return {
@@ -710,7 +715,7 @@ export async function generateSpeech(opts: {
   // ── Free Microsoft Edge neural voices (no API key) ─────────────────────
   if (voiceProvider === "edge") {
     voiceName = resolveEdgeVoiceId(configured, isMale ? "male" : "female");
-    const result = await edgeSynthesize(text, voiceName, edgeRate);
+    const result = await edgeSynthesize(text, voiceName, edgeRate, edgeVoiceOpts);
     if (result.ok && result.body) {
       markSuccess("voice", "primary", { characters: text.length });
       await maybeWarnThreshold("voice", cfg);
