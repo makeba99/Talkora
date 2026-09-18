@@ -19,7 +19,7 @@ import {
 import { openAiSynthesize } from "./openai-tts";
 import { edgeSynthesize, resolveEdgeVoiceId, isMalePersona } from "./edge-tts";
 import { isSesameSpeakerId } from "@shared/talking-partners";
-import { getSesameProvider } from "./voice";
+import { getSesameProvider, getSesameHostSnapshot } from "./voice";
 import { sesameHfToken, sesameFalKey, sesameDeepinfraKey, sesameHasPaidGpu, sesameUserMessage, splitSesameUtterances, concatWavArrayBuffers } from "./voice/sesame-payload";
 
 export type KeySlot = "primary" | "secondary";
@@ -577,9 +577,9 @@ export async function generateAIResponse(opts: {
  */
 export async function generateSpeech(opts: {
   text: string;
-  /** "Female" | "Male" | "Eva" etc — maps to configured female/male voices */
   personaVoice?: string;
   voiceId?: string | null;
+  speed?: number;
 }): Promise<{
   ok: boolean;
   status: number;
@@ -609,13 +609,15 @@ export async function generateSpeech(opts: {
     (clientVid && clientVid === configured ? clientVid : configured);
   const model = cfg.voice.model || "tts-1-hd";
   const text = opts.text.trim();
+  const speakSpeed = Number.isFinite(opts.speed) ? Number(opts.speed) : 1.12;
+  const edgeRate = `${speakSpeed >= 1 ? "+" : ""}${Math.round((Math.max(0.9, Math.min(1.25, speakSpeed)) - 1) * 100)}%`;
   if (!text) {
     return { ok: false, status: 400, contentType: "", error: "empty text", usedSlot: null, failover: false, voiceUsed: voiceName };
   }
 
   const edgeFallbackResult = async (reason: string) => {
     const edgeVoice = resolveEdgeVoiceId(configured, isMale ? "male" : "female");
-    const result = await edgeSynthesize(text, edgeVoice);
+    const result = await edgeSynthesize(text, edgeVoice, edgeRate);
     if (result.ok && result.body) {
       console.warn(`[ai-provider] ${reason} — using free Edge neural TTS`);
       return {
@@ -697,7 +699,7 @@ export async function generateSpeech(opts: {
   // ── Free Microsoft Edge neural voices (no API key) ─────────────────────
   if (voiceProvider === "edge") {
     voiceName = resolveEdgeVoiceId(configured, isMale ? "male" : "female");
-    const result = await edgeSynthesize(text, voiceName);
+    const result = await edgeSynthesize(text, voiceName, edgeRate);
     if (result.ok && result.body) {
       markSuccess("voice", "primary", { characters: text.length });
       await maybeWarnThreshold("voice", cfg);
@@ -1046,6 +1048,7 @@ export async function getProviderStatusSnapshot() {
       secondary: { ...voiceState.secondary },
       usageLabel: "Usage tracked by application",
       quotaNote: "Provider remaining quota unavailable",
+      sesame: getSesameHostSnapshot(),
     },
   };
 }

@@ -2210,6 +2210,7 @@ export async function registerRoutes(
         `VOICE ACTIVATION: If the user says "hello", "are you there", "can you hear me", or similar check-ins, respond immediately and warmly — confirm you're listening in one short sentence.`,
         `Listen first: extract the user's exact intent, reference their words naturally, and answer that specific point. Never ignore or change the topic.`,
         `Lead with the answer: put the most important part of your response first so it can be spoken within the first second. Context and elaboration come after.`,
+        `SPOKEN AUDIO: Never start a reply with hmm, mm, uh, um, okay, or "let me think". Never output a sentence fragment or trailing ellipsis. Every reply must be complete sentences that can be read aloud as-is.`,
         (isEva || isLebroski)
           ? `Keep replies short and natural: 1–2 sentences unless they ask for more. Sound like a person, not an assistant.`
           : `Keep replies short and voice-first: usually 1–2 sentences. If the user asks for detail, give a complete answer — correctness matters more than brevity then.`,
@@ -2398,9 +2399,8 @@ export async function registerRoutes(
       const result = await generateSpeech({
         text: text.trim(),
         personaVoice: voice,
-        // Only accept known OpenAI voice names from the client — never treat
-        // secrets as voice IDs. Admin-configured voices remain the fallback.
         voiceId: typeof voiceId === "string" && /^[a-z0-9_-]{2,64}$/i.test(voiceId) ? voiceId : null,
+        speed: typeof req.body?.speed === "number" ? req.body.speed : 1.12,
       });
       if (!result.ok || !result.body) {
         if (result.error === "browser-tts" || result.status === 501) {
@@ -2622,6 +2622,7 @@ export async function registerRoutes(
         `VOICE ACTIVATION: If the user says "hello", "are you there", "can you hear me", or similar check-ins, respond immediately and warmly — confirm you're listening in one short sentence.`,
         `Listen first: extract the user's exact intent, reference their words naturally, and answer that specific point. Never ignore or change the topic.`,
         `Lead with the answer: put the most important part of your response first so it can be spoken within the first second. Context and elaboration come after.`,
+        `SPOKEN AUDIO: Never start a reply with hmm, mm, uh, um, okay, or "let me think". Never output a sentence fragment or trailing ellipsis. Every reply must be complete sentences that can be read aloud as-is.`,
         (isEva || isLebroski)
           ? `Keep replies short and natural: 1–2 sentences unless they ask for more. Sound like a person, not an assistant.`
           : `Keep replies short and voice-first: usually 1–2 sentences. If the user asks for detail, explanation, or something complex, give a complete, well-structured answer — correctness and completeness matter more than brevity in those cases.`,

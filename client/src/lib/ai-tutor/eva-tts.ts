@@ -11,6 +11,7 @@
  * robotic device SpeechSynthesis voice while Sesame is configured.
  */
 
+import { sanitizeSpokenTutorLine } from "@shared/spoken-tutor-line";
 import { TtsEngine, type TtsCallbacks } from "./tts";
 export type { TtsCallbacks };
 import type { Viseme } from "./lipsync";
@@ -114,10 +115,10 @@ export class EvaTtsEngine {
   }
 
   enqueue(sentence: string) {
-    const text = (sentence || "").trim();
+    const text = sanitizeSpokenTutorLine((sentence || "").trim());
     if (!text) return;
     if (this.fallbackEngaged) {
-      this.ensureFallback().enqueue(sentence);
+      this.ensureFallback().enqueue(text);
       return;
     }
     const item: QueueItem = { text, abort: new AbortController() };
@@ -326,7 +327,7 @@ export class EvaTtsEngine {
     audio.setAttribute("playsinline", "true");
     audio.volume = 1;
     audio.src = url;
-    audio.playbackRate = Math.max(0.92, Math.min(1.05, this.speed));
+    audio.playbackRate = Math.max(1.06, Math.min(1.2, this.speed || 1.12));
     this.htmlAudio = audio;
     this.startFakeVisemeLoop();
 

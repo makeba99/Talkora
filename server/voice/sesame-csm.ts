@@ -24,6 +24,7 @@ import {
   sesameSpaceId,
   unwrapPredictData,
 } from "./sesame-payload";
+import { recordSesameHostResult } from "./sesame-status";
 
 const TIMEOUT_MS = 90_000;
 
@@ -46,6 +47,7 @@ type PromptCache = {
 const promptCache = new Map<string, PromptCache>();
 
 function fail(status: number, error: string, voiceUsed: string): VoiceSynthesizeResult {
+  recordSesameHostResult(false, error);
   return { ok: false, status, contentType: "", error, voiceUsed, provider: "sesame" };
 }
 
@@ -171,6 +173,7 @@ export class SesameCsmProvider implements VoiceProvider {
 
     const succeed = (body: ArrayBuffer, contentType: string): VoiceSynthesizeResult => {
       this.lastError = null;
+      recordSesameHostResult(true);
       return {
         ok: true,
         status: 200,
