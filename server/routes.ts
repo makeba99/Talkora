@@ -7377,6 +7377,10 @@ export async function registerRoutes(
           res.setHeader("Content-Type", result.contentType || "audio/wav");
           res.setHeader("Cache-Control", "no-store");
           res.setHeader("Content-Encoding", "identity");
+          if (result.fallback) {
+            res.setHeader("X-Voice-Fallback", result.fallback);
+            res.setHeader("X-Voice-Message", result.message);
+          }
           return res.send(Buffer.from(result.audio));
         }
         return res.status(result.ok ? 200 : 400).json({

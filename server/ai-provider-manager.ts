@@ -888,6 +888,7 @@ export async function testSesameVoice(): Promise<{
   audio?: ArrayBuffer;
   contentType?: string;
   hasHfToken?: boolean;
+  fallback?: string;
 }> {
   await ensureUsageLoaded();
   const cfg = await getAiTutorConfig();
@@ -907,6 +908,25 @@ export async function testSesameVoice(): Promise<{
       contentType: sesame.contentType,
       hasHfToken,
     };
+  }
+  const gpuBlocked =
+    sesame.error === "sesame-gpu-quota" ||
+    sesame.error === "sesame-skipped" ||
+    sesame.error === "sesame-timeout";
+  if (gpuBlocked) {
+    const edgeVoice = resolveEdgeVoiceId(cfg.voice.femaleVoice, "female");
+    const edge = await edgeSynthesize("Hi, this is Maya.", edgeVoice);
+    if (edge.ok && edge.body) {
+      return {
+        ok: true,
+        message: sesameUserMessage(sesame.error || "sesame-gpu-quota"),
+        status: "WARNING",
+        audio: edge.body,
+        contentType: edge.contentType,
+        hasHfToken,
+        fallback: "edge",
+      };
+    }
   }
   return {
     ok: false,

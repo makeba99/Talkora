@@ -2378,7 +2378,18 @@ function AiTutorTab() {
         audioRef.current = audio;
         audio.onended = () => URL.revokeObjectURL(url);
         await audio.play().catch(() => undefined);
-        toast({ title: "✓ Connection successful", description: `${kind} ${slot} voice key works.` });
+        const fallback = res.headers.get("x-voice-fallback");
+        const voiceMsg = res.headers.get("x-voice-message");
+        toast({
+          title: fallback
+            ? "Sesame GPU blocked — playing Edge neural"
+            : "✓ Connection successful",
+          description:
+            voiceMsg ||
+            (fallback
+              ? "Rooms already speak with Edge when Sesame cannot run."
+              : `${kind} ${slot} voice key works.`),
+        });
         refetch();
         return;
       }
@@ -2688,13 +2699,12 @@ function AiTutorTab() {
                 <>
                   <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-muted-foreground space-y-1">
                     <p>
-                      Sesame CSM-1B via the Hugging Face Space API (<code>/infer</code>). Token stays server-side as <code>HF_TOKEN</code>.
+                      Sesame CSM-1B via the Hugging Face Space API (<code>/infer</code>). Token stays server-side as <code>HF_TOKEN</code> (Classic Read).
                       If generation fails, rooms automatically keep speaking with Edge neural.
                     </p>
                     <p>
-                      Use a <strong>Classic Read</strong> token (not Fine-grained). The hosted Space asks for 180s of ZeroGPU;
-                      Fine-grained tokens are treated as guests (~120s) and <code>/infer</code> always fails. After changing
-                      Railway variables, wait for the service to restart, then Save and Test.
+                      The hosted Space reserves <strong>180s of ZeroGPU per try</strong>. Free Hugging Face accounts get 5 min/day, and failed tests still spend that reservation.
+                      After a GPU block, Test plays Edge so you can hear the room voice.
                     </p>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
