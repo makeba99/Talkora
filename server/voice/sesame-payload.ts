@@ -117,6 +117,9 @@ export function classifySesameError(err: unknown): { code: string; status: numbe
   if (/401|unauthorized|invalid token|invalid credentials|InvalidRepoToken/i.test(text)) {
     return { code: "sesame-unauthorized", status: 401 };
   }
+  if (/gated|agree and access|must accept|access to this model|user is not authorized/i.test(text)) {
+    return { code: "sesame-gated", status: 403 };
+  }
   if (
     /gpu duration|zerogpu|illegal duration|maximum allowed|gpu quota|quota exceeded/i.test(
       text,
@@ -230,23 +233,341 @@ export async function inferViaGradioCallApi(opts: {
   return { data: parsed.data };
 }
 
+const HF_INFERENCE_URLS = [
+  "https://router.huggingface.co/hf-inference/models/sesame/csm-1b",
+  "https://router.huggingface.co/hf-inference/v1/audio/speech",
+  "https://api-inference.huggingface.co/models/sesame/csm-1b",
+];
+
+const FAL_RUN_URL = "https://fal.run/fal-ai/csm-1b";
+const HF_FAL_ROUTER_URL = "https://router.huggingface.co/fal-ai/fal-ai/csm-1b";
+
+const PROMPT_A_WAV =
+  "https://huggingface.co/spaces/sesame/csm-1b/resolve/main/prompts/conversational_a.wav";
+const PROMPT_B_WAV =
+  "https://huggingface.co/spaces/sesame/csm-1b/resolve/main/prompts/conversational_b.wav";
+const PROMPT_A_TEXT =
+  "like revising for an exam I'd have to try and like keep up the momentum because I'd start really early I'd be like okay I'm gonna start revising now and then like you're revising for ages and then I just like start losing steam I didn't do that for the exam we had recently to be fair that was a more of a last minute scenario but like yeah I'm trying to like yeah I noticed this yesterday that like Mondays I sort of start the day with this not like a panic but like a";
+const PROMPT_B_TEXT =
+  "like a super Mario level. Like it's very like high detail. And like, once you get into the park, it just like, everything looks like a computer game and they have all these, like, you know, if, if there's like a, you know, like in a Mario game, they will have like a question block. And if you like, you know, punch it, a coin will come out. So like everyone, when they come into the park, they get like this little bracelet and then you can go punching question blocks around.";
+
+export function sesameSpeakerIndex(speakerA: string): 0 | 1 {
+  return /_b$|_d$/i.test(speakerA) ? 1 : 0;
+}
+
+export function sesameFalKey(): string {
+  let token = sanitizeHfToken(
+    process.env.FAL_KEY || process.env.AI_VOICE_FAL_KEY || process.env.FAL_API_KEY,
+  );
+  token = token.replace(/^Key\s+/i, "").trim();
+  return token;
+}
+
+function isAudioContentType(value: string): boolean {
+  return /audio\//i.test(value) || /octet-stream/i.test(value) || /wav|mpeg|flac|ogg/i.test(value);
+}
+
+function sniffAudioContentType(body: ArrayBuffer): string | null {
+  if (body.byteLength < 12) return null;
+  const bytes = new Uint8Array(body);
+  const ascii = String.fromCharCode(...bytes.slice(0, 4));
+  if (ascii === "RIFF") return "audio/wav";
+  if (ascii === "OggS") return "audio/ogg";
+  if (ascii === "fLaC") return "audio/flac";
+  if (ascii === "ID3\u0003" || ascii.startsWith("ID3") || bytes[0] === 0xff) return "audio/mpeg";
+  return null;
+}
+
+function decodeBase64Audio(raw: string): ArrayBuffer | null {
+  const trimmed = raw.trim();
+  const b64 = trimmed.includes("base64,") ? trimmed.slice(trimmed.indexOf("base64,") + 7) : trimmed;
+  if (!/^[A-Za-z0-9+/=\s]+$/.test(b64) || b64.replace(/\s+/g, "").length < 80) return null;
+  try {
+    const buf = Buffer.from(b64, "base64");
+    if (buf.byteLength < 64) return null;
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  } catch {
+    return null;
+  }
+}
+
+function audioFromJson(parsed: unknown): { body: ArrayBuffer; contentType: string } | null {
+  if (!parsed) return null;
+  const visit = (value: unknown, depth = 0): { body: ArrayBuffer; contentType: string } | null => {
+    if (depth > 4 || value == null) return null;
+    if (typeof value === "string") {
+      if (/^https?:\/\//i.test(value) && /\.(wav|mp3|mpeg|ogg|flac)(\?|$)/i.test(value)) {
+        return null;
+      }
+      const decoded = decodeBase64Audio(value);
+      if (decoded) {
+        return { body: decoded, contentType: sniffAudioContentType(decoded) || "audio/wav" };
+      }
+      return null;
+    }
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const found = visit(item, depth + 1);
+        if (found) return found;
+      }
+      return null;
+    }
+    if (typeof value === "object") {
+      const o = value as Record<string, unknown>;
+      for (const key of ["audio", "audio_url", "url", "generated_audio", "data"]) {
+        if (key in o) {
+          const found = visit(o[key], depth + 1);
+          if (found) return found;
+        }
+      }
+      if (typeof o.b64_json === "string") {
+        const decoded = decodeBase64Audio(o.b64_json);
+        if (decoded) return { body: decoded, contentType: "audio/wav" };
+      }
+    }
+    return null;
+  };
+  return visit(parsed);
+}
+
+function jsonAudioUrl(parsed: unknown): string | null {
+  if (!parsed) return null;
+  if (typeof parsed === "string" && /^https?:\/\//i.test(parsed)) return parsed;
+  if (typeof parsed !== "object") return null;
+  const o = parsed as Record<string, unknown>;
+  const audio = o.audio;
+  if (typeof audio === "string" && /^https?:\/\//i.test(audio)) return audio;
+  if (audio && typeof audio === "object") {
+    const url = (audio as { url?: unknown }).url;
+    if (typeof url === "string" && /^https?:\/\//i.test(url)) return url;
+  }
+  if (typeof o.audio_url === "string" && /^https?:\/\//i.test(o.audio_url)) return o.audio_url;
+  if (typeof o.url === "string" && /^https?:\/\//i.test(o.url)) return o.url;
+  if (Array.isArray(o.data)) {
+    for (const item of o.data) {
+      const nested = jsonAudioUrl(item);
+      if (nested) return nested;
+    }
+  }
+  return null;
+}
+
+async function bufferFromResponse(
+  res: Response,
+): Promise<{ body: ArrayBuffer; contentType: string } | { error: string; status: number } | { loading: string }> {
+  const ctype = res.headers.get("content-type") || "";
+  const rawBuf = await res.arrayBuffer();
+  const sniffed = sniffAudioContentType(rawBuf);
+  if (res.ok && (isAudioContentType(ctype) || sniffed) && rawBuf.byteLength >= 64) {
+    return { body: rawBuf, contentType: sniffed || ctype.split(";")[0] || "audio/wav" };
+  }
+  const raw = Buffer.from(rawBuf).toString("utf8");
+  let parsed: any = null;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    parsed = null;
+  }
+  if (res.ok && parsed) {
+    const embedded = audioFromJson(parsed);
+    if (embedded) return embedded;
+  }
+  const msg =
+    sesameErrorText(parsed) ||
+    parsed?.error ||
+    parsed?.estimated_time ||
+    raw.slice(0, 280) ||
+    `inference ${res.status}`;
+  if (res.status === 503 || /currently loading|estimated_time/i.test(String(msg))) {
+    return { loading: String(msg) };
+  }
+  return { error: String(msg), status: res.status || 502 };
+}
+
+async function sleep(ms: number): Promise<void> {
+  if (ms <= 0) return;
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Direct Sesame CSM-1B via Hugging Face Inference (no ZeroGPU Space / 180s cap). */
+export async function inferViaHfInference(opts: {
+  text: string;
+  speakerA: string;
+  token: string;
+  signal?: AbortSignal;
+  fetchImpl?: typeof fetch;
+  retryDelayMs?: number;
+}): Promise<{ ok: true; body: ArrayBuffer; contentType: string } | { ok: false; error: string; status: number }> {
+  const fetchImpl = opts.fetchImpl || fetch;
+  const speakerId = sesameSpeakerIndex(opts.speakerA);
+  const tagged = `[${speakerId}]${opts.text}`;
+  const payloads: Array<{ url?: string; body: unknown }> = [
+    { body: { inputs: tagged } },
+    { body: { inputs: opts.text } },
+    {
+      url: "https://router.huggingface.co/hf-inference/v1/audio/speech",
+      body: { model: "sesame/csm-1b", input: tagged, voice: speakerId === 1 ? "onyx" : "alloy" },
+    },
+  ];
+  let lastError = "HF inference unavailable";
+  let lastStatus = 502;
+  for (const url of HF_INFERENCE_URLS) {
+    for (const payload of payloads) {
+      if (payload.url && payload.url !== url) continue;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const res = await fetchImpl(url, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${opts.token}`,
+              "Content-Type": "application/json",
+              Accept: "audio/wav, audio/mpeg, audio/flac, application/json",
+              "x-wait-for-model": "true",
+            },
+            body: JSON.stringify(payload.body),
+            signal: opts.signal,
+          });
+          const parsed = await bufferFromResponse(res);
+          if ("body" in parsed) {
+            return { ok: true, body: parsed.body, contentType: parsed.contentType };
+          }
+          if ("loading" in parsed) {
+            lastError = parsed.loading;
+            lastStatus = 503;
+            await sleep(opts.retryDelayMs ?? 2500);
+            continue;
+          }
+          lastError = parsed.error;
+          lastStatus = parsed.status;
+          if (res.status === 401 || res.status === 403) {
+            return { ok: false, error: lastError, status: res.status };
+          }
+          break;
+        } catch (err: any) {
+          lastError = err?.message || "HF inference network error";
+          lastStatus = 502;
+          break;
+        }
+      }
+    }
+  }
+  return { ok: false, error: lastError, status: lastStatus };
+}
+
+function falContextForSpeaker(_speakerId: 0 | 1) {
+  return [
+    { speaker_id: 0, audio_url: PROMPT_A_WAV, prompt: PROMPT_A_TEXT },
+    { speaker_id: 1, audio_url: PROMPT_B_WAV, prompt: PROMPT_B_TEXT },
+  ];
+}
+
+async function downloadAudioUrl(
+  fetchImpl: typeof fetch,
+  url: string,
+  signal?: AbortSignal,
+): Promise<{ body: ArrayBuffer; contentType: string } | null> {
+  const file = await fetchImpl(url, { signal });
+  const downloaded = await bufferFromResponse(file);
+  return "body" in downloaded ? downloaded : null;
+}
+
+/** Hosted Sesame CSM-1B on fal.ai (real GPU, not ZeroGPU). */
+export async function inferViaFal(opts: {
+  text: string;
+  speakerA: string;
+  falKey?: string;
+  hfToken?: string;
+  signal?: AbortSignal;
+  fetchImpl?: typeof fetch;
+}): Promise<{ ok: true; body: ArrayBuffer; contentType: string } | { ok: false; error: string; status: number }> {
+  const fetchImpl = opts.fetchImpl || fetch;
+  const speakerId = sesameSpeakerIndex(opts.speakerA);
+  const body = JSON.stringify({
+    scene: [{ speaker_id: speakerId, text: opts.text }],
+    context: falContextForSpeaker(speakerId),
+  });
+  const attempts: Array<{ url: string; headers: Record<string, string> }> = [];
+  if (opts.falKey) {
+    attempts.push({
+      url: FAL_RUN_URL,
+      headers: {
+        Authorization: `Key ${opts.falKey}`,
+        "Content-Type": "application/json",
+        Accept: "application/json, audio/wav",
+      },
+    });
+  }
+  if (opts.hfToken) {
+    attempts.push({
+      url: HF_FAL_ROUTER_URL,
+      headers: {
+        Authorization: `Bearer ${opts.hfToken}`,
+        "Content-Type": "application/json",
+        Accept: "application/json, audio/wav",
+      },
+    });
+  }
+  let lastError = "fal.ai CSM unavailable";
+  let lastStatus = 502;
+  for (const attempt of attempts) {
+    try {
+      const res = await fetchImpl(attempt.url, {
+        method: "POST",
+        headers: attempt.headers,
+        body,
+        signal: opts.signal,
+      });
+      const rawBuf = await res.arrayBuffer();
+      const sniffed = sniffAudioContentType(rawBuf);
+      if (res.ok && sniffed && rawBuf.byteLength >= 64) {
+        return { ok: true, body: rawBuf, contentType: sniffed };
+      }
+      const raw = Buffer.from(rawBuf).toString("utf8");
+      const json = safeJson(raw);
+      const audioUrl = jsonAudioUrl(json);
+      if (audioUrl) {
+        const downloaded = await downloadAudioUrl(fetchImpl, audioUrl, opts.signal);
+        if (downloaded) return { ok: true, ...downloaded };
+      }
+      const embedded = audioFromJson(json);
+      if (embedded) return { ok: true, ...embedded };
+      lastError = sesameErrorText(json) || raw.slice(0, 280) || `fal ${res.status}`;
+      lastStatus = res.status || 502;
+    } catch (err: any) {
+      lastError = err?.message || "fal.ai network error";
+      lastStatus = 502;
+    }
+  }
+  return { ok: false, error: lastError, status: lastStatus };
+}
+
+function safeJson(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
 export function sesameUserMessage(code: string): string {
   switch (code) {
     case "sesame-no-token":
-      return "HF_TOKEN is missing on Railway. Add a Hugging Face Classic Read token (hf_...), then restart the service.";
+      return "Add Railway HF_TOKEN (Hugging Face Classic Read) and open huggingface.co/sesame/csm-1b to accept the license. For guaranteed GPU audio, also set FAL_KEY from fal.ai (model fal-ai/csm-1b).";
     case "sesame-unauthorized":
-      return "Hugging Face rejected HF_TOKEN. Create a Classic Read token (not Fine-grained) at huggingface.co/settings/tokens and paste it into Railway HF_TOKEN.";
+      return "Hugging Face rejected HF_TOKEN. Use a Classic Read token (hf_...) and accept the sesame/csm-1b license at huggingface.co/sesame/csm-1b.";
+    case "sesame-gated":
+      return "HF_TOKEN works, but sesame/csm-1b is gated. Open huggingface.co/sesame/csm-1b while logged in, click Agree, then retry Test Sesame Voice.";
     case "sesame-gpu-quota":
-      return "Read token is loaded, but sesame/csm-1b still reserves 180s of ZeroGPU per try. Free accounts get 5 min/day — failed tests still spend that reservation. Wait for the daily reset, or rooms will keep using Edge neural.";
+      return "The public sesame/csm-1b Space asks for 180s of ZeroGPU, which free Hugging Face accounts cannot grant. Set FAL_KEY (fal.ai CSM-1B) or a custom Space with GPU_TIMEOUT=60 on AI_VOICE_SESAME_SPACE.";
     case "sesame-timeout":
-      return "Sesame timed out waiting for the Hugging Face Space. Retry in a minute; in-room tutors will use Edge until it recovers.";
+      return "Sesame timed out waiting for GPU audio. Retry; rooms keep a browser voice until CSM returns.";
     case "sesame-skipped":
-      return "Sesame is paused for 10 minutes after a ZeroGPU quota error so rooms stay on Edge. Retry after that, or restart the service.";
+      return "Sesame is paused after a ZeroGPU error. Set FAL_KEY for a real GPU host, or retry after restart.";
     case "sesame-no-audio":
       return "Sesame /infer returned no audio file.";
     case "sesame-audio-download-failed":
       return "Sesame produced audio but the file could not be downloaded.";
     default:
-      return "Sesame CSM-1B failed. In-room tutors keep speaking with Edge neural until this succeeds.";
+      return "Sesame CSM-1B did not return audio. Accept the model license, or set Railway FAL_KEY for fal-ai/csm-1b. Rooms keep speaking with the on-device voice until this succeeds.";
   }
 }

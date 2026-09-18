@@ -4,10 +4,12 @@ import {
   classifySesameError,
   conversationForAiUtterance,
   fileUrlFromPredict,
+  inferViaFal,
+  inferViaHfInference,
   parseGradioCallStream,
   resolveSesameSpeaker,
   sanitizeHfToken,
-  sesameUserMessage,
+  sesameSpeakerIndex,
 } from "./sesame-payload";
 import { SESAME_INFER_API } from "./types";
 import { clearSesamePromptCache, SesameCsmProvider } from "./sesame-csm";
@@ -184,8 +186,87 @@ describe("sesame token and error helpers", () => {
     expect(classifySesameError({ title: "ZeroGPU illegal duration" }).code).toBe("sesame-gpu-quota");
   });
 
-  it("explains gpu quota in admin copy", () => {
-    expect(sesameUserMessage("sesame-gpu-quota")).toMatch(/180s/);
+  it("maps Maya speakers to CSM speaker 0", () => {
+    expect(sesameSpeakerIndex("conversational_a")).toBe(0);
+    expect(sesameSpeakerIndex("conversational_b")).toBe(1);
+  });
+
+  it("reads Sesame audio from Hugging Face Inference", async () => {
+    const wav = new Uint8Array(128);
+    wav.set([0x52, 0x49, 0x46, 0x46]);
+    const result = await inferViaHfInference({
+      text: "Hi",
+      speakerA: "conversational_a",
+      token: "hf_test",
+      retryDelayMs: 0,
+      fetchImpl: async () =>
+        new Response(wav, { status: 200, headers: { "content-type": "audio/wav" } }),
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.body.byteLength).toBe(128);
+  });
+
+  it("accepts RIFF bytes even when Hugging Face omits an audio content-type", async () => {
+    const wav = new Uint8Array(128);
+    wav.set([0x52, 0x49, 0x46, 0x46]);
+    const result = await inferViaHfInference({
+      text: "Hi",
+      speakerA: "conversational_a",
+      token: "hf_test",
+      retryDelayMs: 0,
+      fetchImpl: async () =>
+        new Response(wav, { status: 200, headers: { "content-type": "application/octet-stream" } }),
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("retries HF Inference while the CSM checkpoint is loading", async () => {
+    const wav = new Uint8Array(128);
+    wav.set([0x52, 0x49, 0x46, 0x46]);
+    let n = 0;
+    const result = await inferViaHfInference({
+      text: "Hi",
+      speakerA: "conversational_a",
+      token: "hf_test",
+      retryDelayMs: 0,
+      fetchImpl: async () => {
+        n += 1;
+        if (n === 1) {
+          return new Response(JSON.stringify({ error: "Model sesame/csm-1b is currently loading", estimated_time: 2 }), {
+            status: 503,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        return new Response(wav, { status: 200, headers: { "content-type": "audio/wav" } });
+      },
+    });
+    expect(result.ok).toBe(true);
+    expect(n).toBeGreaterThan(1);
+  });
+
+  it("downloads Sesame wav from fal.ai audio.url", async () => {
+    const wav = new Uint8Array(128);
+    wav.set([0x52, 0x49, 0x46, 0x46]);
+    const result = await inferViaFal({
+      text: "Hi",
+      speakerA: "conversational_a",
+      falKey: "fal_test",
+      fetchImpl: async (url) => {
+        if (String(url).includes("fal.run")) {
+          return new Response(JSON.stringify({ audio: { url: "https://cdn.example/maya.wav", content_type: "audio/wav" } }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        return new Response(wav, { status: 200, headers: { "content-type": "audio/wav" } });
+      },
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.body.byteLength).toBe(128);
+  });
+
+  it("classifies a gated CSM checkpoint", () => {
+    expect(classifySesameError("Cannot access gated repo for sesame/csm-1b").code).toBe("sesame-gated");
   });
 
   it("parses Gradio call SSE complete and empty error", () => {

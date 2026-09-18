@@ -2367,7 +2367,8 @@ function AiTutorTab() {
         }),
       });
       const contentType = res.headers.get("content-type") || "";
-      if (contentType.includes("audio/")) {
+      const fallback = res.headers.get("x-voice-fallback");
+      if (contentType.includes("audio/") && fallback !== "edge") {
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         if (audioRef.current) {
@@ -2378,17 +2379,19 @@ function AiTutorTab() {
         audioRef.current = audio;
         audio.onended = () => URL.revokeObjectURL(url);
         await audio.play().catch(() => undefined);
-        const fallback = res.headers.get("x-voice-fallback");
-        const voiceMsg = res.headers.get("x-voice-message");
         toast({
-          title: fallback
-            ? "Sesame GPU blocked — playing Edge neural"
-            : "✓ Connection successful",
-          description:
-            voiceMsg ||
-            (fallback
-              ? "Rooms already speak with Edge when Sesame cannot run."
-              : `${kind} ${slot} voice key works.`),
+          title: "✓ Connection successful",
+          description: `${kind} ${slot} voice key works.`,
+        });
+        refetch();
+        return;
+      }
+      if (kind === "sesame" && !contentType.includes("audio/")) {
+        const body = await res.json().catch(() => ({}));
+        toast({
+          title: "✗ Sesame CSM did not return audio",
+          description: body.message || "Accept huggingface.co/sesame/csm-1b, or set Railway FAL_KEY for fal-ai/csm-1b.",
+          variant: "destructive",
         });
         refetch();
         return;
@@ -2699,12 +2702,12 @@ function AiTutorTab() {
                 <>
                   <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-muted-foreground space-y-1">
                     <p>
-                      Sesame CSM-1B via the Hugging Face Space API (<code>/infer</code>). Token stays server-side as <code>HF_TOKEN</code> (Classic Read).
-                      If Sesame fails, rooms use the free on-device browser voice — Maya stays female, Miles stays male.
+                      Sesame CSM-1B is generated server-side (Maya = speaker 0, Miles = speaker 1).
+                      Secrets stay on Railway: <code>HF_TOKEN</code> (Classic Read) and/or <code>FAL_KEY</code> for fal-ai/csm-1b.
                     </p>
                     <p>
-                      The hosted Space reserves <strong>180s of ZeroGPU per try</strong>. Free Hugging Face accounts get 5 min/day, and failed tests still spend that reservation.
-                      After a GPU block, Test still plays a female Edge sample. In rooms Maya uses a free female browser voice.
+                      The public Hugging Face Space cannot run from Railway (it asks for 180s of ZeroGPU).
+                      Real CSM audio uses Hugging Face Inference after you accept the license at huggingface.co/sesame/csm-1b, or fal.ai GPU with <code>FAL_KEY</code>.
                     </p>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -2947,7 +2950,7 @@ function AiTutorTab() {
               <RefreshCw className="h-4 w-4" />
             </Button>
             <p className="text-xs text-muted-foreground">
-              Free setup: Groq brain + Edge neural. Sesame: Railway <code>HF_TOKEN</code> (Classic Read) and <code>AI_VOICE_PROVIDER=sesame</code>.
+              Free setup: Groq brain + Edge neural. Sesame: Railway <code>HF_TOKEN</code> (accept sesame/csm-1b) and/or <code>FAL_KEY</code>, plus <code>AI_VOICE_PROVIDER=sesame</code>.
             </p>
           </div>
         </>

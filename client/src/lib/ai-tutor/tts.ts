@@ -10,6 +10,65 @@
 import { getWordViseme, getNextActiveViseme, type Viseme } from "./lipsync";
 import type { VoicePersona } from "./types";
 
+export function isLikelyMaleBrowserVoice(name: string): boolean {
+  return /\bmale\b|google us english(?!.*female)|google uk english male|microsoft david|daniel|david|alex|mark|george|tom|oliver|james|arthur|guy|aaron|brian|christopher|eric|justin|liam|matthew|michael|paul|ravi|ryan|stephen|thomas|william|diego/i.test(name);
+}
+
+export function isLikelyFemaleBrowserVoice(name: string): boolean {
+  return /female|woman|google uk english female|microsoft zira|samantha|victoria|serena|aria|jenny|libby|sonia|emma|ava|susan|zira|hazel|moira|tessa|fiona|karen|siri|alice|vicki|olivia|amelia|eva|nora|clara|catherine|linda|heather|michelle/i.test(name);
+}
+
+export function pickBrowserVoice(
+  voices: SpeechSynthesisVoice[],
+  gender: "Female" | "Male",
+): SpeechSynthesisVoice | undefined {
+  const isFemale = gender === "Female";
+  const english = voices.filter((v) => v.lang.toLowerCase().startsWith("en"));
+  const pool = english.length ? english : voices;
+  if (isFemale) {
+    return (
+      pool.find((v) => /aria.*online|jenny.*online|libby.*online|sonia.*online|emma.*online|zira.*online|natural/i.test(v.name) && !isLikelyMaleBrowserVoice(v.name)) ||
+      pool.find((v) => /google uk english female/i.test(v.name)) ||
+      pool.find((v) => /\b(samantha|victoria|serena|ava|susan|zira)\b/i.test(v.name)) ||
+      pool.find((v) => isLikelyFemaleBrowserVoice(v.name) && !isLikelyMaleBrowserVoice(v.name))
+    );
+  }
+  return (
+    pool.find((v) => /google us english(?!.*female)|google uk english male|microsoft david/i.test(v.name)) ||
+    pool.find((v) => isLikelyMaleBrowserVoice(v.name))
+  );
+}
+
+/** One-shot Maya/Miles preview for admin tests (free on-device voice). */
+export function speakBrowserPreview(text: string, gender: "Female" | "Male"): Promise<void> {
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    return Promise.reject(new Error("speechSynthesis unavailable"));
+  }
+  const say = () => {
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = "en-US";
+    utter.rate = 0.95;
+    utter.pitch = gender === "Female" ? 1.08 : 0.85;
+    const chosen = pickBrowserVoice(window.speechSynthesis.getVoices(), gender);
+    if (chosen) utter.voice = chosen;
+    window.speechSynthesis.speak(utter);
+  };
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length === 0) {
+    return new Promise((resolve) => {
+      const done = () => {
+        say();
+        resolve();
+      };
+      window.speechSynthesis.onvoiceschanged = done;
+      window.setTimeout(done, 400);
+    });
+  }
+  say();
+  return Promise.resolve();
+}
+
 export type TtsCallbacks = {
   onStart: () => void;
   onEnd: () => void;
@@ -120,37 +179,14 @@ export class TtsEngine {
     if (freshVoices.length > 0) this.cachedVoices = freshVoices;
     const voices = this.cachedVoices;
     if (voices.length > 0) {
-      const isNovelty = (v: SpeechSynthesisVoice) =>
-        /albert|bahh|bells|boing|bubbles|cellos|deranged|hysterical|good news|bad news|jester|organ|trinoids|whisper|zarvox|wobble|kathy|junior|princess|ralph|bruce|fred|grandma|grandpa/i.test(v.name);
-      const isLikelyMale = (v: SpeechSynthesisVoice) =>
-        /\bmale\b|google us english(?!.*female)|google uk english male|microsoft david|daniel|david|alex|mark|george|tom|oliver|james|arthur|guy|aaron|brian|christopher|eric|justin|liam|matthew|michael|paul|ravi|ryan|stephen|thomas|william|diego/i.test(v.name);
-      const isLikelyFemale = (v: SpeechSynthesisVoice) =>
-        /female|woman|google uk english female|microsoft zira|samantha|victoria|serena|aria|jenny|libby|sonia|emma|ava|susan|zira|hazel|moira|tessa|fiona|karen|siri|alice|vicki|olivia|amelia|eva|nora|clara|catherine|linda|heather|michelle/i.test(v.name);
-
+      const gender = isFemale ? "Female" : "Male";
       const savedVoice = this.voiceId
-        ? voices.find(v => (v.voiceURI === this.voiceId || v.name === this.voiceId) && (isFemale ? !isLikelyMale(v) : true))
+        ? voices.find((v) =>
+            (v.voiceURI === this.voiceId || v.name === this.voiceId) &&
+            (isFemale ? !isLikelyMaleBrowserVoice(v.name) : !isLikelyFemaleBrowserVoice(v.name)),
+          )
         : undefined;
-
-      const naturalFemale =
-        voices.find(v => /aria.*online|jenny.*online|libby.*online|sonia.*online|emma.*online|zira.*online|natural/i.test(v.name) && v.lang.startsWith("en") && !isLikelyMale(v)) ??
-        voices.find(v => /google uk english female/i.test(v.name));
-
-      const matureFemale =
-        voices.find(v => /\b(samantha|victoria|serena|kate|allison|ava|susan|zira)\b/i.test(v.name) && v.lang.startsWith("en")) ??
-        voices.find(v => isLikelyFemale(v) && v.lang.startsWith("en") && !isNovelty(v) && !isLikelyMale(v));
-
-      const femaleVoice = naturalFemale ?? matureFemale;
-
-      const maleVoice =
-        voices.find(v => /google us english(?!.*female)|google uk english male|microsoft david/i.test(v.name) && v.lang.startsWith("en")) ??
-        voices.find(v => isLikelyMale(v) && v.lang.startsWith("en") && !isNovelty(v));
-
-      const chosen =
-        savedVoice ??
-        (isFemale
-          ? (femaleVoice ?? voices.find(v => isLikelyFemale(v) && v.lang.startsWith("en")))
-          : (maleVoice ?? voices.find(v => isLikelyMale(v) && v.lang.startsWith("en"))));
-
+      const chosen = savedVoice ?? pickBrowserVoice(voices, gender);
       if (chosen) {
         utter.voice = chosen;
         const stableVoiceId = chosen.voiceURI || chosen.name;

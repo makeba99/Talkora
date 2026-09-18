@@ -7383,8 +7383,9 @@ export async function registerRoutes(
           }
           return res.send(Buffer.from(result.audio));
         }
-        return res.status(result.ok ? 200 : 400).json({
-          ok: result.ok,
+        return res.status(200).json({
+          ok: false,
+          fallback: result.fallback || "browser",
           message: result.message,
           status: result.status,
           hasHfToken: result.hasHfToken,

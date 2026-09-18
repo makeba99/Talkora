@@ -14,9 +14,12 @@ import {
   buildSesameInferPayload,
   classifySesameError,
   fileUrlFromPredict,
+  inferViaFal,
   inferViaGradioCallApi,
+  inferViaHfInference,
   resolveSesameSpeaker,
   sesameErrorText,
+  sesameFalKey,
   sesameHfToken,
   sesameSpaceId,
   unwrapPredictData,
@@ -137,19 +140,18 @@ export class SesameCsmProvider implements VoiceProvider {
 
   async health(): Promise<VoiceHealth> {
     const token = sesameHfToken();
-    if (!token) {
-      return { available: false, reachable: false, detail: "HF_TOKEN not configured" };
+    const falKey = sesameFalKey();
+    if (!token && !falKey) {
+      return { available: false, reachable: false, detail: "HF_TOKEN / FAL_KEY not configured" };
     }
-    try {
-      const client = await this.deps.connect(sesameSpaceId(), { token });
-      await client.predict(SESAME_UPDATE_TEXT_A, { speaker: "conversational_a" });
-      this.lastError = null;
-      return { available: true, reachable: true, detail: "Sesame CSM-1B Space reachable" };
-    } catch (err: any) {
-      this.lastError = err?.message || "sesame-unreachable";
-      console.error("[sesame-csm] health failed:", this.lastError);
-      return { available: true, reachable: false, detail: "Sesame CSM-1B Space unreachable" };
+    if (falKey) {
+      return { available: true, reachable: true, detail: "Sesame CSM-1B via fal.ai" };
     }
+    const auth = await verifyHfToken(token);
+    if (auth === "unauthorized") {
+      return { available: true, reachable: false, detail: "HF_TOKEN rejected" };
+    }
+    return { available: true, reachable: true, detail: "Sesame CSM-1B via Hugging Face Inference" };
   }
 
   async synthesize(req: VoiceSynthesizeRequest): Promise<VoiceSynthesizeResult> {
@@ -158,24 +160,78 @@ export class SesameCsmProvider implements VoiceProvider {
     if (!text) return fail(400, "empty text", speakerA);
 
     const token = sesameHfToken();
+    const falKey = sesameFalKey();
     const usingLiveSpace = this.deps.connect === defaultConnect;
-    // Unauthenticated ZeroGPU callers get ~180s quota; sesame/csm-1b requests
-    // 180s up front, so /infer always fails without HF_TOKEN. Skip immediately
-    // so in-room tutors fall back to Edge instead of hanging.
-    if (usingLiveSpace && !token) {
-      this.lastError = "HF_TOKEN not configured";
+    if (usingLiveSpace && !token && !falKey) {
+      this.lastError = "HF_TOKEN / FAL_KEY not configured";
       return fail(503, "sesame-no-token", speakerA);
+    }
+    if (usingLiveSpace && token) {
+      const auth = await verifyHfToken(token);
+      if (auth === "unauthorized" && !falKey) {
+        this.lastError = "Hugging Face rejected HF_TOKEN (401/403)";
+        return fail(401, "sesame-unauthorized", speakerA);
+      }
+      if (auth !== "unauthorized") {
+        const hf = await inferViaHfInference({
+          text,
+          speakerA,
+          token,
+          signal: req.signal,
+        });
+        if (hf.ok) {
+          this.lastError = null;
+          skipSesameUntil = 0;
+          return {
+            ok: true,
+            status: 200,
+            contentType: hf.contentType || "audio/wav",
+            body: hf.body,
+            voiceUsed: speakerA,
+            provider: "sesame",
+          };
+        }
+        this.lastError = hf.error;
+        console.warn("[sesame-csm] HF Inference failed:", hf.error);
+        const gated = classifySesameError(hf.error);
+        if (gated.code === "sesame-gated" && !falKey) {
+          return fail(403, "sesame-gated", speakerA);
+        }
+      }
+    }
+    if (usingLiveSpace && (falKey || token)) {
+      const fal = await inferViaFal({
+        text,
+        speakerA,
+        falKey: falKey || undefined,
+        hfToken: token || undefined,
+        signal: req.signal,
+      });
+      if (fal.ok) {
+        this.lastError = null;
+        skipSesameUntil = 0;
+        return {
+          ok: true,
+          status: 200,
+          contentType: fal.contentType || "audio/wav",
+          body: fal.body,
+          voiceUsed: speakerA,
+          provider: "sesame",
+        };
+      }
+      this.lastError = fal.error;
+      console.warn("[sesame-csm] fal.ai CSM failed:", fal.error);
+    }
+
+    const spaceId = sesameSpaceId();
+    const officialZeroGpuSpace = /^sesame\/csm-1b$/i.test(spaceId);
+    if (usingLiveSpace && officialZeroGpuSpace) {
+      // The public Space always requests 180s of ZeroGPU and cannot run from Railway.
+      return fail(503, "sesame-gpu-quota", speakerA);
     }
     if (usingLiveSpace && !req.bypassSkip && Date.now() < skipSesameUntil) {
       this.lastError = "sesame temporarily skipped after GPU quota error";
       return fail(503, "sesame-skipped", speakerA);
-    }
-    if (usingLiveSpace && token) {
-      const auth = await verifyHfToken(token);
-      if (auth === "unauthorized") {
-        this.lastError = "Hugging Face rejected HF_TOKEN (401/403)";
-        return fail(401, "sesame-unauthorized", speakerA);
-      }
     }
 
     const controller = new AbortController();

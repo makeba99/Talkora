@@ -901,25 +901,22 @@ export async function testSesameVoice(): Promise<{
       hasHfToken,
     };
   }
-  const gpuBlocked =
-    sesame.error === "sesame-gpu-quota" ||
-    sesame.error === "sesame-skipped" ||
-    sesame.error === "sesame-timeout";
-  if (gpuBlocked) {
-    const edgeVoice = resolveEdgeVoiceId(cfg.voice.femaleVoice, "female");
-    const edge = await edgeSynthesize("Hi, this is Maya.", edgeVoice);
-    if (edge.ok && edge.body) {
+    const gpuBlocked =
+      sesame.error === "sesame-gpu-quota" ||
+      sesame.error === "sesame-skipped" ||
+      sesame.error === "sesame-timeout" ||
+      sesame.error === "sesame-failed" ||
+      sesame.error === "sesame-no-token" ||
+      sesame.error === "sesame-unauthorized" ||
+      sesame.error === "sesame-gated";
+    if (gpuBlocked) {
       return {
-        ok: true,
-        message: sesameUserMessage(sesame.error || "sesame-gpu-quota"),
-        status: "WARNING",
-        audio: edge.body,
-        contentType: edge.contentType,
+        ok: false,
+        message: sesameUserMessage(sesame.error || "sesame-failed"),
+        status: sesame.error === "sesame-gated" || sesame.error === "sesame-unauthorized" ? "ERROR" : "WARNING",
         hasHfToken,
-        fallback: "edge",
       };
     }
-  }
   return {
     ok: false,
     message: sesameUserMessage(sesame.error || "sesame-failed"),
