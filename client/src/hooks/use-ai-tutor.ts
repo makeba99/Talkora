@@ -19,7 +19,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { extractSentences } from "@/lib/ai-tutor/tts";
 import { createTts, type TtsLike } from "@/lib/ai-tutor/tts-factory";
-import { primeEvaAudio } from "@/lib/ai-tutor/eva-tts";
+import { primeEvaAudio, warmupEvaTts } from "@/lib/ai-tutor/eva-tts";
 import {
   SttEngine,
   WakeWordDetector,
@@ -328,10 +328,13 @@ export function useAiTutor(deps: AiTutorDeps) {
     speakingRef.current = true;
     ttsStartedAtRef.current = Date.now();
     socket?.emit("room:ai-tutor-speaking", { roomId, userId, speaking: true });
-    // Start barge-in detector when AI begins speaking. Cloud transcription
-    // stays on the whole time, so it needs no separate recognizer.
-    if (sttModeRef.current === "browser") sttRef.current?.startBargeIn();
-    setVoiceBargeInActive(true);
+    // Delay barge-in until audio is actually in the room — starting it at
+    // fetch-time made Maya interrupt herself (voice sounded cut off).
+    window.setTimeout(() => {
+      if (!speakingRef.current) return;
+      if (sttModeRef.current === "browser") sttRef.current?.startBargeIn();
+      setVoiceBargeInActive(true);
+    }, 900);
   }, [socket, roomId, userId]);
 
   const onTtsEnd = useCallback(() => {
@@ -763,7 +766,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     // feels fast. Mutually exclusive with the thinking phrase below:
     // only one preamble per turn to avoid double stacking ("Mm. One sec.").
     const RECEIPT_CUES = ["Mm.", "Mm-hmm.", "Right.", "Yeah.", "Okay."];
-    const playReceiptCue = Math.random() < 0.35;
+    const playReceiptCue = Math.random() < 0.35 && serverTtsProviderRef.current !== "sesame";
     if (playReceiptCue) {
       speakAi(RECEIPT_CUES[Math.floor(Math.random() * RECEIPT_CUES.length)]);
       addDebug("info", "Receipt cue played — immediate ACK");
@@ -782,10 +785,18 @@ export function useAiTutor(deps: AiTutorDeps) {
       "Mm, give me a moment.",
     ];
     const thinkingTimer = setTimeout(() => {
-      if (!firstTokenFired && !playReceiptCue && !abort.signal.aborted && activeRef.current && !speakingRef.current) {
-        speakAi(THINKING_PHRASES[Math.floor(Math.random() * THINKING_PHRASES.length)]);
-        addDebug("info", `Thinking phrase spoken — first token delayed >${Date.now() - t0}ms`);
+      if (
+        serverTtsProviderRef.current === "sesame" ||
+        firstTokenFired ||
+        playReceiptCue ||
+        abort.signal.aborted ||
+        !activeRef.current ||
+        speakingRef.current
+      ) {
+        return;
       }
+      speakAi(THINKING_PHRASES[Math.floor(Math.random() * THINKING_PHRASES.length)]);
+      addDebug("info", `Thinking phrase spoken — first token delayed >${Date.now() - t0}ms`);
     }, 500);
 
     // Stop primary listening while streaming
@@ -975,6 +986,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     setAiSettings(s => ({ ...s, voice, voiceId, avatarId, personaName: pName }));
     // Also configure TTS immediately (don't wait for React state cycle)
     ttsRef.current?.configure(voice, aiSettings.speed, voiceId, serverTtsProviderRef.current);
+    warmupEvaTts(voice, voiceId);
 
     // Clear any previous mic error
     setMicError(null);

@@ -33,7 +33,15 @@ function ensurePrimedAudio(): HTMLAudioElement {
   return audio;
 }
 
-/** Call from a user gesture (Start Maya) so later Sesame wavs can play(). */
+export function warmupEvaTts(voice: VoicePersona, voiceId?: string | null): void {
+  if (typeof window === "undefined") return;
+  void fetch("/api/ai-tutor/tts", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json", "Accept": "audio/wav, audio/mpeg, audio/*" },
+    body: JSON.stringify({ text: "Hi.", voice, speed: 1, voiceId: voiceId || null }),
+  }).then((r) => (r.ok ? r.arrayBuffer() : null)).catch(() => {});
+}
 export function primeEvaAudio(): void {
   if (typeof window === "undefined") return;
   const audio = ensurePrimedAudio();
@@ -61,6 +69,8 @@ export function primeEvaAudio(): void {
 interface QueueItem {
   text: string;
   abort: AbortController;
+  ready?: { data: ArrayBuffer; type: string };
+  loading?: Promise<void>;
 }
 
 export class EvaTtsEngine {
@@ -110,9 +120,13 @@ export class EvaTtsEngine {
       this.ensureFallback().enqueue(sentence);
       return;
     }
-    this.queue.push({ text, abort: new AbortController() });
+    const item: QueueItem = { text, abort: new AbortController() };
+    this.queue.push(item);
+    this.prefetch(item);
     if (!this.active) this.playNext();
   }
+
+  get isActive() { return this.active; }
 
   cancel() {
     // Abort everything in flight + clear queue
@@ -184,7 +198,58 @@ export class EvaTtsEngine {
     // Do NOT set fallbackEngaged sticky — cloud path stays preferred.
   }
 
-  get isActive() { return this.active; }
+  private prefetch(item: QueueItem) {
+    if (item.ready || item.loading || item.abort.signal.aborted) return;
+    item.loading = this.fetchTtsBytes(item).then((ready) => {
+      item.ready = ready;
+    });
+  }
+
+  private async fetchTtsBytes(item: QueueItem): Promise<{ data: ArrayBuffer; type: string }> {
+    let lastReason = "tts-failed";
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const res = await fetch("/api/ai-tutor/tts", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "Accept": "audio/wav, audio/mpeg, audio/*" },
+        body: JSON.stringify({
+          text: item.text,
+          voice: this.voice,
+          speed: this.speed,
+          language: this.language,
+          voiceId: this.voiceId,
+        }),
+        signal: item.abort.signal,
+      });
+      if (res.ok) {
+        const audioData = await res.arrayBuffer();
+        const contentType = res.headers.get("content-type") || "audio/wav";
+        if (audioData && audioData.byteLength >= 64) {
+          return { data: audioData, type: contentType };
+        }
+        lastReason = "empty audio";
+      } else {
+        const errText = await res.text().catch(() => "");
+        let detail = "";
+        try {
+          const j = JSON.parse(errText);
+          detail = j?.error || j?.detail?.message || j?.detail || j?.message || "";
+        } catch {}
+        lastReason = res.status === 429
+          ? "rate limited"
+          : detail
+            ? `HTTP ${res.status}: ${String(detail).slice(0, 120)}`
+            : `HTTP ${res.status}`;
+        if (item.abort.signal.aborted) throw new DOMException("aborted", "AbortError");
+        if (res.status === 429 || res.status >= 500) {
+          await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+          continue;
+        }
+        break;
+      }
+    }
+    throw new Error(lastReason);
+  }
 
   private async ensureAudioContext(): Promise<AudioContext> {
     if (!this.audioCtx) {
@@ -208,70 +273,21 @@ export class EvaTtsEngine {
 
     this.active = true;
     this.currentAbort = item.abort;
-
-    // ── Fire onStart immediately when the fetch begins ────────────────────
-    // Previously onStart fired only after audio data was decoded and ready
-    // to play — adding 200-800ms of perceived silence after the user speaks.
-    // Firing it here means the UI (face animation, speaking indicator) lights
-    // up as soon as the AI starts fetching the voice, not when audio plays.
-    // This makes the response feel instant even if ElevenLabs takes a moment.
-    if (!this.currentSource && !this.htmlAudio) this.callbacks.onStart();
+    this.queue.slice(0, 2).forEach((q) => this.prefetch(q));
 
     try {
-      let res: Response | null = null;
-      let lastReason = "tts-failed";
-      for (let attempt = 0; attempt < 3; attempt++) {
-        res = await fetch("/api/ai-tutor/tts", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json", "Accept": "audio/wav, audio/mpeg, audio/*" },
-          body: JSON.stringify({
-            text: item.text,
-            voice: this.voice,
-            speed: this.speed,
-            language: this.language,
-            voiceId: this.voiceId,
-          }),
-          signal: item.abort.signal,
-        });
-        if (res.ok) break;
-        const errText = await res.text().catch(() => "");
-        let detail = "";
-        try {
-          const j = JSON.parse(errText);
-          detail = j?.error || j?.detail?.message || j?.detail || j?.message || "";
-        } catch {}
-        lastReason = res.status === 429
-          ? "rate limited"
-          : res.status === 502 || res.status === 504
-            ? "voice provider unreachable"
-            : detail
-              ? `HTTP ${res.status}: ${String(detail).slice(0, 120)}`
-              : `HTTP ${res.status}`;
-        if (item.abort.signal.aborted) return;
-        if (res.status === 429 || res.status >= 500) {
-          await new Promise((r) => setTimeout(r, 700 * (attempt + 1)));
-          continue;
-        }
-        break;
-      }
-
-      if (!res || !res.ok) {
-        this.engageFallback(lastReason, item);
-        return;
-      }
-
-      const audioData = await res.arrayBuffer();
-      const contentType = res.headers.get("content-type") || "audio/wav";
-      if (!audioData || audioData.byteLength < 64) {
+      this.prefetch(item);
+      await item.loading;
+      if (item.abort.signal.aborted) return;
+      if (!item.ready) {
         this.engageFallback("empty audio", item);
         return;
       }
-      await this.playSesameBytes(audioData, contentType, item.abort.signal);
+      if (!this.currentSource && !this.htmlAudio) this.callbacks.onStart();
+      await this.playSesameBytes(item.ready.data, item.ready.type, item.abort.signal);
       this.finishSentence();
     } catch (err: any) {
       if (item.abort.signal.aborted || err?.name === "AbortError") {
-        // Cancelled — playNext may already have been called by cancel(); just stop here.
         if (!this.queue.length) {
           this.active = false;
           this.callbacks.onViseme?.("rest");
@@ -310,7 +326,7 @@ export class EvaTtsEngine {
     audio.setAttribute("playsinline", "true");
     audio.volume = 1;
     audio.src = url;
-    audio.playbackRate = Math.max(0.85, Math.min(1.15, this.speed));
+    audio.playbackRate = Math.max(0.92, Math.min(1.05, this.speed));
     this.htmlAudio = audio;
     this.startFakeVisemeLoop();
 
@@ -341,7 +357,6 @@ export class EvaTtsEngine {
           const p = audio.play();
           if (p && typeof p.catch === "function") {
             p.catch((err: unknown) => {
-              // Retry once after resume — never SpeechSynthesis.
               const Ctor = (window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
               if (Ctor) {
                 try {
@@ -354,11 +369,17 @@ export class EvaTtsEngine {
             });
           }
         };
-        if (audio.readyState >= 2) start();
+        audio.onloadedmetadata = () => {
+          if (Number.isFinite(audio.duration) && audio.duration > 0) {
+            window.setTimeout(() => {
+              if (!settled && audio.currentTime >= Math.max(0, audio.duration - 0.05)) done();
+            }, audio.duration * 1000 + 400);
+          }
+        };
+        if (audio.readyState >= 3) start();
         else {
           audio.oncanplaythrough = () => start();
-          audio.onloadeddata = () => start();
-          window.setTimeout(start, 250);
+          audio.oncanplay = () => start();
         }
       });
     } finally {

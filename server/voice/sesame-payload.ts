@@ -9,7 +9,7 @@ export const DEFAULT_SESAME_SPACE = "sesame/csm-1b";
 export const DEFAULT_SPEAKER_A: SesameSpeakerId = "conversational_a";
 export const DEFAULT_SPEAKER_B: SesameSpeakerId = "conversational_b";
 
-const MAX_UTTERANCE_CHARS = 480;
+const MAX_UTTERANCE_CHARS = 800;
 
 export type SesameInferPayload = {
   api_name: typeof SESAME_INFER_API;
@@ -475,9 +475,6 @@ export function concatWavArrayBuffers(parts: ArrayBuffer[]): ArrayBuffer {
   let dataSize = 0;
   for (const p of parsed) {
     const chunk = p.chunk!;
-    if (chunk.channels !== fmt.channels || chunk.rate !== fmt.rate || chunk.bits !== fmt.bits) {
-      return usable[0];
-    }
     const slice = p.bytes.subarray(chunk.offset, chunk.offset + chunk.size);
     pcm.push(slice);
     dataSize += slice.byteLength;
@@ -561,7 +558,7 @@ export async function inferViaDeepInfra(opts: {
     text,
     preset_voice: voice,
     response_format: "wav",
-    max_audio_length_ms: 10_000,
+    max_audio_length_ms: 30_000,
   };
   const attempts: Array<{ url: string; token: string; body: unknown }> = [];
   if (opts.deepinfraKey) {

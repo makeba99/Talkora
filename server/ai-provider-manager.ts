@@ -640,10 +640,11 @@ export async function generateSpeech(opts: {
     if (!isSesameSpeakerId(String(voiceName)) || /Neural$/i.test(String(voiceName))) {
       voiceName = isMale ? "conversational_b" : "conversational_a";
     }
-    const chunks = splitSesameUtterances(text);
+    const chunks = splitSesameUtterances(text, sesameFalKey() ? 450 : 200);
+    const toSynth = chunks.length ? chunks : [text];
     const wavs: ArrayBuffer[] = [];
     let lastError = "sesame-failed";
-    for (const chunk of chunks.length ? chunks : [text]) {
+    const synthOne = async (chunk: string) => {
       let sesame = await getSesameProvider().synthesize({
         text: chunk,
         voiceId: voiceName || (isMale ? "miles" : "maya"),
@@ -655,9 +656,13 @@ export async function generateSpeech(opts: {
           bypassSkip: true,
         });
       }
+      return sesame;
+    };
+    const results = await Promise.all(toSynth.map((chunk) => synthOne(chunk)));
+    for (const sesame of results) {
       if (!sesame.ok || !sesame.body) {
         lastError = sesame.error || lastError;
-        break;
+        continue;
       }
       wavs.push(sesame.body);
     }
