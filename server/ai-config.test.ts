@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { normalizeAiTutorConfig, type AiTutorConfig } from "./ai-config";
+import { effectiveVoiceProvider, normalizeAiTutorConfig, type AiTutorConfig } from "./ai-config";
 
 function staleBrowserConfig(): AiTutorConfig {
   return {
@@ -23,7 +23,7 @@ function staleBrowserConfig(): AiTutorConfig {
   };
 }
 
-describe("normalizeAiTutorConfig free Edge lock", () => {
+describe("normalizeAiTutorConfig admin Sesame save", () => {
   const prev = {
     provider: process.env.AI_VOICE_PROVIDER,
     fal: process.env.FAL_KEY,
@@ -36,15 +36,33 @@ describe("normalizeAiTutorConfig free Edge lock", () => {
     else process.env.FAL_KEY = prev.fal;
     if (prev.di === undefined) delete process.env.DEEPINFRA_TOKEN;
     else process.env.DEEPINFRA_TOKEN = prev.di;
-  });
-
-  it("uses free Edge neural when sesame is requested without a paid GPU key", () => {
-    process.env.AI_VOICE_PROVIDER = "sesame";
-    delete process.env.FAL_KEY;
-    delete process.env.DEEPINFRA_TOKEN;
     delete process.env.AI_VOICE_FAL_KEY;
     delete process.env.DEEPINFRA_API_KEY;
     delete process.env.AI_VOICE_DEEPINFRA_TOKEN;
+  });
+
+  it("keeps Sesame + speaker ids when admin saves without a paid GPU key", () => {
+    delete process.env.AI_VOICE_PROVIDER;
+    delete process.env.FAL_KEY;
+    delete process.env.DEEPINFRA_TOKEN;
+    const n = normalizeAiTutorConfig({
+      ...staleBrowserConfig(),
+      voice: {
+        ...staleBrowserConfig().voice,
+        provider: "sesame",
+        femaleVoice: "read_speech_a",
+        maleVoice: "read_speech_b",
+      },
+    });
+    expect(n.voice.provider).toBe("sesame");
+    expect(n.voice.femaleVoice).toBe("read_speech_a");
+    expect(n.voice.maleVoice).toBe("read_speech_b");
+    expect(effectiveVoiceProvider(n)).toBe("edge");
+  });
+
+  it("does not let AI_VOICE_PROVIDER=edge overwrite a saved Sesame row", () => {
+    process.env.AI_VOICE_PROVIDER = "edge";
+    process.env.FAL_KEY = "fal_test";
     const n = normalizeAiTutorConfig({
       ...staleBrowserConfig(),
       voice: {
@@ -54,16 +72,15 @@ describe("normalizeAiTutorConfig free Edge lock", () => {
         maleVoice: "conversational_b",
       },
     });
-    expect(n.voice.provider).toBe("edge");
-    expect(n.voice.femaleVoice).toBe("en-US-AvaNeural");
-    expect(n.voice.maleVoice).toBe("en-US-AndrewNeural");
+    expect(n.voice.provider).toBe("sesame");
+    expect(n.voice.femaleVoice).toBe("conversational_a");
+    expect(effectiveVoiceProvider(n)).toBe("sesame");
   });
 
   it("keeps Sesame when FAL_KEY is set", () => {
     process.env.AI_VOICE_PROVIDER = "sesame";
     process.env.FAL_KEY = "fal_test";
     const n = normalizeAiTutorConfig(staleBrowserConfig());
-    expect(n.voice.provider).toBe("sesame");
-    expect(n.voice.femaleVoice).toBe("conversational_a");
+    expect(n.voice.provider).toBe("browser");
   });
 });

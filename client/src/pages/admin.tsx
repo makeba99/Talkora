@@ -74,6 +74,7 @@ type KeyUsageStats = {
 type AiConfigResponse = {
   config: AiTutorConfigPublic;
   status: any;
+  runtimeVoice?: "openai" | "edge" | "browser" | "sesame";
   alerts: Array<{ id: string; kind: string; severity: string; title: string; message: string; createdAt: number; read: boolean }>;
   hasKeys: {
     brainPrimary: boolean;
@@ -2336,7 +2337,11 @@ function AiTutorTab() {
       setVoicePrimaryKey("");
       setVoiceSecondaryKey("");
       queryClient.invalidateQueries({ queryKey: ["/api/admin/ai-config"] });
-      toast({ title: "AI Tutor config saved", description: "Brain and Voice settings apply to live requests immediately." });
+      const runtimeNote =
+        voiceProvider === "sesame"
+          ? "Sesame speakers are stored. Rooms use Sesame when FAL_KEY or DEEPINFRA_TOKEN is set; otherwise Edge until those keys exist."
+          : "Brain and Voice settings apply to live requests immediately.";
+      toast({ title: "AI Tutor config saved", description: runtimeNote });
     },
     onError: (err: any) => {
       toast({ title: "Save failed", description: err?.message, variant: "destructive" });
@@ -2457,7 +2462,7 @@ function AiTutorTab() {
                     ? "HEALTHY"
                     : "WARNING",
               )}
-              Voice: {cfg?.voice.provider === "edge" ? "Edge neural (free)" : cfg?.voice.provider === "browser" ? "Browser" : cfg?.voice.provider === "sesame" ? (status?.voice?.sesame?.state === "ok" ? "Sesame CSM-1B" : status?.voice?.sesame?.state === "credits" ? "Sesame credits out" : status?.voice?.sesame?.state === "unauthorized" ? "Sesame key rejected" : "Sesame CSM-1B") : data?.hasKeys?.voicePrimary ? "OpenAI ready" : "not configured"}
+              Voice: {cfg?.voice.provider === "edge" ? "Edge neural (free)" : cfg?.voice.provider === "browser" ? "Browser" : cfg?.voice.provider === "sesame" ? (data?.runtimeVoice === "edge" ? "Sesame saved (rooms: Edge until GPU key)" : status?.voice?.sesame?.state === "credits" ? "Sesame credits out" : status?.voice?.sesame?.state === "unauthorized" ? "Sesame key rejected" : "Sesame CSM-1B") : data?.hasKeys?.voicePrimary ? "OpenAI ready" : "not configured"}
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -2715,7 +2720,7 @@ function AiTutorTab() {
                   <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-muted-foreground space-y-1">
                     <p>
                       Sesame CSM-1B is generated server-side (Maya = conversational_a, Miles = conversational_b).
-                      Completely free rooms use Microsoft Edge neural (Ava / Andrew) — no API key. Sesame CSM is the same Maya/Miles model only when a paid GPU key is set; otherwise this panel still saves Sesame but the server speaks with Edge so tutors are never silent or robotic.
+                      Completely free rooms use Microsoft Edge neural (Ava / Andrew) — no API key. Saving Sesame here keeps Maya/Miles/Eva speaker IDs even if GPU keys are missing. Test Sesame Voice can succeed while rooms still speak Edge until FAL_KEY or DEEPINFRA_TOKEN is on Railway.
                     </p>
                     <p>
                       Get keys at <a className="underline" href="https://fal.ai/dashboard/keys" target="_blank" rel="noreferrer">fal.ai/dashboard/keys</a> and <a className="underline" href="https://deepinfra.com" target="_blank" rel="noreferrer">deepinfra.com</a>. Set <strong>both</strong> <code>FAL_KEY</code> and <code>DEEPINFRA_TOKEN</code> on Railway. Those account keys do not expire by date — they only stop when credits hit zero (HTTP 402) or you rotate the key. Enable auto top-up / a card on both dashboards. Skip Hugging Face fine-grained tokens (they can have an expiry date). DeepInfra is cheaper (~$7 / 1M characters). fal.ai is about $0.03 / 1k characters. Still accept the license at <a className="underline" href="https://huggingface.co/sesame/csm-1b" target="_blank" rel="noreferrer">huggingface.co/sesame/csm-1b</a> if a host requires it.

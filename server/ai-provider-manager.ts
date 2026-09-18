@@ -13,6 +13,7 @@ import {
   resolveBrainEndpoint,
   resolveGroqModel,
   DEFAULT_GROQ_MODEL,
+  effectiveVoiceProvider,
   type AiTutorConfig,
   type KeyHealth,
 } from "./ai-config";
@@ -603,12 +604,7 @@ export async function generateSpeech(opts: {
   // Server admin config is authoritative for gender → voice mapping.
   const configured = isMale ? cfg.voice.maleVoice : cfg.voice.femaleVoice;
   const clientVid = typeof opts.voiceId === "string" ? opts.voiceId.trim() : "";
-  let voiceProvider = cfg.voice.provider;
-  if (sesameHasPaidGpu() && (process.env.AI_VOICE_PROVIDER === "sesame" || voiceProvider === "sesame")) {
-    voiceProvider = "sesame";
-  } else if (voiceProvider === "sesame" || voiceProvider === "browser") {
-    voiceProvider = "edge";
-  }
+  let voiceProvider = effectiveVoiceProvider(cfg);
   // Prefer a real Sesame speaker id from the client; otherwise admin gender map.
   let voiceName =
     (voiceProvider === "sesame" && isSesameSpeakerId(clientVid) && clientVid) ||
@@ -1056,6 +1052,7 @@ export async function getProviderStatusSnapshot() {
     },
     voice: {
       provider: cfg.voice.provider,
+      effectiveProvider: effectiveVoiceProvider(cfg),
       model: cfg.voice.model,
       femaleVoice: cfg.voice.femaleVoice,
       maleVoice: cfg.voice.maleVoice,
