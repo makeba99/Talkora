@@ -1,14 +1,11 @@
 /**
  * TTS factory — Maya, Miles, and Eva all speak through the server
  * (`/api/ai-tutor/tts` → Sesame CSM-1B / Edge / OpenAI).
- * Browser SpeechSynthesis is last-resort only (admin provider = browser, or
- * every cloud voice failed).
+ * Device SpeechSynthesis is never selected for in-room tutors.
  */
 
-import { TtsEngine, type TtsCallbacks } from "./tts";
-import { EvaTtsEngine } from "./eva-tts";
+import { EvaTtsEngine, primeEvaAudio, type TtsCallbacks } from "./eva-tts";
 import type { VoicePersona } from "./types";
-import { isSesameSpeakerId } from "@shared/talking-partners";
 
 export interface TtsLike {
   configure(voice: VoicePersona, speed: number, voiceId?: string | null, provider?: string): void;
@@ -24,78 +21,41 @@ declare global {
   }
 }
 
+function cloudProvider(provider?: string): string {
+  if (provider === "openai" || provider === "edge" || provider === "sesame") return provider;
+  return "edge";
+}
+
 /**
- * Returns a routing TTS engine that picks Browser vs Eva (ElevenLabs) per-call
- * based on the configured voice persona. The wrapper holds both underlying
- * engines and forwards enqueue()/cancel() to whichever one matches the current
- * voice.
- *
- * The "Eva" voice is intentionally always routed through ElevenLabs; selecting
- * Female or Male keeps the existing browser voice (so the original AI Tutor
- * personas — Afi K / Dude — sound exactly as before).
+ * Rooms always use EvaTtsEngine (HTMLAudio of the server wav).
+ * Stale admin "browser" is treated as Edge so Maya never uses the
+ * robotic device voice. Completely free path is Microsoft Edge neural.
  */
 export function createTts(callbacks: TtsCallbacks): TtsLike {
-  const browser = new TtsEngine(callbacks);
-  let eva: EvaTtsEngine | null = null;
+  const eva = new EvaTtsEngine(callbacks);
   let currentVoice: VoicePersona = "Female";
   let currentSpeed = 1.0;
   let currentVoiceId: string | null = null;
-  // The server is authoritative. Until its config arrives, route through the
-  // server so it can make the same decision as the admin panel.
-  let currentProvider = "unknown";
-
-  const ensureEva = (): EvaTtsEngine => {
-    if (!eva) {
-      eva = new EvaTtsEngine(callbacks);
-    }
-    return eva;
-  };
-
-  // Pick the engine that *should* play given the current voice.
-  // All three personas → ElevenLabs ALWAYS via EvaTtsEngine.
-  // EvaTtsEngine gracefully falls back to browser SpeechSynthesis when no
-  // ElevenLabs API key is configured, so users always hear something.
-  const pickEngine = (): TtsLike => {
-    if (currentProvider === "browser") {
-      const browserVoiceId = isSesameSpeakerId(currentVoiceId) ? null : currentVoiceId;
-      browser.configure(currentVoice, currentSpeed, browserVoiceId);
-      return browser;
-    }
-    const e = ensureEva();
-    e.configure(currentVoice, currentSpeed, currentVoiceId, currentProvider);
-    return e;
-  };
+  let currentProvider = "edge";
 
   return {
     configure: (voice, speed, voiceId, provider) => {
-      const voiceChanged = voice !== currentVoice;
-      const providerChanged = provider !== undefined && provider !== currentProvider;
       currentVoice = voice;
       currentSpeed = speed;
       currentVoiceId = voiceId ?? null;
-      if (provider !== undefined) currentProvider = provider;
-      // Cancel the *other* engine so a mid-session swap doesn't leave audio
-      // playing through the previous voice.
-      if (voiceChanged || providerChanged) {
-        if (currentProvider === "browser") {
-          if (eva) eva.cancel();
-        } else {
-          browser.cancel();
-        }
-      }
-      const browserVoiceId = isSesameSpeakerId(voiceId) ? null : voiceId;
-      browser.configure(voice, speed, browserVoiceId);
-      if (eva) eva.configure(voice, speed, voiceId, currentProvider);
+      if (provider !== undefined) currentProvider = cloudProvider(provider);
+      eva.configure(voice, speed, voiceId, currentProvider);
     },
     enqueue: (sentence) => {
-      pickEngine().enqueue(sentence);
+      primeEvaAudio();
+      eva.configure(currentVoice, currentSpeed, currentVoiceId, currentProvider);
+      eva.enqueue(sentence);
     },
     cancel: () => {
-      browser.cancel();
-      if (eva) eva.cancel();
+      eva.cancel();
     },
     get isActive() {
-      return browser.isActive || (eva?.isActive ?? false);
+      return eva.isActive;
     },
   };
 }

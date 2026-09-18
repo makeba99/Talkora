@@ -17,8 +17,9 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { extractSentences } from "@/lib/ai-tutor/tts";
+import { extractCompleteSentences, sanitizeSpokenTutorLine } from "@shared/spoken-tutor-line";
 import { createTts, type TtsLike } from "@/lib/ai-tutor/tts-factory";
+import { primeEvaAudio, warmupEvaTts } from "@/lib/ai-tutor/eva-tts";
 import {
   SttEngine,
   WakeWordDetector,
@@ -88,7 +89,7 @@ const FEMALE_INTROS = [
   "Hey, I'm Maya. So glad you're here — what's on your mind?",
   "Hi there. I'm Maya. Tell me anything — I'm listening.",
   "Hey you, I'm Maya. Take your time — what do you wanna talk about?",
-  "Mmm hi, I'm Maya. Whenever you're ready, just start talking.",
+  "Hi, I'm Maya. Whenever you're ready, just start talking.",
 ];
 
 const MALE_INTROS = [
@@ -103,7 +104,7 @@ const EVA_INTROS = [
   "Hey, I'm Lebroskiu. So glad you're here — what's on your mind?",
   "Hi there. I'm Lebroskiu. Tell me anything — I'm listening.",
   "Hey you, I'm Lebroskiu. Take your time — what do you wanna talk about?",
-  "Mmm hi, I'm Lebroskiu. Whenever you're ready, just start talking.",
+  "Hi, I'm Lebroskiu. Whenever you're ready, just start talking.",
 ];
 
 // Persona-queue item — requests from other room participants
@@ -148,7 +149,9 @@ function loadSavedAiSettings(): AiTutorSettings {
       ...parsed,
       voiceId: null,
       avatarId: ["aurora", "ember", "nova", "onyx"].includes(savedAvatarId) ? savedAvatarId : DEFAULT_AI_SETTINGS.avatarId,
-      speed: typeof parsed.speed === "number" ? Math.max(0.5, Math.min(2, parsed.speed)) : DEFAULT_AI_SETTINGS.speed,
+      speed: typeof parsed.speed === "number"
+        ? (parsed.speed <= 0.85 ? 1.12 : Math.max(0.9, Math.min(1.25, parsed.speed)))
+        : DEFAULT_AI_SETTINGS.speed,
       tone: typeof parsed.tone === "number" ? Math.max(0, Math.min(1, parsed.tone)) : DEFAULT_AI_SETTINGS.tone,
       wakeWordEnabled: typeof parsed.wakeWordEnabled === "boolean" ? parsed.wakeWordEnabled : DEFAULT_AI_SETTINGS.wakeWordEnabled,
     };
@@ -313,13 +316,13 @@ export function useAiTutor(deps: AiTutorDeps) {
    * of answering itself.
    */
   const speakAi = useCallback((text: string) => {
-    const trimmed = (text || "").trim();
-    if (!trimmed) return;
-    lastSpokenRef.current = `${lastSpokenRef.current} ${trimmed}`
+    const cleaned = sanitizeSpokenTutorLine(text);
+    if (!cleaned) return;
+    lastSpokenRef.current = `${lastSpokenRef.current} ${cleaned}`
       .split(/\s+/)
       .slice(-80)
       .join(" ");
-    ttsRef.current?.enqueue(trimmed);
+    ttsRef.current?.enqueue(cleaned);
   }, []);
 
   const onTtsStart = useCallback(() => {
@@ -327,10 +330,13 @@ export function useAiTutor(deps: AiTutorDeps) {
     speakingRef.current = true;
     ttsStartedAtRef.current = Date.now();
     socket?.emit("room:ai-tutor-speaking", { roomId, userId, speaking: true });
-    // Start barge-in detector when AI begins speaking. Cloud transcription
-    // stays on the whole time, so it needs no separate recognizer.
-    if (sttModeRef.current === "browser") sttRef.current?.startBargeIn();
-    setVoiceBargeInActive(true);
+    // Delay barge-in until audio is actually in the room — starting it at
+    // fetch-time made Maya interrupt herself (voice sounded cut off).
+    window.setTimeout(() => {
+      if (!speakingRef.current) return;
+      if (sttModeRef.current === "browser") sttRef.current?.startBargeIn();
+      setVoiceBargeInActive(true);
+    }, 900);
   }, [socket, roomId, userId]);
 
   const onTtsEnd = useCallback(() => {
@@ -750,42 +756,12 @@ export function useAiTutor(deps: AiTutorDeps) {
     let fullReply = "";
     let sentenceBuffer = "";
     let firstToken = true;
-    let firstTokenFired = false;
     const t0 = Date.now();
 
     setTimeout(() => setAiAcknowledging(false), 400);
 
-    // ── Immediate receipt acknowledgment ─────────────────────────────────────
-    // Fires at ~0ms (no delay) to confirm the AI received the input.
-    // ~35% probability per turn — keeps it natural and non-repetitive.
-    // Very short phrases (<300ms of audio) so the actual response still
-    // feels fast. Mutually exclusive with the thinking phrase below:
-    // only one preamble per turn to avoid double stacking ("Mm. One sec.").
-    const RECEIPT_CUES = ["Mm.", "Mm-hmm.", "Right.", "Yeah.", "Okay."];
-    const playReceiptCue = Math.random() < 0.35;
-    if (playReceiptCue) {
-      speakAi(RECEIPT_CUES[Math.floor(Math.random() * RECEIPT_CUES.length)]);
-      addDebug("info", "Receipt cue played — immediate ACK");
-    }
-
-    // ── Latency-acknowledgment guard ─────────────────────────────────────────
-    // If the LLM hasn't sent its first token within 500ms AND no receipt cue
-    // was played, speak a brief "thinking" phrase to fill the silence.
-    // Cleared immediately when the first token arrives, so fast responses
-    // (common on subsequent turns) never hear the phrase at all.
-    const THINKING_PHRASES = [
-      "Hmm.",
-      "Let me think.",
-      "One sec.",
-      "Got it, hold on.",
-      "Mm, give me a moment.",
-    ];
-    const thinkingTimer = setTimeout(() => {
-      if (!firstTokenFired && !playReceiptCue && !abort.signal.aborted && activeRef.current && !speakingRef.current) {
-        speakAi(THINKING_PHRASES[Math.floor(Math.random() * THINKING_PHRASES.length)]);
-        addDebug("info", `Thinking phrase spoken — first token delayed >${Date.now() - t0}ms`);
-      }
-    }, 500);
+    // Never speak filler ("hmm"/"mm") or stall lines — they mix into Sesame
+    // audio and sound like incomplete replies.
 
     // Stop primary listening while streaming
     pauseMic();
@@ -804,8 +780,6 @@ export function useAiTutor(deps: AiTutorDeps) {
         {
           onToken: token => {
             if (firstToken) {
-              firstTokenFired = true;
-              clearTimeout(thinkingTimer);
               addDebug("info", `First token in ${Date.now() - t0}ms`);
               firstToken = false;
             }
@@ -818,7 +792,7 @@ export function useAiTutor(deps: AiTutorDeps) {
             );
 
             // Flush complete sentences to TTS immediately (speak before full response)
-            const [sentences, remainder] = extractSentences(sentenceBuffer);
+            const [sentences, remainder] = extractCompleteSentences(sentenceBuffer);
             sentenceBuffer = remainder;
             sentences.forEach(s => speakAi(s));
           },
@@ -827,7 +801,7 @@ export function useAiTutor(deps: AiTutorDeps) {
           },
           onDone: (model, latencyMs) => {
             addDebug("info", `Stream complete in ${latencyMs}ms · model: ${model}`);
-            if (sentenceBuffer.trim()) speakAi(sentenceBuffer.trim());
+            if (sanitizeSpokenTutorLine(sentenceBuffer)) speakAi(sentenceBuffer.trim());
             sentenceBuffer = "";
             if (fullReply.trim()) {
               setAiLastBroadcast(fullReply);
@@ -901,7 +875,6 @@ export function useAiTutor(deps: AiTutorDeps) {
         addDebug("error", `All AI calls failed: ${errDetail || "unknown"}`);
       }
     } finally {
-      clearTimeout(thinkingTimer);
       setAiLoading(false);
       setAiAcknowledging(false);
       loadingRef.current = false;
@@ -936,7 +909,7 @@ export function useAiTutor(deps: AiTutorDeps) {
   }, [addDebug, processNextQueued]);
 
   // ── Start with a specific persona (voice + name, locked for session) ──────
-  const startWithPersona = useCallback((voice: VoicePersona, pName: string) => {
+  const startWithPersona = useCallback((voice: VoicePersona, pName: string, speakerId?: string | null) => {
     // If a session is already running, fully tear it down first so the new
     // persona actually takes effect. The previous early-return caused a real
     // bug: clicking Eva while a Dude session was still active silently kept
@@ -960,19 +933,20 @@ export function useAiTutor(deps: AiTutorDeps) {
     // Lock the persona for this session
     personaLockedRef.current = true;
     setPersonaName(pName);
+    primeEvaAudio();
 
     // Update voice + avatar settings together so face matches gender.
     // Female (Afik K) gets the admin-configured female ElevenLabs voiceId (Lebroskiu etc.).
     // Male (Dude) gets the admin-configured male ElevenLabs voiceId (Adam, Daniel, etc.).
     const avatarId = voice === "Male" ? "nova" : "aurora";
-    const voiceId = voice === "Female"
-      ? serverVoiceIdRef.current
-      : voice === "Male"
+    const voiceId = speakerId
+      || (voice === "Male"
         ? (serverMaleVoiceIdRef.current || serverVoiceIdRef.current)
-        : null;
+        : (serverVoiceIdRef.current || null));
     setAiSettings(s => ({ ...s, voice, voiceId, avatarId, personaName: pName }));
     // Also configure TTS immediately (don't wait for React state cycle)
     ttsRef.current?.configure(voice, aiSettings.speed, voiceId, serverTtsProviderRef.current);
+    warmupEvaTts(voice, voiceId);
 
     // Clear any previous mic error
     setMicError(null);
@@ -1066,6 +1040,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       onViseme: shape => setCurrentViseme(shape),
     });
     engine.configure(voice as VoicePersona, speed, voiceId, serverTtsProviderRef.current);
+    primeEvaAudio();
     engine.enqueue(text);
   }, []);
 
@@ -1081,7 +1056,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     if (persona === "miles") {
       startWithPersonaRef.current?.("Male", "Miles");
     } else if (persona === "eva") {
-      startWithPersonaRef.current?.("Eva", "Eva");
+      startWithPersonaRef.current?.("Eva", "Eva", "read_speech_a");
     } else {
       startWithPersonaRef.current?.("Female", "Maya");
     }

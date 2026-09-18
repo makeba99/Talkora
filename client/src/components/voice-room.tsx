@@ -17313,7 +17313,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   <span className="text-[14px] font-semibold" style={{ color: "rgba(230,235,245,0.95)" }}>Choose Your Tutor</span>
                 </div>
                 <p className="text-[12px] text-center mb-7 mt-3" style={{ color: "rgba(170,180,200,0.65)" }}>
-                  Pick Maya or Miles — or just say “hey”.
+                  Pick a tutor — Maya, Miles, Eva, or Noah — or just say “hey”.
                 </p>
 
                 {/* Persona cards (dark neumorphic) */}
@@ -17336,6 +17336,26 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     description="Calm · Direct · Human-like male voice"
                     nameColor="rgba(160,200,255,0.95)"
                     accentColor="rgba(100,160,255,0.90)"
+                  />
+
+                  <NeumorphicPersonaCard
+                    testId="button-persona-eva"
+                    onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Eva", "Eva", "read_speech_a"); }}
+                    avatar={<NeumorphicAvatarRing glowRgb="180,140,255" intense content={<img loading="lazy" decoding="async" src={femaleTutorUrl} alt="Eva avatar" className="w-full h-full object-cover rounded-full" />} />}
+                    name="Eva"
+                    description="Clear · Bright · Slightly faster female voice"
+                    nameColor="rgba(210,190,255,0.95)"
+                    accentColor="rgba(170,130,255,0.90)"
+                  />
+
+                  <NeumorphicPersonaCard
+                    testId="button-persona-noah"
+                    onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Male", "Noah", "read_speech_b"); }}
+                    avatar={<NeumorphicAvatarRing glowRgb="80,210,190" intense content={<img loading="lazy" decoding="async" src={maleTutorUrl} alt="Noah avatar" className="w-full h-full object-cover rounded-full" />} />}
+                    name="Noah"
+                    description="Steady · Natural · Slightly faster male voice"
+                    nameColor="rgba(160,230,210,0.95)"
+                    accentColor="rgba(80,200,180,0.90)"
                   />
                 </div>
 

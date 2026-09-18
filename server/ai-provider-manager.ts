@@ -19,8 +19,8 @@ import {
 import { openAiSynthesize } from "./openai-tts";
 import { edgeSynthesize, resolveEdgeVoiceId, isMalePersona } from "./edge-tts";
 import { isSesameSpeakerId } from "@shared/talking-partners";
-import { getSesameProvider } from "./voice";
-import { sesameHfToken, sesameUserMessage, splitSesameUtterances, concatWavArrayBuffers } from "./voice/sesame-payload";
+import { getSesameProvider, getSesameHostSnapshot, sesameHostAlertFromSnapshot } from "./voice";
+import { sesameHfToken, sesameFalKey, sesameDeepinfraKey, sesameHasPaidGpu, sesameUserMessage, splitSesameUtterances, concatWavArrayBuffers } from "./voice/sesame-payload";
 
 export type KeySlot = "primary" | "secondary";
 export type ProviderKind = "brain" | "voice";
@@ -170,6 +170,12 @@ export async function markAiAlertsRead(): Promise<void> {
   await ensureAlertsLoaded();
   alertsCache = alertsCache.map((a) => ({ ...a, read: true }));
   await persistAlerts();
+}
+
+async function maybePushSesameHostAlert() {
+  const alert = sesameHostAlertFromSnapshot(getSesameHostSnapshot());
+  if (!alert) return;
+  await pushAiAlert(alert);
 }
 
 function stateMap(kind: ProviderKind) {
@@ -577,9 +583,9 @@ export async function generateAIResponse(opts: {
  */
 export async function generateSpeech(opts: {
   text: string;
-  /** "Female" | "Male" | "Eva" etc — maps to configured female/male voices */
   personaVoice?: string;
   voiceId?: string | null;
+  speed?: number;
 }): Promise<{
   ok: boolean;
   status: number;
@@ -597,31 +603,27 @@ export async function generateSpeech(opts: {
   // Server admin config is authoritative for gender → voice mapping.
   const configured = isMale ? cfg.voice.maleVoice : cfg.voice.femaleVoice;
   const clientVid = typeof opts.voiceId === "string" ? opts.voiceId.trim() : "";
+  let voiceProvider = cfg.voice.provider;
+  if (sesameHasPaidGpu() && (process.env.AI_VOICE_PROVIDER === "sesame" || voiceProvider === "sesame")) {
+    voiceProvider = "sesame";
+  } else if (voiceProvider === "sesame" || voiceProvider === "browser") {
+    voiceProvider = "edge";
+  }
   // Prefer a real Sesame speaker id from the client; otherwise admin gender map.
   let voiceName =
-    (cfg.voice.provider === "sesame" && isSesameSpeakerId(clientVid) && clientVid) ||
+    (voiceProvider === "sesame" && isSesameSpeakerId(clientVid) && clientVid) ||
     (clientVid && clientVid === configured ? clientVid : configured);
   const model = cfg.voice.model || "tts-1-hd";
   const text = opts.text.trim();
+  const speakSpeed = Number.isFinite(opts.speed) ? Number(opts.speed) : 1.12;
+  const edgeRate = `${speakSpeed >= 1 ? "+" : ""}${Math.round((Math.max(0.9, Math.min(1.25, speakSpeed)) - 1) * 100)}%`;
   if (!text) {
     return { ok: false, status: 400, contentType: "", error: "empty text", usedSlot: null, failover: false, voiceUsed: voiceName };
   }
 
-  if (cfg.voice.provider === "browser") {
-    return {
-      ok: false,
-      status: 501,
-      contentType: "",
-      error: "browser-tts",
-      usedSlot: null,
-      failover: false,
-      voiceUsed: voiceName,
-    };
-  }
-
   const edgeFallbackResult = async (reason: string) => {
     const edgeVoice = resolveEdgeVoiceId(configured, isMale ? "male" : "female");
-    const result = await edgeSynthesize(text, edgeVoice);
+    const result = await edgeSynthesize(text, edgeVoice, edgeRate);
     if (result.ok && result.body) {
       console.warn(`[ai-provider] ${reason} — using free Edge neural TTS`);
       return {
@@ -637,12 +639,20 @@ export async function generateSpeech(opts: {
     return null;
   };
 
-  // ── Sesame CSM-1B (Gradio /infer) ──────────────────────────────────────
-  if (cfg.voice.provider === "sesame") {
-    const chunks = splitSesameUtterances(text);
+  // ── Sesame CSM-1B (paid GPU only) ──────────────────────────────────────
+  if (voiceProvider === "sesame") {
+    if (!sesameHasPaidGpu()) {
+      const edge = await edgeFallbackResult("Sesame needs FAL_KEY or DEEPINFRA_TOKEN");
+      if (edge) return edge;
+    }
+    if (!isSesameSpeakerId(String(voiceName)) || /Neural$/i.test(String(voiceName))) {
+      voiceName = isMale ? "conversational_b" : "conversational_a";
+    }
+    const chunks = splitSesameUtterances(text, sesameFalKey() ? 450 : 200);
+    const toSynth = chunks.length ? chunks : [text];
     const wavs: ArrayBuffer[] = [];
     let lastError = "sesame-failed";
-    for (const chunk of chunks.length ? chunks : [text]) {
+    const synthOne = async (chunk: string) => {
       let sesame = await getSesameProvider().synthesize({
         text: chunk,
         voiceId: voiceName || (isMale ? "miles" : "maya"),
@@ -654,9 +664,13 @@ export async function generateSpeech(opts: {
           bypassSkip: true,
         });
       }
+      return sesame;
+    };
+    const results = await Promise.all(toSynth.map((chunk) => synthOne(chunk)));
+    for (const sesame of results) {
       if (!sesame.ok || !sesame.body) {
         lastError = sesame.error || lastError;
-        break;
+        continue;
       }
       wavs.push(sesame.body);
     }
@@ -675,6 +689,17 @@ export async function generateSpeech(opts: {
       };
     }
     markFailure("voice", "primary", "ERROR", lastError);
+    await maybePushSesameHostAlert();
+    const edge = await edgeFallbackResult(`Sesame failed (${lastError})`);
+    if (edge) {
+      await pushAiAlert({
+        kind: "voice",
+        severity: "failover",
+        title: "Sesame GPU failed — Edge speaking",
+        message: `Rooms stayed audible with Edge. ${getSesameHostSnapshot().message}`,
+      });
+      return edge;
+    }
     return {
       ok: false,
       status: 502,
@@ -687,9 +712,9 @@ export async function generateSpeech(opts: {
   }
 
   // ── Free Microsoft Edge neural voices (no API key) ─────────────────────
-  if (cfg.voice.provider === "edge") {
+  if (voiceProvider === "edge") {
     voiceName = resolveEdgeVoiceId(configured, isMale ? "male" : "female");
-    const result = await edgeSynthesize(text, voiceName);
+    const result = await edgeSynthesize(text, voiceName, edgeRate);
     if (result.ok && result.body) {
       markSuccess("voice", "primary", { characters: text.length });
       await maybeWarnThreshold("voice", cfg);
@@ -896,6 +921,7 @@ export async function testSesameVoice(): Promise<{
   audio?: ArrayBuffer;
   contentType?: string;
   hasHfToken?: boolean;
+  hasGpuKey?: boolean;
   fallback?: string;
 }> {
   await ensureUsageLoaded();
@@ -906,6 +932,7 @@ export async function testSesameVoice(): Promise<{
     bypassSkip: true,
   });
   const hasHfToken = !!sesameHfToken();
+  const hasGpuKey = !!(sesameFalKey() || sesameDeepinfraKey() || hasHfToken);
   if (sesame.ok && sesame.body) {
     markSuccess("voice", "primary", { characters: 16 });
     return {
@@ -915,6 +942,7 @@ export async function testSesameVoice(): Promise<{
       audio: sesame.body,
       contentType: sesame.contentType,
       hasHfToken,
+      hasGpuKey,
     };
   }
     const gpuBlocked =
@@ -927,11 +955,13 @@ export async function testSesameVoice(): Promise<{
       sesame.error === "sesame-gated" ||
       sesame.error === "sesame-credits";
     if (gpuBlocked) {
+      await maybePushSesameHostAlert();
       return {
         ok: false,
         message: sesameUserMessage(sesame.error || "sesame-failed"),
         status: sesame.error === "sesame-gated" || sesame.error === "sesame-unauthorized" ? "ERROR" : "WARNING",
         hasHfToken,
+        hasGpuKey,
       };
     }
   return {
@@ -939,6 +969,7 @@ export async function testSesameVoice(): Promise<{
     message: sesameUserMessage(sesame.error || "sesame-failed"),
     status: "ERROR",
     hasHfToken,
+    hasGpuKey,
   };
 }
 
@@ -1033,6 +1064,7 @@ export async function getProviderStatusSnapshot() {
       secondary: { ...voiceState.secondary },
       usageLabel: "Usage tracked by application",
       quotaNote: "Provider remaining quota unavailable",
+      sesame: getSesameHostSnapshot(),
     },
   };
 }

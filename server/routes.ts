@@ -73,6 +73,7 @@ import {
 import { MAX_STT_BYTES, sttAvailable, transcribeSpeech } from "./ai-stt";
 import { detectRepetitiveHistory, isDuplicateReply, lastAssistantText } from "./ai-anti-repeat";
 import { getSesameProvider } from "./voice";
+import { sesameHasPaidGpu } from "./voice/sesame-payload";
 
 /**
  * Collect a raw (non-JSON) request body up to maxBytes, or null when the
@@ -2209,6 +2210,7 @@ export async function registerRoutes(
         `VOICE ACTIVATION: If the user says "hello", "are you there", "can you hear me", or similar check-ins, respond immediately and warmly — confirm you're listening in one short sentence.`,
         `Listen first: extract the user's exact intent, reference their words naturally, and answer that specific point. Never ignore or change the topic.`,
         `Lead with the answer: put the most important part of your response first so it can be spoken within the first second. Context and elaboration come after.`,
+        `SPOKEN AUDIO: Never start a reply with hmm, mm, uh, um, okay, or "let me think". Never output a sentence fragment or trailing ellipsis. Every reply must be complete sentences that can be read aloud as-is.`,
         (isEva || isLebroski)
           ? `Keep replies short and natural: 1–2 sentences unless they ask for more. Sound like a person, not an assistant.`
           : `Keep replies short and voice-first: usually 1–2 sentences. If the user asks for detail, give a complete answer — correctness matters more than brevity then.`,
@@ -2317,10 +2319,7 @@ export async function registerRoutes(
   });
 
   // ── AI Tutor TTS (multi-provider proxy) ──────────────────────────────────
-  // Capability probe — client uses this to decide whether Eva can speak.
-  // Female/Male personas use browser SpeechSynthesis and don't call this.
-  // Returns the admin-configured TTS provider and voice ID (no secrets) so the
-  // client can decide whether to route Afik / Male through ElevenLabs.
+  // Capability probe — rooms always speak via /api/ai-tutor/tts (Sesame/Edge/OpenAI).
   app.get("/api/ai-tutor/voice-config", isAuthenticated, async (_req, res) => {
     try {
       const cfg = await getAiTutorConfig();
@@ -2328,11 +2327,14 @@ export async function registerRoutes(
       const publicCfg = voiceConfigPublic(cfg);
       let provider: string = cfg.voice.provider;
       if (provider === "openai" && !hasOpenAiVoice) provider = "edge";
+      if (provider === "sesame" && !sesameHasPaidGpu()) {
+        provider = "edge";
+      }
       if (provider === "browser") {
         res.json({
-          provider: "browser",
-          voiceId: publicCfg.voiceId || null,
-          maleVoiceId: publicCfg.maleVoiceId || null,
+          provider: "edge",
+          voiceId: publicCfg.voiceId && /Neural$/i.test(publicCfg.voiceId) ? publicCfg.voiceId : "en-US-AvaNeural",
+          maleVoiceId: publicCfg.maleVoiceId && /Neural$/i.test(publicCfg.maleVoiceId) ? publicCfg.maleVoiceId : "en-US-AndrewNeural",
         });
         return;
       }
@@ -2397,9 +2399,8 @@ export async function registerRoutes(
       const result = await generateSpeech({
         text: text.trim(),
         personaVoice: voice,
-        // Only accept known OpenAI voice names from the client — never treat
-        // secrets as voice IDs. Admin-configured voices remain the fallback.
         voiceId: typeof voiceId === "string" && /^[a-z0-9_-]{2,64}$/i.test(voiceId) ? voiceId : null,
+        speed: typeof req.body?.speed === "number" ? req.body.speed : 1.12,
       });
       if (!result.ok || !result.body) {
         if (result.error === "browser-tts" || result.status === 501) {
@@ -2621,6 +2622,7 @@ export async function registerRoutes(
         `VOICE ACTIVATION: If the user says "hello", "are you there", "can you hear me", or similar check-ins, respond immediately and warmly — confirm you're listening in one short sentence.`,
         `Listen first: extract the user's exact intent, reference their words naturally, and answer that specific point. Never ignore or change the topic.`,
         `Lead with the answer: put the most important part of your response first so it can be spoken within the first second. Context and elaboration come after.`,
+        `SPOKEN AUDIO: Never start a reply with hmm, mm, uh, um, okay, or "let me think". Never output a sentence fragment or trailing ellipsis. Every reply must be complete sentences that can be read aloud as-is.`,
         (isEva || isLebroski)
           ? `Keep replies short and natural: 1–2 sentences unless they ask for more. Sound like a person, not an assistant.`
           : `Keep replies short and voice-first: usually 1–2 sentences. If the user asks for detail, explanation, or something complex, give a complete, well-structured answer — correctness and completeness matter more than brevity in those cases.`,
@@ -7389,6 +7391,7 @@ export async function registerRoutes(
           message: result.message,
           status: result.status,
           hasHfToken: result.hasHfToken,
+          hasGpuKey: result.hasGpuKey,
         });
       }
       if (slot !== "primary" && slot !== "secondary") {

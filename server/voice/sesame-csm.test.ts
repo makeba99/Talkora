@@ -124,18 +124,63 @@ describe("SesameCsmProvider", () => {
     expect(infer?.data.audio_prompt_speaker_a).toEqual({ handled: "https://example.com/prompt.wav" });
   });
 
-  it("skips the live Space immediately when HF_TOKEN is missing", async () => {
-    const prev = process.env.HF_TOKEN;
+  it("skips the live Space immediately when GPU keys are missing", async () => {
+    const prev = {
+      HF_TOKEN: process.env.HF_TOKEN,
+      FAL_KEY: process.env.FAL_KEY,
+      DEEPINFRA_TOKEN: process.env.DEEPINFRA_TOKEN,
+    };
     delete process.env.HF_TOKEN;
     delete process.env.AI_VOICE_HF_TOKEN;
     delete process.env.HUGGINGFACE_TOKEN;
     delete process.env.HUGGING_FACE_HUB_TOKEN;
     delete process.env.HUGGINGFACEHUB_API_TOKEN;
+    delete process.env.FAL_KEY;
+    delete process.env.AI_VOICE_FAL_KEY;
+    delete process.env.FAL_API_KEY;
+    delete process.env.DEEPINFRA_TOKEN;
+    delete process.env.DEEPINFRA_API_KEY;
+    delete process.env.AI_VOICE_DEEPINFRA_TOKEN;
     const provider = new SesameCsmProvider();
     const result = await provider.synthesize({ text: "Hello", voiceId: "maya" });
-    if (prev) process.env.HF_TOKEN = prev;
+    if (prev.HF_TOKEN) process.env.HF_TOKEN = prev.HF_TOKEN;
+    if (prev.FAL_KEY) process.env.FAL_KEY = prev.FAL_KEY;
+    if (prev.DEEPINFRA_TOKEN) process.env.DEEPINFRA_TOKEN = prev.DEEPINFRA_TOKEN;
     expect(result.ok).toBe(false);
     expect(result.error).toBe("sesame-no-token");
+  });
+
+  it("uses fal.run on the live path and never opens the Hugging Face Space", async () => {
+    const prevFal = process.env.FAL_KEY;
+    const prevHf = process.env.HF_TOKEN;
+    process.env.FAL_KEY = "fal_test";
+    delete process.env.HF_TOKEN;
+    const wav = new Uint8Array(128);
+    wav.set([0x52, 0x49, 0x46, 0x46]);
+    const origFetch = globalThis.fetch;
+    const urls: string[] = [];
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      urls.push(String(input));
+      if (String(input).includes("fal.run")) {
+        return new Response(
+          JSON.stringify({ audio: { url: "https://cdn.example/maya.wav", content_type: "audio/wav" } }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      return new Response(wav, { status: 200, headers: { "content-type": "audio/wav" } });
+    }) as typeof fetch;
+    try {
+      const provider = new SesameCsmProvider();
+      const result = await provider.synthesize({ text: "Hello from Maya", voiceId: "maya" });
+      expect(result.ok).toBe(true);
+      expect(urls.some((u) => u.includes("fal.run/fal-ai/csm-1b"))).toBe(true);
+      expect(urls.some((u) => /hf\.space|huggingface\.co\/spaces/i.test(u))).toBe(false);
+    } finally {
+      globalThis.fetch = origFetch;
+      if (prevFal) process.env.FAL_KEY = prevFal;
+      else delete process.env.FAL_KEY;
+      if (prevHf) process.env.HF_TOKEN = prevHf;
+    }
   });
 
   it("fails closed when Gradio throws so callers can fall back", async () => {
@@ -302,6 +347,25 @@ describe("sesame token and error helpers", () => {
     });
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.body.byteLength).toBe(128);
+  });
+
+  it("calls DeepInfra's own API first when DEEPINFRA_TOKEN is set", async () => {
+    const wav = new Uint8Array(128);
+    wav.set([0x52, 0x49, 0x46, 0x46]);
+    const urls: string[] = [];
+    const result = await inferViaDeepInfra({
+      text: "Hi, this is Maya.",
+      speakerA: "conversational_a",
+      hfToken: "hf_test",
+      deepinfraKey: "di_test",
+      fetchImpl: async (url) => {
+        urls.push(String(url));
+        return new Response(wav, { status: 200, headers: { "content-type": "audio/wav" } });
+      },
+    });
+    expect(result.ok).toBe(true);
+    expect(urls[0]).toContain("api.deepinfra.com");
+    expect(urls.some((u) => u.includes("router.huggingface.co"))).toBe(false);
   });
 
   it("downloads Sesame wav from DeepInfra JSON audio", async () => {

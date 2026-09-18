@@ -2404,9 +2404,9 @@ function AiTutorTab() {
           title: `✗ ${body.message || "Test failed"}`,
           description:
             kind === "sesame"
-              ? body.hasHfToken
-                ? "Railway has HF_TOKEN loaded. If this still fails, the token is Fine-grained — replace it with a Classic Read token and wait for restart."
-                : "Railway did not load HF_TOKEN yet. Set HF_TOKEN and wait for the service restart."
+              ? body.hasGpuKey || body.hasHfToken
+                ? body.message || "GPU host rejected the request. Check fal.ai / DeepInfra billing."
+                : "Set Railway FAL_KEY or DEEPINFRA_TOKEN and wait for restart. These are pay-as-you-go after signup credits — the HF Space is not used."
               : `${kind} ${slot}`,
           variant: "destructive",
         });
@@ -2443,9 +2443,21 @@ function AiTutorTab() {
               {statusDot(data?.hasKeys?.brainPrimary || data?.hasKeys?.brainSecondary ? "HEALTHY" : "ERROR")}
               Brain: {data?.hasKeys?.brainPrimary || data?.hasKeys?.brainSecondary ? `${cfg?.brain.provider || "—"} ready` : "key required"}
             </span>
-            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${cfg?.voice.provider === "edge" || cfg?.voice.provider === "browser" || cfg?.voice.provider === "sesame" || data?.hasKeys?.voicePrimary ? "border-emerald-500/40 text-emerald-300 bg-emerald-500/10" : "border-amber-500/40 text-amber-300 bg-amber-500/10"}`}>
-              {statusDot(cfg?.voice.provider === "edge" || cfg?.voice.provider === "browser" || cfg?.voice.provider === "sesame" || data?.hasKeys?.voicePrimary ? "HEALTHY" : "WARNING")}
-              Voice: {cfg?.voice.provider === "edge" ? "Edge neural (free)" : cfg?.voice.provider === "browser" ? "Browser" : cfg?.voice.provider === "sesame" ? "Sesame CSM-1B" : data?.hasKeys?.voicePrimary ? "OpenAI ready" : "not configured"}
+            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 ${
+              status?.voice?.sesame?.state === "credits" || status?.voice?.sesame?.state === "unauthorized"
+                ? "border-red-500/40 text-red-300 bg-red-500/10"
+                : cfg?.voice.provider === "edge" || cfg?.voice.provider === "browser" || cfg?.voice.provider === "sesame" || data?.hasKeys?.voicePrimary
+                  ? "border-emerald-500/40 text-emerald-300 bg-emerald-500/10"
+                  : "border-amber-500/40 text-amber-300 bg-amber-500/10"
+            }`}>
+              {statusDot(
+                status?.voice?.sesame?.state === "credits" || status?.voice?.sesame?.state === "unauthorized"
+                  ? "ERROR"
+                  : cfg?.voice.provider === "edge" || cfg?.voice.provider === "browser" || cfg?.voice.provider === "sesame" || data?.hasKeys?.voicePrimary
+                    ? "HEALTHY"
+                    : "WARNING",
+              )}
+              Voice: {cfg?.voice.provider === "edge" ? "Edge neural (free)" : cfg?.voice.provider === "browser" ? "Browser" : cfg?.voice.provider === "sesame" ? (status?.voice?.sesame?.state === "ok" ? "Sesame CSM-1B" : status?.voice?.sesame?.state === "credits" ? "Sesame credits out" : status?.voice?.sesame?.state === "unauthorized" ? "Sesame key rejected" : "Sesame CSM-1B") : data?.hasKeys?.voicePrimary ? "OpenAI ready" : "not configured"}
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -2686,7 +2698,7 @@ function AiTutorTab() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="edge">Edge neural (free, natural)</SelectItem>
-                    <SelectItem value="sesame">Sesame CSM-1B (Hugging Face)</SelectItem>
+                    <SelectItem value="sesame">Sesame CSM-1B (paid GPU — fal.ai / DeepInfra)</SelectItem>
                     <SelectItem value="browser">Browser (free, device voices)</SelectItem>
                     <SelectItem value="openai">OpenAI TTS (paid)</SelectItem>
                   </SelectContent>
@@ -2703,12 +2715,42 @@ function AiTutorTab() {
                   <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-muted-foreground space-y-1">
                     <p>
                       Sesame CSM-1B is generated server-side (Maya = conversational_a, Miles = conversational_b).
-                      Railway <code>HF_TOKEN</code> (Classic Read) is routed to DeepInfra, the live Hugging Face Inference Provider for sesame/csm-1b.
+                      Completely free rooms use Microsoft Edge neural (Ava / Andrew) — no API key. Sesame CSM is the same Maya/Miles model only when a paid GPU key is set; otherwise this panel still saves Sesame but the server speaks with Edge so tutors are never silent or robotic.
                     </p>
                     <p>
-                      Open <a className="underline" href="https://huggingface.co/sesame/csm-1b" target="_blank" rel="noreferrer">huggingface.co/sesame/csm-1b</a> while logged in and click Agree, then Test Sesame Voice. The public Space is not used (it asks for 180s of ZeroGPU).
+                      Get keys at <a className="underline" href="https://fal.ai/dashboard/keys" target="_blank" rel="noreferrer">fal.ai/dashboard/keys</a> and <a className="underline" href="https://deepinfra.com" target="_blank" rel="noreferrer">deepinfra.com</a>. Set <strong>both</strong> <code>FAL_KEY</code> and <code>DEEPINFRA_TOKEN</code> on Railway. Those account keys do not expire by date — they only stop when credits hit zero (HTTP 402) or you rotate the key. Enable auto top-up / a card on both dashboards. Skip Hugging Face fine-grained tokens (they can have an expiry date). DeepInfra is cheaper (~$7 / 1M characters). fal.ai is about $0.03 / 1k characters. Still accept the license at <a className="underline" href="https://huggingface.co/sesame/csm-1b" target="_blank" rel="noreferrer">huggingface.co/sesame/csm-1b</a> if a host requires it.
                     </p>
                   </div>
+                  {status?.voice?.sesame && (
+                    <div
+                      className={`rounded-lg border p-3 text-xs space-y-2 ${
+                        status.voice.sesame.state === "ok"
+                          ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-200"
+                          : status.voice.sesame.state === "credits" || status.voice.sesame.state === "unauthorized"
+                            ? "border-red-500/30 bg-red-500/5 text-red-200"
+                            : "border-cyan-500/20 bg-cyan-500/5 text-muted-foreground"
+                      }`}
+                      data-testid="sesame-host-status"
+                    >
+                      <p className="font-medium text-foreground">Sesame GPU keys (do not expire by date)</p>
+                      <p>{status.voice.sesame.message}</p>
+                      <ul className="flex flex-wrap gap-2">
+                        <li className="rounded-full border px-2 py-0.5">{status.voice.sesame.hasFalKey ? "FAL_KEY set" : "FAL_KEY missing"}</li>
+                        <li className="rounded-full border px-2 py-0.5">{status.voice.sesame.hasDeepinfraKey ? "DEEPINFRA_TOKEN set" : "DEEPINFRA_TOKEN missing"}</li>
+                        <li className="rounded-full border px-2 py-0.5">
+                          {status.voice.sesame.durableKeys ? "Dual keys (failover ready)" : "Add the second GPU key for failover"}
+                        </li>
+                        {status.voice.sesame.hasHfToken ? (
+                          <li className="rounded-full border border-amber-500/40 px-2 py-0.5 text-amber-200">HF_TOKEN present — skip if it has an expiry</li>
+                        ) : null}
+                      </ul>
+                      <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+                        {(status.voice.sesame.guidance || []).map((line: string) => (
+                          <li key={line}>{line}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1.5">
                       <Label>Maya voice (speaker A)</Label>
@@ -2949,7 +2991,7 @@ function AiTutorTab() {
               <RefreshCw className="h-4 w-4" />
             </Button>
             <p className="text-xs text-muted-foreground">
-              Free setup: Groq brain + Edge neural. Sesame: Railway <code>HF_TOKEN</code> (accept sesame/csm-1b) and <code>AI_VOICE_PROVIDER=sesame</code>.
+              Completely free: Groq brain + Edge neural (Ava/Andrew). Sesame CSM cannot run for $0 — without FAL_KEY/DEEPINFRA_TOKEN rooms use Edge automatically.
             </p>
           </div>
         </>
