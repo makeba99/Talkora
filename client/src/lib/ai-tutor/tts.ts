@@ -34,6 +34,7 @@ export class TtsEngine {
   private callbacks: TtsCallbacks;
   // Eagerly cached voice list — avoids Chrome returning empty on first playback
   private cachedVoices: SpeechSynthesisVoice[] = [];
+  private waitedForVoices = false;
 
   constructor(callbacks: TtsCallbacks) {
     this.callbacks = callbacks;
@@ -54,7 +55,9 @@ export class TtsEngine {
     // Browser engine has no Eva voice — collapse it onto Female.
     this.voice = voice === "Male" ? "Male" : "Female";
     this.speed = speed;
-    this.voiceId = voiceId || null;
+    // Sesame speaker ids are not browser voices — passing them makes Chrome
+    // keep the default male voice. Always pick by gender for Maya/Miles.
+    this.voiceId = voiceId && /^(conversational|read_speech)_[a-d]$/i.test(voiceId) ? null : voiceId || null;
   }
 
   /** Add a sentence fragment; auto-starts playback if idle */
@@ -94,71 +97,59 @@ export class TtsEngine {
     const sentence = this.queue.shift()!;
     if (!sentence.trim()) { this.playNext(); return; }
 
+    const freshVoicesEarly = typeof window !== "undefined" ? window.speechSynthesis.getVoices() : [];
+    if (freshVoicesEarly.length > 0) this.cachedVoices = freshVoicesEarly;
+    if (this.cachedVoices.length === 0 && !this.waitedForVoices) {
+      this.waitedForVoices = true;
+      this.queue.unshift(sentence);
+      window.setTimeout(() => this.playNext(), 250);
+      return;
+    }
+
     this.active = true;
     this.callbacks.onStart();
 
     const isFemale = this.voice === "Female";
     const utter = new SpeechSynthesisUtterance(sentence);
     utter.rate = Math.max(0.5, Math.min(2, this.speed));
-    // Mature, natural-sounding adult female: pitch close to 1.0 (default).
-    // 1.65 was childish/cartoonish. Male stays distinctly lower at 0.85.
-    utter.pitch = isFemale ? 1.05 : 0.85;
-    // Subtle volume normalization — speech engines often output a touch hot.
+    utter.pitch = isFemale ? 1.08 : 0.85;
     utter.volume = 1.0;
     utter.lang = "en-US";
 
-    // Use cached voices (loaded in constructor) so the correct voice is
-    // available even on the very first utterance — avoids male voice on first click
     const freshVoices = window.speechSynthesis.getVoices();
     if (freshVoices.length > 0) this.cachedVoices = freshVoices;
     const voices = this.cachedVoices;
     if (voices.length > 0) {
-      const savedVoice = this.voiceId
-        ? voices.find(v => v.voiceURI === this.voiceId || v.name === this.voiceId)
-        : undefined;
-
-      // ── Pick the most natural / native-sounding female voice available ──
-      // Priority order:
-      //   1. Modern neural / cloud voices (Microsoft Online Natural, Google WaveNet, Apple Premium)
-      //   2. High-quality classic voices known to sound mature and native (Samantha, Aria, Jenny, Serena)
-      //   3. Any en-US/en-GB female voice
-      //   4. Any English voice that isn't obviously male/novelty
       const isNovelty = (v: SpeechSynthesisVoice) =>
         /albert|bahh|bells|boing|bubbles|cellos|deranged|hysterical|good news|bad news|jester|organ|trinoids|whisper|zarvox|wobble|kathy|junior|princess|ralph|bruce|fred|grandma|grandpa/i.test(v.name);
       const isLikelyMale = (v: SpeechSynthesisVoice) =>
-        /\bmale\b|daniel|david|alex|mark|george|tom|oliver|james|arthur|guy|aaron|brian|christopher|eric|justin|liam|matthew|michael|paul|ravi|ryan|stephen|thomas|william|diego/i.test(v.name);
+        /\bmale\b|google us english(?!.*female)|google uk english male|microsoft david|daniel|david|alex|mark|george|tom|oliver|james|arthur|guy|aaron|brian|christopher|eric|justin|liam|matthew|michael|paul|ravi|ryan|stephen|thomas|william|diego/i.test(v.name);
+      const isLikelyFemale = (v: SpeechSynthesisVoice) =>
+        /female|woman|google uk english female|microsoft zira|samantha|victoria|serena|aria|jenny|libby|sonia|emma|ava|susan|zira|hazel|moira|tessa|fiona|karen|siri|alice|vicki|olivia|amelia|eva|nora|clara|catherine|linda|heather|michelle/i.test(v.name);
 
-      // Tier 1 — modern neural/online natural voices (sound like real people)
+      const savedVoice = this.voiceId
+        ? voices.find(v => (v.voiceURI === this.voiceId || v.name === this.voiceId) && (isFemale ? !isLikelyMale(v) : true))
+        : undefined;
+
       const naturalFemale =
-        voices.find(v => /aria.*online|jenny.*online|libby.*online|sonia.*online|emma.*online|natural/i.test(v.name) && v.lang.startsWith("en")) ??
-        voices.find(v => /(google).*(us|uk).*english/i.test(v.name) && !isLikelyMale(v));
+        voices.find(v => /aria.*online|jenny.*online|libby.*online|sonia.*online|emma.*online|zira.*online|natural/i.test(v.name) && v.lang.startsWith("en") && !isLikelyMale(v)) ??
+        voices.find(v => /google uk english female/i.test(v.name));
 
-      // Tier 2 — high-quality classic mature female voices
       const matureFemale =
-        voices.find(v => /\b(samantha|victoria|serena|kate|allison|ava|susan)\b/i.test(v.name) && v.lang.startsWith("en")) ??
-        voices.find(v => /\b(aria|jenny|libby|sonia|emma|nora|clara|eva|olivia|amelia)\b/i.test(v.name) && v.lang.startsWith("en")) ??
-        voices.find(v => /\b(zira|hazel|catherine|linda|heather|michelle)\b/i.test(v.name) && v.lang.startsWith("en"));
+        voices.find(v => /\b(samantha|victoria|serena|kate|allison|ava|susan|zira)\b/i.test(v.name) && v.lang.startsWith("en")) ??
+        voices.find(v => isLikelyFemale(v) && v.lang.startsWith("en") && !isNovelty(v) && !isLikelyMale(v));
 
-      // Tier 3 — any voice obviously labelled female / known-female names
-      const anyFemale =
-        voices.find(v => /female|woman|girl|moira|tessa|fiona|karen|siri|amelie|yelena|alice|vicki|princess/i.test(v.name) && v.lang.startsWith("en") && !isNovelty(v));
+      const femaleVoice = naturalFemale ?? matureFemale;
 
-      // Tier 4 — any English voice that isn't male or novelty
-      const fallbackFemale =
-        voices.find(v => v.lang.startsWith("en-") && !isLikelyMale(v) && !isNovelty(v));
-
-      const femaleVoice = naturalFemale ?? matureFemale ?? anyFemale ?? fallbackFemale;
-
-      // Prefer an explicitly male-named voice for Dude
       const maleVoice =
-        voices.find(v => /\b(daniel|david|alex|guy|brian|mark|microsoft.*male|google uk english male)\b/i.test(v.name) && v.lang.startsWith("en") && !isNovelty(v)) ??
+        voices.find(v => /google us english(?!.*female)|google uk english male|microsoft david/i.test(v.name) && v.lang.startsWith("en")) ??
         voices.find(v => isLikelyMale(v) && v.lang.startsWith("en") && !isNovelty(v));
 
       const chosen =
         savedVoice ??
         (isFemale
-          ? (femaleVoice ?? voices.find(v => v.lang.startsWith("en")))
-          : (maleVoice ?? femaleVoice ?? voices.find(v => v.lang.startsWith("en"))));
+          ? (femaleVoice ?? voices.find(v => isLikelyFemale(v) && v.lang.startsWith("en")))
+          : (maleVoice ?? voices.find(v => isLikelyMale(v) && v.lang.startsWith("en"))));
 
       if (chosen) {
         utter.voice = chosen;

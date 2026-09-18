@@ -657,24 +657,16 @@ export async function generateSpeech(opts: {
       };
     }
     markFailure("voice", "primary", "ERROR", sesame.error || "sesame-failed");
-    const edge = await edgeFallbackResult("Sesame CSM-1B failed");
-    if (edge) {
-      await pushAiAlert({
-        kind: "voice",
-        severity: "failover",
-        title: "Sesame voice fallback",
-        message: "Sesame CSM-1B failed. Using free Microsoft Edge neural TTS.",
-      });
-      return edge;
-    }
+    // Free on-device voice so Maya/Miles still speak. Gender is applied in
+    // the browser engine (Maya = female, Miles = male).
     return {
       ok: false,
-      status: sesame.status || 502,
+      status: 501,
       contentType: "",
-      error: sesame.error || "sesame-failed",
+      error: "browser-tts",
       usedSlot: "primary",
       failover: true,
-      voiceUsed: voiceName,
+      voiceUsed: isMale ? "browser-male" : "browser-female",
     };
   }
 

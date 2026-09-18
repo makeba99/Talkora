@@ -8,6 +8,7 @@
 import { TtsEngine, type TtsCallbacks } from "./tts";
 import { EvaTtsEngine } from "./eva-tts";
 import type { VoicePersona } from "./types";
+import { isSesameSpeakerId } from "@shared/talking-partners";
 
 export interface TtsLike {
   configure(voice: VoicePersona, speed: number, voiceId?: string | null, provider?: string): void;
@@ -56,7 +57,8 @@ export function createTts(callbacks: TtsCallbacks): TtsLike {
   // ElevenLabs API key is configured, so users always hear something.
   const pickEngine = (): TtsLike => {
     if (currentProvider === "browser") {
-      browser.configure(currentVoice, currentSpeed, null);
+      const browserVoiceId = isSesameSpeakerId(currentVoiceId) ? null : currentVoiceId;
+      browser.configure(currentVoice, currentSpeed, browserVoiceId);
       return browser;
     }
     const e = ensureEva();
@@ -81,7 +83,8 @@ export function createTts(callbacks: TtsCallbacks): TtsLike {
           browser.cancel();
         }
       }
-      browser.configure(voice, speed, voiceId);
+      const browserVoiceId = isSesameSpeakerId(voiceId) ? null : voiceId;
+      browser.configure(voice, speed, browserVoiceId);
       if (eva) eva.configure(voice, speed, voiceId, currentProvider);
     },
     enqueue: (sentence) => {
