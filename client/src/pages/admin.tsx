@@ -2686,7 +2686,7 @@ function AiTutorTab() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="edge">Edge neural (free, natural)</SelectItem>
-                    <SelectItem value="sesame">Sesame CSM-1B (fal.ai / DeepInfra GPU)</SelectItem>
+                    <SelectItem value="sesame">Sesame CSM-1B (paid GPU — fal.ai / DeepInfra)</SelectItem>
                     <SelectItem value="browser">Browser (free, device voices)</SelectItem>
                     <SelectItem value="openai">OpenAI TTS (paid)</SelectItem>
                   </SelectContent>
@@ -2703,7 +2703,7 @@ function AiTutorTab() {
                   <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-muted-foreground space-y-1">
                     <p>
                       Sesame CSM-1B is generated server-side (Maya = conversational_a, Miles = conversational_b).
-                      Railway <code>FAL_KEY</code> (fal-ai/csm-1b) or <code>DEEPINFRA_TOKEN</code> talks to a real GPU. This is pay-as-you-go after signup credits — not free. The public Hugging Face Space is never called.
+                      Completely free rooms use Microsoft Edge neural (Ava / Andrew) — no API key. Sesame CSM is the same Maya/Miles model only when a paid GPU key is set; otherwise this panel still saves Sesame but the server speaks with Edge so tutors are never silent or robotic.
                     </p>
                     <p>
                       Get a key at <a className="underline" href="https://fal.ai/dashboard/keys" target="_blank" rel="noreferrer">fal.ai/dashboard/keys</a> or <a className="underline" href="https://deepinfra.com" target="_blank" rel="noreferrer">deepinfra.com</a>. DeepInfra is cheaper (~$7 / 1M characters). fal.ai is about $0.03 / 1k characters. Still accept the license at <a className="underline" href="https://huggingface.co/sesame/csm-1b" target="_blank" rel="noreferrer">huggingface.co/sesame/csm-1b</a> if the host requires it.
@@ -2949,7 +2949,7 @@ function AiTutorTab() {
               <RefreshCw className="h-4 w-4" />
             </Button>
             <p className="text-xs text-muted-foreground">
-              Sesame: Railway <code>FAL_KEY</code> or <code>DEEPINFRA_TOKEN</code> (GPU, paid after credits) + <code>AI_VOICE_PROVIDER=sesame</code>.
+              Completely free: Groq brain + Edge neural (Ava/Andrew). Sesame CSM cannot run for $0 — without FAL_KEY/DEEPINFRA_TOKEN rooms use Edge automatically.
             </p>
           </div>
         </>

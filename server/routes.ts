@@ -73,6 +73,7 @@ import {
 import { MAX_STT_BYTES, sttAvailable, transcribeSpeech } from "./ai-stt";
 import { detectRepetitiveHistory, isDuplicateReply, lastAssistantText } from "./ai-anti-repeat";
 import { getSesameProvider } from "./voice";
+import { sesameHasPaidGpu } from "./voice/sesame-payload";
 
 /**
  * Collect a raw (non-JSON) request body up to maxBytes, or null when the
@@ -2325,12 +2326,14 @@ export async function registerRoutes(
       const publicCfg = voiceConfigPublic(cfg);
       let provider: string = cfg.voice.provider;
       if (provider === "openai" && !hasOpenAiVoice) provider = "edge";
+      if (provider === "sesame" && !sesameHasPaidGpu()) {
+        provider = "edge";
+      }
       if (provider === "browser") {
-        // Rooms must not switch to SpeechSynthesis when Sesame is configured.
         res.json({
-          provider: "sesame",
-          voiceId: publicCfg.voiceId || "conversational_a",
-          maleVoiceId: publicCfg.maleVoiceId || "conversational_b",
+          provider: "edge",
+          voiceId: publicCfg.voiceId && /Neural$/i.test(publicCfg.voiceId) ? publicCfg.voiceId : "en-US-AvaNeural",
+          maleVoiceId: publicCfg.maleVoiceId && /Neural$/i.test(publicCfg.maleVoiceId) ? publicCfg.maleVoiceId : "en-US-AndrewNeural",
         });
         return;
       }

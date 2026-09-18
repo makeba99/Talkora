@@ -274,6 +274,11 @@ export function sesameDeepinfraKey(): string {
   );
 }
 
+/** Real GPU hosts only. HF Space / HF_TOKEN-without-billing is not a free CSM path. */
+export function sesameHasPaidGpu(): boolean {
+  return !!(sesameFalKey() || sesameDeepinfraKey());
+}
+
 export function sesamePresetVoice(speakerA: string): string {
   if (/^(conversational|read_speech)_[a-d]$/i.test(speakerA)) return speakerA;
   return sesameSpeakerIndex(speakerA) === 1 ? "conversational_b" : "conversational_a";
@@ -786,7 +791,7 @@ function safeJson(raw: string): unknown {
 export function sesameUserMessage(code: string): string {
   switch (code) {
     case "sesame-no-token":
-      return "Add Railway FAL_KEY (fal.ai → fal-ai/csm-1b) or DEEPINFRA_TOKEN. The public Hugging Face Space is not used.";
+      return "Sesame CSM needs a paid GPU (FAL_KEY or DEEPINFRA_TOKEN). Completely free rooms already use Microsoft Edge neural (Ava/Andrew) — no key.";
     case "sesame-unauthorized":
       return "Hugging Face rejected HF_TOKEN. Prefer FAL_KEY or DEEPINFRA_TOKEN. If you keep HF_TOKEN, use a Classic Read token and accept sesame/csm-1b.";
     case "sesame-gated":

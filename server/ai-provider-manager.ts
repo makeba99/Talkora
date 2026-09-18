@@ -20,7 +20,7 @@ import { openAiSynthesize } from "./openai-tts";
 import { edgeSynthesize, resolveEdgeVoiceId, isMalePersona } from "./edge-tts";
 import { isSesameSpeakerId } from "@shared/talking-partners";
 import { getSesameProvider } from "./voice";
-import { sesameHfToken, sesameFalKey, sesameDeepinfraKey, sesameUserMessage, splitSesameUtterances, concatWavArrayBuffers } from "./voice/sesame-payload";
+import { sesameHfToken, sesameFalKey, sesameDeepinfraKey, sesameHasPaidGpu, sesameUserMessage, splitSesameUtterances, concatWavArrayBuffers } from "./voice/sesame-payload";
 
 export type KeySlot = "primary" | "secondary";
 export type ProviderKind = "brain" | "voice";
@@ -598,8 +598,11 @@ export async function generateSpeech(opts: {
   const configured = isMale ? cfg.voice.maleVoice : cfg.voice.femaleVoice;
   const clientVid = typeof opts.voiceId === "string" ? opts.voiceId.trim() : "";
   let voiceProvider = cfg.voice.provider;
-  if (process.env.AI_VOICE_PROVIDER === "sesame") voiceProvider = "sesame";
-  else if (voiceProvider === "browser" && sesameHfToken()) voiceProvider = "sesame";
+  if (sesameHasPaidGpu() && (process.env.AI_VOICE_PROVIDER === "sesame" || voiceProvider === "sesame")) {
+    voiceProvider = "sesame";
+  } else if (voiceProvider === "sesame" || voiceProvider === "browser") {
+    voiceProvider = "edge";
+  }
   // Prefer a real Sesame speaker id from the client; otherwise admin gender map.
   let voiceName =
     (voiceProvider === "sesame" && isSesameSpeakerId(clientVid) && clientVid) ||
@@ -608,18 +611,6 @@ export async function generateSpeech(opts: {
   const text = opts.text.trim();
   if (!text) {
     return { ok: false, status: 400, contentType: "", error: "empty text", usedSlot: null, failover: false, voiceUsed: voiceName };
-  }
-
-  if (voiceProvider === "browser") {
-    return {
-      ok: false,
-      status: 501,
-      contentType: "",
-      error: "browser-tts",
-      usedSlot: null,
-      failover: false,
-      voiceUsed: voiceName,
-    };
   }
 
   const edgeFallbackResult = async (reason: string) => {
@@ -640,8 +631,12 @@ export async function generateSpeech(opts: {
     return null;
   };
 
-  // ── Sesame CSM-1B (Gradio /infer) ──────────────────────────────────────
+  // ── Sesame CSM-1B (paid GPU only) ──────────────────────────────────────
   if (voiceProvider === "sesame") {
+    if (!sesameHasPaidGpu()) {
+      const edge = await edgeFallbackResult("Sesame needs FAL_KEY or DEEPINFRA_TOKEN");
+      if (edge) return edge;
+    }
     if (!isSesameSpeakerId(String(voiceName)) || /Neural$/i.test(String(voiceName))) {
       voiceName = isMale ? "conversational_b" : "conversational_a";
     }

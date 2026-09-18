@@ -3,13 +3,14 @@
  *
  * Free-friendly defaults:
  * - Brain: Groq (OpenAI-compatible, free tier) when GROQ_API_KEY is set
- * - Voice: browser SpeechSynthesis when no OpenAI TTS keys (free forever)
+ * - Voice: Microsoft Edge neural TTS (no API key, free forever). Sesame CSM needs a paid GPU.
  *
  * Persisted in app_settings under key `ai_tutor_config`.
  * Secrets stay server-side; the admin UI only ever receives masked values.
  */
 
 import { storage } from "./storage";
+import { sesameHasPaidGpu } from "./voice/sesame-payload";
 
 export type KeyHealth =
   | "HEALTHY"
@@ -159,14 +160,26 @@ export function normalizeAiTutorConfig(cfg: AiTutorConfig): AiTutorConfig {
   if (voiceProvider === "openai" && !hasVoiceKey) {
     voiceProvider = "edge";
   }
+  // Sesame CSM is not free. Without FAL_KEY / DEEPINFRA_TOKEN use Edge neural.
+  if (voiceProvider === "sesame" && !sesameHasPaidGpu()) {
+    voiceProvider = "edge";
+  }
 
   let femaleVoice = cfg.voice.femaleVoice || DEFAULT_EDGE_FEMALE;
   let maleVoice = cfg.voice.maleVoice || DEFAULT_EDGE_MALE;
   if (voiceProvider === "edge") {
-    if (!femaleVoice || /^(nova|shimmer|alloy|onyx|echo|fable|coral|sage|ash)$/i.test(femaleVoice)) {
+    if (
+      !femaleVoice ||
+      /^(nova|shimmer|alloy|onyx|echo|fable|coral|sage|ash)$/i.test(femaleVoice) ||
+      /^(conversational|read_speech)_/i.test(femaleVoice)
+    ) {
       femaleVoice = DEFAULT_EDGE_FEMALE;
     }
-    if (!maleVoice || /^(nova|shimmer|alloy|onyx|echo|fable|coral|sage|ash)$/i.test(maleVoice)) {
+    if (
+      !maleVoice ||
+      /^(nova|shimmer|alloy|onyx|echo|fable|coral|sage|ash)$/i.test(maleVoice) ||
+      /^(conversational|read_speech)_/i.test(maleVoice)
+    ) {
       maleVoice = DEFAULT_EDGE_MALE;
     }
   }
@@ -255,18 +268,12 @@ function envDefaults(): AiTutorConfig {
 
   const voice1 = sanitizeKey(process.env.AI_VOICE_KEY_1 || "");
   const voice2 = sanitizeKey(process.env.AI_VOICE_KEY_2 || "");
-  // Free by default: Edge neural TTS (no key). OpenAI only when explicitly configured.
-  // Sesame CSM-1B when Hugging Face is configured — this is what in-room Maya/Miles use.
+  // Free by default: Edge neural TTS (no key).
   const hasPaidVoice = !!(voice1 || process.env.AI_VOICE_USE_OPENAI === "1");
-  const hasSesameToken = !!(
-    process.env.HF_TOKEN ||
-    process.env.AI_VOICE_HF_TOKEN ||
-    process.env.HUGGINGFACE_TOKEN
-  );
-  const voiceProvider: VoiceProvider = asVoiceProvider(
-    process.env.AI_VOICE_PROVIDER,
-    hasSesameToken ? "sesame" : hasPaidVoice ? "openai" : "edge",
-  );
+  const hasPaidSesameGpu = sesameHasPaidGpu();
+  const envVoice = asVoiceProvider(process.env.AI_VOICE_PROVIDER, hasPaidVoice ? "openai" : "edge");
+  const voiceProvider: VoiceProvider =
+    envVoice === "sesame" && !hasPaidSesameGpu ? "edge" : envVoice;
 
   const edgeDefaults = voiceProvider === "edge" || voiceProvider === "browser";
   const sesameDefaults = voiceProvider === "sesame";

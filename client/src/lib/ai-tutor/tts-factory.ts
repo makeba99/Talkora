@@ -22,21 +22,21 @@ declare global {
 }
 
 function cloudProvider(provider?: string): string {
-  if (!provider || provider === "unknown" || provider === "browser") return "sesame";
-  return provider;
+  if (provider === "openai" || provider === "edge" || provider === "sesame") return provider;
+  return "edge";
 }
 
 /**
  * Rooms always use EvaTtsEngine (HTMLAudio of the server wav).
- * Stale admin "browser" is treated as Sesame so Maya never uses the
- * robotic device voice.
+ * Stale admin "browser" is treated as Edge so Maya never uses the
+ * robotic device voice. Completely free path is Microsoft Edge neural.
  */
 export function createTts(callbacks: TtsCallbacks): TtsLike {
   const eva = new EvaTtsEngine(callbacks);
   let currentVoice: VoicePersona = "Female";
   let currentSpeed = 1.0;
   let currentVoiceId: string | null = null;
-  let currentProvider = "sesame";
+  let currentProvider = "edge";
 
   return {
     configure: (voice, speed, voiceId, provider) => {
