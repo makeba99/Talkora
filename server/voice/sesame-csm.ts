@@ -14,10 +14,12 @@ import {
   buildSesameInferPayload,
   classifySesameError,
   fileUrlFromPredict,
+  inferViaDeepInfra,
   inferViaFal,
   inferViaGradioCallApi,
   inferViaHfInference,
   resolveSesameSpeaker,
+  sesameDeepinfraKey,
   sesameErrorText,
   sesameFalKey,
   sesameHfToken,
@@ -141,17 +143,16 @@ export class SesameCsmProvider implements VoiceProvider {
   async health(): Promise<VoiceHealth> {
     const token = sesameHfToken();
     const falKey = sesameFalKey();
-    if (!token && !falKey) {
-      return { available: false, reachable: false, detail: "HF_TOKEN / FAL_KEY not configured" };
+    if (!token && !falKey && !sesameDeepinfraKey()) {
+      return { available: false, reachable: false, detail: "HF_TOKEN not configured" };
     }
-    if (falKey) {
-      return { available: true, reachable: true, detail: "Sesame CSM-1B via fal.ai" };
+    if (token || sesameDeepinfraKey()) {
+      const auth = token ? await verifyHfToken(token) : "ok";
+      if (auth === "unauthorized" && !sesameDeepinfraKey() && !falKey) {
+        return { available: true, reachable: false, detail: "HF_TOKEN rejected" };
+      }
+      return { available: true, reachable: true, detail: "Sesame CSM-1B via DeepInfra" };
     }
-    const auth = await verifyHfToken(token);
-    if (auth === "unauthorized") {
-      return { available: true, reachable: false, detail: "HF_TOKEN rejected" };
-    }
-    return { available: true, reachable: true, detail: "Sesame CSM-1B via Hugging Face Inference" };
   }
 
   async synthesize(req: VoiceSynthesizeRequest): Promise<VoiceSynthesizeResult> {
@@ -161,43 +162,63 @@ export class SesameCsmProvider implements VoiceProvider {
 
     const token = sesameHfToken();
     const falKey = sesameFalKey();
+    const deepinfraKey = sesameDeepinfraKey();
     const usingLiveSpace = this.deps.connect === defaultConnect;
-    if (usingLiveSpace && !token && !falKey) {
-      this.lastError = "HF_TOKEN / FAL_KEY not configured";
+    if (usingLiveSpace && !token && !falKey && !deepinfraKey) {
+      this.lastError = "HF_TOKEN not configured";
       return fail(503, "sesame-no-token", speakerA);
     }
+    if (usingLiveSpace && (token || deepinfraKey)) {
+      if (token) {
+        const auth = await verifyHfToken(token);
+        if (auth === "unauthorized" && !deepinfraKey && !falKey) {
+          this.lastError = "Hugging Face rejected HF_TOKEN (401/403)";
+          return fail(401, "sesame-unauthorized", speakerA);
+        }
+      }
+      const deepinfra = await inferViaDeepInfra({
+        text,
+        speakerA,
+        hfToken: token || undefined,
+        deepinfraKey: deepinfraKey || undefined,
+        signal: req.signal,
+      });
+      if (deepinfra.ok) {
+        this.lastError = null;
+        skipSesameUntil = 0;
+        return {
+          ok: true,
+          status: 200,
+          contentType: deepinfra.contentType || "audio/wav",
+          body: deepinfra.body,
+          voiceUsed: speakerA,
+          provider: "sesame",
+        };
+      }
+      this.lastError = deepinfra.error;
+      console.warn("[sesame-csm] DeepInfra CSM failed:", deepinfra.error);
+    }
     if (usingLiveSpace && token) {
-      const auth = await verifyHfToken(token);
-      if (auth === "unauthorized" && !falKey) {
-        this.lastError = "Hugging Face rejected HF_TOKEN (401/403)";
-        return fail(401, "sesame-unauthorized", speakerA);
+      const hf = await inferViaHfInference({
+        text,
+        speakerA,
+        token,
+        signal: req.signal,
+      });
+      if (hf.ok) {
+        this.lastError = null;
+        skipSesameUntil = 0;
+        return {
+          ok: true,
+          status: 200,
+          contentType: hf.contentType || "audio/wav",
+          body: hf.body,
+          voiceUsed: speakerA,
+          provider: "sesame",
+        };
       }
-      if (auth !== "unauthorized") {
-        const hf = await inferViaHfInference({
-          text,
-          speakerA,
-          token,
-          signal: req.signal,
-        });
-        if (hf.ok) {
-          this.lastError = null;
-          skipSesameUntil = 0;
-          return {
-            ok: true,
-            status: 200,
-            contentType: hf.contentType || "audio/wav",
-            body: hf.body,
-            voiceUsed: speakerA,
-            provider: "sesame",
-          };
-        }
-        this.lastError = hf.error;
-        console.warn("[sesame-csm] HF Inference failed:", hf.error);
-        const gated = classifySesameError(hf.error);
-        if (gated.code === "sesame-gated" && !falKey) {
-          return fail(403, "sesame-gated", speakerA);
-        }
-      }
+      this.lastError = hf.error;
+      console.warn("[sesame-csm] HF Inference failed:", hf.error);
     }
     if (usingLiveSpace && (falKey || token)) {
       const fal = await inferViaFal({

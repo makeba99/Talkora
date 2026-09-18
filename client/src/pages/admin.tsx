@@ -2390,7 +2390,7 @@ function AiTutorTab() {
         const body = await res.json().catch(() => ({}));
         toast({
           title: "✗ Sesame CSM did not return audio",
-          description: body.message || "Accept huggingface.co/sesame/csm-1b, or set Railway FAL_KEY for fal-ai/csm-1b.",
+          description: body.message || "Accept huggingface.co/sesame/csm-1b, then retry Test Sesame Voice.",
           variant: "destructive",
         });
         refetch();
@@ -2702,12 +2702,11 @@ function AiTutorTab() {
                 <>
                   <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-muted-foreground space-y-1">
                     <p>
-                      Sesame CSM-1B is generated server-side (Maya = speaker 0, Miles = speaker 1).
-                      Secrets stay on Railway: <code>HF_TOKEN</code> (Classic Read) and/or <code>FAL_KEY</code> for fal-ai/csm-1b.
+                      Sesame CSM-1B is generated server-side (Maya = conversational_a, Miles = conversational_b).
+                      Railway <code>HF_TOKEN</code> (Classic Read) is routed to DeepInfra, the live Hugging Face Inference Provider for sesame/csm-1b.
                     </p>
                     <p>
-                      The public Hugging Face Space cannot run from Railway (it asks for 180s of ZeroGPU).
-                      Real CSM audio uses Hugging Face Inference after you accept the license at huggingface.co/sesame/csm-1b, or fal.ai GPU with <code>FAL_KEY</code>.
+                      Open <a className="underline" href="https://huggingface.co/sesame/csm-1b" target="_blank" rel="noreferrer">huggingface.co/sesame/csm-1b</a> while logged in and click Agree, then Test Sesame Voice. The public Space is not used (it asks for 180s of ZeroGPU).
                     </p>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -2950,7 +2949,7 @@ function AiTutorTab() {
               <RefreshCw className="h-4 w-4" />
             </Button>
             <p className="text-xs text-muted-foreground">
-              Free setup: Groq brain + Edge neural. Sesame: Railway <code>HF_TOKEN</code> (accept sesame/csm-1b) and/or <code>FAL_KEY</code>, plus <code>AI_VOICE_PROVIDER=sesame</code>.
+              Free setup: Groq brain + Edge neural. Sesame: Railway <code>HF_TOKEN</code> (accept sesame/csm-1b) and <code>AI_VOICE_PROVIDER=sesame</code>.
             </p>
           </div>
         </>

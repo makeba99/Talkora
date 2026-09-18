@@ -4,11 +4,13 @@ import {
   classifySesameError,
   conversationForAiUtterance,
   fileUrlFromPredict,
+  inferViaDeepInfra,
   inferViaFal,
   inferViaHfInference,
   parseGradioCallStream,
   resolveSesameSpeaker,
   sanitizeHfToken,
+  sesamePresetVoice,
   sesameSpeakerIndex,
 } from "./sesame-payload";
 import { SESAME_INFER_API } from "./types";
@@ -189,6 +191,8 @@ describe("sesame token and error helpers", () => {
   it("maps Maya speakers to CSM speaker 0", () => {
     expect(sesameSpeakerIndex("conversational_a")).toBe(0);
     expect(sesameSpeakerIndex("conversational_b")).toBe(1);
+    expect(sesamePresetVoice("maya")).toBe("conversational_a");
+    expect(sesamePresetVoice("conversational_b")).toBe("conversational_b");
   });
 
   it("reads Sesame audio from Hugging Face Inference", async () => {
@@ -257,6 +261,27 @@ describe("sesame token and error helpers", () => {
             status: 200,
             headers: { "content-type": "application/json" },
           });
+        }
+        return new Response(wav, { status: 200, headers: { "content-type": "audio/wav" } });
+      },
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.body.byteLength).toBe(128);
+  });
+
+  it("downloads Sesame wav from DeepInfra JSON audio", async () => {
+    const wav = new Uint8Array(128);
+    wav.set([0x52, 0x49, 0x46, 0x46]);
+    const result = await inferViaDeepInfra({
+      text: "Hi, this is Maya.",
+      speakerA: "conversational_a",
+      hfToken: "hf_test",
+      fetchImpl: async (url) => {
+        if (String(url).includes("openai/audio/speech")) {
+          return new Response(
+            JSON.stringify({ audio: "https://cdn.deepinfra.example/maya.wav" }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          );
         }
         return new Response(wav, { status: 200, headers: { "content-type": "audio/wav" } });
       },

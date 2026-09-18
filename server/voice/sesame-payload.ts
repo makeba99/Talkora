@@ -120,6 +120,9 @@ export function classifySesameError(err: unknown): { code: string; status: numbe
   if (/gated|agree and access|must accept|access to this model|user is not authorized/i.test(text)) {
     return { code: "sesame-gated", status: 403 };
   }
+  if (/402|payment required|insufficient credits|no credits|quota.*inference/i.test(text)) {
+    return { code: "sesame-credits", status: 402 };
+  }
   if (
     /gpu duration|zerogpu|illegal duration|maximum allowed|gpu quota|quota exceeded/i.test(
       text,
@@ -263,6 +266,19 @@ export function sesameFalKey(): string {
   return token;
 }
 
+export function sesameDeepinfraKey(): string {
+  return sanitizeHfToken(
+    process.env.DEEPINFRA_TOKEN ||
+      process.env.DEEPINFRA_API_KEY ||
+      process.env.AI_VOICE_DEEPINFRA_TOKEN,
+  );
+}
+
+export function sesamePresetVoice(speakerA: string): string {
+  if (/^(conversational|read_speech)_[a-d]$/i.test(speakerA)) return speakerA;
+  return sesameSpeakerIndex(speakerA) === 1 ? "conversational_b" : "conversational_a";
+}
+
 function isAudioContentType(value: string): boolean {
   return /audio\//i.test(value) || /octet-stream/i.test(value) || /wav|mpeg|flac|ogg/i.test(value);
 }
@@ -387,6 +403,126 @@ async function bufferFromResponse(
 async function sleep(ms: number): Promise<void> {
   if (ms <= 0) return;
   await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+const DEEPINFRA_MAX_CHARS = 200;
+
+async function audioFromProviderResponse(
+  fetchImpl: typeof fetch,
+  res: Response,
+  rawBuf: ArrayBuffer,
+  signal?: AbortSignal,
+): Promise<{ body: ArrayBuffer; contentType: string } | { error: string; status: number }> {
+  const sniffed = sniffAudioContentType(rawBuf);
+  const ctype = res.headers.get("content-type") || "";
+  if (res.ok && (sniffed || isAudioContentType(ctype)) && rawBuf.byteLength >= 64) {
+    return { body: rawBuf, contentType: sniffed || ctype.split(";")[0] || "audio/wav" };
+  }
+  const raw = Buffer.from(rawBuf).toString("utf8");
+  const json = safeJson(raw);
+  const embedded = audioFromJson(json);
+  if (embedded) return embedded;
+  const audioUrl = jsonAudioUrl(json);
+  if (audioUrl) {
+    const downloaded = await downloadAudioUrl(fetchImpl, audioUrl, signal);
+    if (downloaded) return downloaded;
+  }
+  return {
+    error: sesameErrorText(json) || raw.slice(0, 280) || `inference ${res.status}`,
+    status: res.status || 502,
+  };
+}
+
+/**
+ * Live Sesame CSM-1B via DeepInfra, the Hugging Face Inference Provider mapped
+ * to sesame/csm-1b. HF_TOKEN is routed through router.huggingface.co/deepinfra.
+ */
+export async function inferViaDeepInfra(opts: {
+  text: string;
+  speakerA: string;
+  hfToken?: string;
+  deepinfraKey?: string;
+  signal?: AbortSignal;
+  fetchImpl?: typeof fetch;
+}): Promise<{ ok: true; body: ArrayBuffer; contentType: string } | { ok: false; error: string; status: number }> {
+  const fetchImpl = opts.fetchImpl || fetch;
+  const voice = sesamePresetVoice(opts.speakerA);
+  const text = conversationForAiUtterance(opts.text).slice(0, DEEPINFRA_MAX_CHARS);
+  const speechBody = {
+    model: "sesame/csm-1b",
+    input: text,
+    voice,
+    response_format: "wav",
+  };
+  const nativeBody = {
+    text,
+    preset_voice: voice,
+    response_format: "wav",
+    max_audio_length_ms: 10_000,
+  };
+  const attempts: Array<{ url: string; token: string; body: unknown }> = [];
+  if (opts.hfToken) {
+    attempts.push({
+      url: "https://router.huggingface.co/deepinfra/v1/openai/audio/speech",
+      token: opts.hfToken,
+      body: speechBody,
+    });
+    attempts.push({
+      url: "https://router.huggingface.co/v1/audio/speech",
+      token: opts.hfToken,
+      body: { ...speechBody, model: "sesame/csm-1b:deepinfra" },
+    });
+    attempts.push({
+      url: "https://router.huggingface.co/deepinfra/v1/inference/sesame/csm-1b",
+      token: opts.hfToken,
+      body: nativeBody,
+    });
+  }
+  if (opts.deepinfraKey) {
+    attempts.push({
+      url: "https://api.deepinfra.com/v1/inference/sesame/csm-1b",
+      token: opts.deepinfraKey,
+      body: nativeBody,
+    });
+    attempts.push({
+      url: "https://api.deepinfra.com/v1/openai/audio/speech",
+      token: opts.deepinfraKey,
+      body: speechBody,
+    });
+    attempts.push({
+      url: "https://api.deepinfra.com/v1/audio/speech",
+      token: opts.deepinfraKey,
+      body: speechBody,
+    });
+  }
+  let lastError = "DeepInfra CSM unavailable";
+  let lastStatus = 502;
+  for (const attempt of attempts) {
+    try {
+      const res = await fetchImpl(attempt.url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${attempt.token}`,
+          "Content-Type": "application/json",
+          Accept: "audio/wav, audio/mpeg, application/json",
+        },
+        body: JSON.stringify(attempt.body),
+        signal: opts.signal,
+      });
+      const rawBuf = await res.arrayBuffer();
+      const parsed = await audioFromProviderResponse(fetchImpl, res, rawBuf, opts.signal);
+      if ("body" in parsed) {
+        return { ok: true, body: parsed.body, contentType: parsed.contentType };
+      }
+      lastError = parsed.error;
+      lastStatus = parsed.status;
+      if (res.status === 401 || res.status === 403) continue;
+    } catch (err: any) {
+      lastError = err?.message || "DeepInfra network error";
+      lastStatus = 502;
+    }
+  }
+  return { ok: false, error: lastError, status: lastStatus };
 }
 
 /** Direct Sesame CSM-1B via Hugging Face Inference (no ZeroGPU Space / 180s cap). */
@@ -552,13 +688,15 @@ function safeJson(raw: string): unknown {
 export function sesameUserMessage(code: string): string {
   switch (code) {
     case "sesame-no-token":
-      return "Add Railway HF_TOKEN (Hugging Face Classic Read) and open huggingface.co/sesame/csm-1b to accept the license. For guaranteed GPU audio, also set FAL_KEY from fal.ai (model fal-ai/csm-1b).";
+      return "Add Railway HF_TOKEN (Hugging Face Classic Read) and open huggingface.co/sesame/csm-1b to accept the license. CSM audio is generated by DeepInfra through that token.";
     case "sesame-unauthorized":
       return "Hugging Face rejected HF_TOKEN. Use a Classic Read token (hf_...) and accept the sesame/csm-1b license at huggingface.co/sesame/csm-1b.";
     case "sesame-gated":
       return "HF_TOKEN works, but sesame/csm-1b is gated. Open huggingface.co/sesame/csm-1b while logged in, click Agree, then retry Test Sesame Voice.";
+    case "sesame-credits":
+      return "Hugging Face Inference (DeepInfra) needs credits on this account. Add a payment method at huggingface.co/settings/billing or set DEEPINFRA_TOKEN / FAL_KEY.";
     case "sesame-gpu-quota":
-      return "The public sesame/csm-1b Space asks for 180s of ZeroGPU, which free Hugging Face accounts cannot grant. Set FAL_KEY (fal.ai CSM-1B) or a custom Space with GPU_TIMEOUT=60 on AI_VOICE_SESAME_SPACE.";
+      return "The public sesame/csm-1b Space asks for 180s of ZeroGPU and cannot run from Railway. CSM is served via DeepInfra with HF_TOKEN instead.";
     case "sesame-timeout":
       return "Sesame timed out waiting for GPU audio. Retry; rooms keep a browser voice until CSM returns.";
     case "sesame-skipped":
@@ -568,6 +706,6 @@ export function sesameUserMessage(code: string): string {
     case "sesame-audio-download-failed":
       return "Sesame produced audio but the file could not be downloaded.";
     default:
-      return "Sesame CSM-1B did not return audio. Accept the model license, or set Railway FAL_KEY for fal-ai/csm-1b. Rooms keep speaking with the on-device voice until this succeeds.";
+      return "Sesame CSM-1B did not return audio. Accept the model license at huggingface.co/sesame/csm-1b, then retry. Rooms keep speaking with the on-device voice until this succeeds.";
   }
 }

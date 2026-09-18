@@ -908,7 +908,8 @@ export async function testSesameVoice(): Promise<{
       sesame.error === "sesame-failed" ||
       sesame.error === "sesame-no-token" ||
       sesame.error === "sesame-unauthorized" ||
-      sesame.error === "sesame-gated";
+      sesame.error === "sesame-gated" ||
+      sesame.error === "sesame-credits";
     if (gpuBlocked) {
       return {
         ok: false,
