@@ -130,6 +130,106 @@ export function classifySesameError(err: unknown): { code: string; status: numbe
   return { code: "sesame-failed", status: 502 };
 }
 
+export function sesameSpaceOrigin(spaceId = sesameSpaceId()): string {
+  const id = (spaceId || DEFAULT_SESAME_SPACE).trim();
+  if (/^https?:\/\//i.test(id)) return id.replace(/\/$/, "");
+  return `https://${id.replace("/", "-").toLowerCase()}.hf.space`;
+}
+
+/** Parse Gradio `GET /gradio_api/call/{api}/{event_id}` SSE text. */
+export function parseGradioCallStream(sseText: string): { data?: unknown; error?: string } {
+  const blocks = String(sseText || "").split(/\n\n+/);
+  let error: string | undefined;
+  let data: unknown;
+  for (const block of blocks) {
+    const eventMatch = block.match(/^event:\s*(.+)$/m);
+    const dataMatch = block.match(/^data:\s*(.*)$/m);
+    const event = eventMatch?.[1]?.trim() || "";
+    const raw = dataMatch?.[1] ?? "";
+    if (event === "error") {
+      if (!raw || raw === "null") {
+        error =
+          "The requested GPU duration (180s) is larger than the maximum allowed";
+      } else {
+        try {
+          const parsed = JSON.parse(raw);
+          error =
+            typeof parsed === "string"
+              ? parsed
+              : sesameErrorText(parsed) || raw;
+        } catch {
+          error = raw;
+        }
+      }
+    }
+    if (event === "complete" && raw && raw !== "null") {
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        data = raw;
+      }
+    }
+  }
+  if (error && data === undefined) return { error };
+  if (data !== undefined) return { data };
+  return { error: error || "sesame-no-audio" };
+}
+
+export async function inferViaGradioCallApi(opts: {
+  spaceId: string;
+  payload: SesameInferPayload;
+  token?: string;
+  signal?: AbortSignal;
+}): Promise<{ data: unknown }> {
+  const origin = sesameSpaceOrigin(opts.spaceId);
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "User-Agent": "Vextorn/1.0 (+sesame-csm)",
+  };
+  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
+
+  const start = await fetch(`${origin}/gradio_api/call/infer`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      data: [
+        opts.payload.text_prompt_speaker_a,
+        opts.payload.text_prompt_speaker_b,
+        opts.payload.audio_prompt_speaker_a,
+        opts.payload.audio_prompt_speaker_b,
+        opts.payload.gen_conversation_input,
+      ],
+    }),
+    signal: opts.signal,
+  });
+  const startedText = await start.text();
+  let started: { event_id?: string; error?: string; detail?: unknown } = {};
+  try {
+    started = JSON.parse(startedText);
+  } catch {
+    throw new Error(startedText.slice(0, 300) || `infer call ${start.status}`);
+  }
+  if (!start.ok || !started.event_id) {
+    throw new Error(
+      sesameErrorText(started.detail) ||
+        started.error ||
+        startedText.slice(0, 300) ||
+        `infer call ${start.status}`,
+    );
+  }
+
+  const stream = await fetch(`${origin}/gradio_api/call/infer/${started.event_id}`, {
+    headers: opts.token ? { Authorization: `Bearer ${opts.token}` } : {},
+    signal: opts.signal,
+  });
+  const sseText = await stream.text();
+  const parsed = parseGradioCallStream(sseText);
+  if (parsed.error && parsed.data === undefined) {
+    throw new Error(parsed.error);
+  }
+  return { data: parsed.data };
+}
+
 export function sesameUserMessage(code: string): string {
   switch (code) {
     case "sesame-no-token":
@@ -137,7 +237,7 @@ export function sesameUserMessage(code: string): string {
     case "sesame-unauthorized":
       return "Hugging Face rejected HF_TOKEN. Create a Classic Read token (not Fine-grained) at huggingface.co/settings/tokens and paste it into Railway HF_TOKEN.";
     case "sesame-gpu-quota":
-      return "Sesame's Space asks for 180s of ZeroGPU. Fine-grained or unused tokens are treated as guests (~120s) so /infer always fails. Use a Classic Read token, wait for Railway to restart, then test again.";
+      return "Read token is loaded, but sesame/csm-1b still reserves 180s of ZeroGPU per try. Free accounts get 5 min/day — failed tests still spend that reservation. Wait for the daily reset, or rooms will keep using Edge neural.";
     case "sesame-timeout":
       return "Sesame timed out waiting for the Hugging Face Space. Retry in a minute; in-room tutors will use Edge until it recovers.";
     case "sesame-skipped":

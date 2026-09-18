@@ -4,6 +4,7 @@ import {
   classifySesameError,
   conversationForAiUtterance,
   fileUrlFromPredict,
+  parseGradioCallStream,
   resolveSesameSpeaker,
   sanitizeHfToken,
   sesameUserMessage,
@@ -184,6 +185,15 @@ describe("sesame token and error helpers", () => {
   });
 
   it("explains gpu quota in admin copy", () => {
-    expect(sesameUserMessage("sesame-gpu-quota")).toMatch(/Classic Read/);
+    expect(sesameUserMessage("sesame-gpu-quota")).toMatch(/180s/);
+  });
+
+  it("parses Gradio call SSE complete and empty error", () => {
+    const ok = parseGradioCallStream(
+      'event: complete\ndata: [{"url":"https://example.com/out.wav"}]\n\n',
+    );
+    expect(fileUrlFromPredict(ok.data)).toBe("https://example.com/out.wav");
+    const err = parseGradioCallStream("event: error\ndata: null\n\n");
+    expect(err.error).toMatch(/GPU duration/);
   });
 });

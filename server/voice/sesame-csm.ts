@@ -14,6 +14,7 @@ import {
   buildSesameInferPayload,
   classifySesameError,
   fileUrlFromPredict,
+  inferViaGradioCallApi,
   resolveSesameSpeaker,
   sesameErrorText,
   sesameHfToken,
@@ -205,13 +206,20 @@ export class SesameCsmProvider implements VoiceProvider {
         return fail(400, "prompt too long", speakerA);
       }
 
-      const infer = await client.predict(SESAME_INFER_API, {
-        text_prompt_speaker_a: payload.text_prompt_speaker_a,
-        text_prompt_speaker_b: payload.text_prompt_speaker_b,
-        audio_prompt_speaker_a: payload.audio_prompt_speaker_a,
-        audio_prompt_speaker_b: payload.audio_prompt_speaker_b,
-        gen_conversation_input: payload.gen_conversation_input,
-      });
+      const infer = usingLiveSpace
+        ? await inferViaGradioCallApi({
+            spaceId: sesameSpaceId(),
+            payload,
+            token: token || undefined,
+            signal: controller.signal,
+          })
+        : await client.predict(SESAME_INFER_API, {
+            text_prompt_speaker_a: payload.text_prompt_speaker_a,
+            text_prompt_speaker_b: payload.text_prompt_speaker_b,
+            audio_prompt_speaker_a: payload.audio_prompt_speaker_a,
+            audio_prompt_speaker_b: payload.audio_prompt_speaker_b,
+            gen_conversation_input: payload.gen_conversation_input,
+          });
 
       const url = fileUrlFromPredict(infer.data);
       if (!url) {
