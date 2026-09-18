@@ -18,8 +18,9 @@ import {
 } from "./ai-config";
 import { openAiSynthesize } from "./openai-tts";
 import { edgeSynthesize, resolveEdgeVoiceId, isMalePersona } from "./edge-tts";
+import { isSesameSpeakerId } from "@shared/talking-partners";
 import { getSesameProvider } from "./voice";
-import { sesameHfToken, sesameUserMessage } from "./voice/sesame-payload";
+import { sesameHfToken, sesameUserMessage, splitSesameUtterances, concatWavArrayBuffers } from "./voice/sesame-payload";
 
 export type KeySlot = "primary" | "secondary";
 export type ProviderKind = "brain" | "voice";
@@ -596,11 +597,10 @@ export async function generateSpeech(opts: {
   // Server admin config is authoritative for gender → voice mapping.
   const configured = isMale ? cfg.voice.maleVoice : cfg.voice.femaleVoice;
   const clientVid = typeof opts.voiceId === "string" ? opts.voiceId.trim() : "";
-  // Only accept client voiceId when it matches the persona's configured gender voice.
+  // Prefer a real Sesame speaker id from the client; otherwise admin gender map.
   let voiceName =
-    clientVid && clientVid === configured
-      ? clientVid
-      : configured;
+    (cfg.voice.provider === "sesame" && isSesameSpeakerId(clientVid) && clientVid) ||
+    (clientVid && clientVid === configured ? clientVid : configured);
   const model = cfg.voice.model || "tts-1-hd";
   const text = opts.text.trim();
   if (!text) {
@@ -639,34 +639,50 @@ export async function generateSpeech(opts: {
 
   // ── Sesame CSM-1B (Gradio /infer) ──────────────────────────────────────
   if (cfg.voice.provider === "sesame") {
-    const sesame = await getSesameProvider().synthesize({
-      text,
-      voiceId: voiceName || (isMale ? "miles" : "maya"),
-    });
-    if (sesame.ok && sesame.body) {
+    const chunks = splitSesameUtterances(text);
+    const wavs: ArrayBuffer[] = [];
+    let lastError = "sesame-failed";
+    for (const chunk of chunks.length ? chunks : [text]) {
+      let sesame = await getSesameProvider().synthesize({
+        text: chunk,
+        voiceId: voiceName || (isMale ? "miles" : "maya"),
+      });
+      if (!sesame.ok || !sesame.body) {
+        sesame = await getSesameProvider().synthesize({
+          text: chunk,
+          voiceId: voiceName || (isMale ? "miles" : "maya"),
+          bypassSkip: true,
+        });
+      }
+      if (!sesame.ok || !sesame.body) {
+        lastError = sesame.error || lastError;
+        break;
+      }
+      wavs.push(sesame.body);
+    }
+    if (wavs.length) {
+      const body = concatWavArrayBuffers(wavs);
       markSuccess("voice", "primary", { characters: text.length });
       await maybeWarnThreshold("voice", cfg);
       return {
         ok: true,
         status: 200,
-        contentType: sesame.contentType || "audio/wav",
-        body: sesame.body,
+        contentType: "audio/wav",
+        body,
         usedSlot: "primary",
         failover: false,
-        voiceUsed: sesame.voiceUsed,
+        voiceUsed: voiceName || (isMale ? "conversational_b" : "conversational_a"),
       };
     }
-    markFailure("voice", "primary", "ERROR", sesame.error || "sesame-failed");
-    // Free on-device voice so Maya/Miles still speak. Gender is applied in
-    // the browser engine (Maya = female, Miles = male).
+    markFailure("voice", "primary", "ERROR", lastError);
     return {
       ok: false,
-      status: 501,
+      status: 502,
       contentType: "",
-      error: "browser-tts",
+      error: lastError,
       usedSlot: "primary",
       failover: true,
-      voiceUsed: isMale ? "browser-male" : "browser-female",
+      voiceUsed: voiceName,
     };
   }
 

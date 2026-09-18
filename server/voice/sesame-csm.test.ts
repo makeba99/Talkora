@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   buildSesameInferPayload,
   classifySesameError,
+  concatWavArrayBuffers,
   conversationForAiUtterance,
   fileUrlFromPredict,
   inferViaDeepInfra,
@@ -12,6 +13,7 @@ import {
   sanitizeHfToken,
   sesamePresetVoice,
   sesameSpeakerIndex,
+  splitSesameUtterances,
 } from "./sesame-payload";
 import { SESAME_INFER_API } from "./types";
 import { clearSesamePromptCache, SesameCsmProvider } from "./sesame-csm";
@@ -43,8 +45,41 @@ describe("sesame payload", () => {
     expect(payload.text_prompt_speaker_b).toBe("prompt b");
   });
 
-  it("collapses whitespace and caps utterance length", () => {
-    expect(conversationForAiUtterance("  hello\nthere  ")).toBe("hello there");
+  it("splits long tutor lines so DeepInfra's 200-char cap still speaks the whole reply", () => {
+    const parts = splitSesameUtterances(
+      "Hello there. This is a longer Maya line that should be split into more than one chunk because it keeps going with extra words for the test case about Paris and coffee and what you liked.",
+      80,
+    );
+    expect(parts.length).toBeGreaterThan(1);
+    expect(parts.join(" ").replace(/\s+/g, " ")).toContain("Hello there");
+    expect(parts.every((p) => p.length <= 80)).toBe(true);
+  });
+
+  it("concatenates PCM wav buffers", () => {
+    const make = (pcm: number) => {
+      const out = new ArrayBuffer(44 + pcm);
+      const bytes = new Uint8Array(out);
+      const view = new DataView(out);
+      const w = (o: number, s: string) => {
+        for (let i = 0; i < s.length; i++) bytes[o + i] = s.charCodeAt(i);
+      };
+      w(0, "RIFF");
+      view.setUint32(4, 36 + pcm, true);
+      w(8, "WAVE");
+      w(12, "fmt ");
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, 24000, true);
+      view.setUint32(28, 48000, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      w(36, "data");
+      view.setUint32(40, pcm, true);
+      return out;
+    };
+    const joined = concatWavArrayBuffers([make(10), make(20)]);
+    expect(joined.byteLength).toBe(44 + 30);
   });
 
   it("reads Gradio FileData urls", () => {

@@ -42,6 +42,7 @@ export class EvaTtsEngine {
   // Web Audio
   private audioCtx: AudioContext | null = null;
   private currentSource: AudioBufferSourceNode | null = null;
+  private htmlAudio: HTMLAudioElement | null = null;
   private analyser: AnalyserNode | null = null;
   private visemeRaf: number | null = null;
   private currentAbort: AbortController | null = null;
@@ -88,6 +89,15 @@ export class EvaTtsEngine {
     if (this.currentSource) {
       try { this.currentSource.onended = null; this.currentSource.stop(); } catch {}
       this.currentSource = null;
+    }
+    if (this.htmlAudio) {
+      try {
+        this.htmlAudio.onended = null;
+        this.htmlAudio.onerror = null;
+        this.htmlAudio.pause();
+        this.htmlAudio.src = "";
+      } catch {}
+      this.htmlAudio = null;
     }
     if (this.visemeRaf != null) {
       cancelAnimationFrame(this.visemeRaf);
@@ -171,95 +181,60 @@ export class EvaTtsEngine {
     // Firing it here means the UI (face animation, speaking indicator) lights
     // up as soon as the AI starts fetching the voice, not when audio plays.
     // This makes the response feel instant even if ElevenLabs takes a moment.
-    if (!this.currentSource) this.callbacks.onStart();
+    if (!this.currentSource && !this.htmlAudio) this.callbacks.onStart();
 
     try {
-      const res = await fetch("/api/ai-tutor/tts", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json", "Accept": "audio/wav, audio/mpeg" },
-        body: JSON.stringify({
-          text: item.text,
-          voice: this.voice,
-          speed: this.speed,
-          language: this.language,
-          voiceId: this.voiceId,
-        }),
-        signal: item.abort.signal,
-      });
-
-      if (!res.ok) {
-        // Try to extract the real ElevenLabs error message from the JSON body
-        // so the user sees the actual reason (rate limit / wrong voice id /
-        // missing permission / etc) instead of a generic "may be invalid".
+      let res: Response | null = null;
+      let lastReason = "tts-failed";
+      for (let attempt = 0; attempt < 3; attempt++) {
+        res = await fetch("/api/ai-tutor/tts", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json", "Accept": "audio/wav, audio/mpeg, audio/*" },
+          body: JSON.stringify({
+            text: item.text,
+            voice: this.voice,
+            speed: this.speed,
+            language: this.language,
+            voiceId: this.voiceId,
+          }),
+          signal: item.abort.signal,
+        });
+        if (res.ok) break;
         const errText = await res.text().catch(() => "");
         let detail = "";
         try {
           const j = JSON.parse(errText);
-          detail = j?.error || j?.detail?.message || j?.detail || "";
+          detail = j?.error || j?.detail?.message || j?.detail || j?.message || "";
         } catch {}
-        const reason = res.status === 502 || res.status === 504
-          ? "voice provider unreachable"
-          : res.status === 501
-            ? "no API key configured"
-            : res.status === 401 || res.status === 403
-              ? "API key rejected (invalid or out of credits)"
-              : res.status === 429
-                ? "rate limited"
-                : detail
-                  ? `HTTP ${res.status}: ${String(detail).slice(0, 120)}`
-                  : `HTTP ${res.status}`;
-        // Engage browser-TTS fallback for THIS sentence and all following
-        // sentences in the session, so the AI Tutor never goes silent.
-        this.engageFallback(reason, item);
+        lastReason = res.status === 429
+          ? "rate limited"
+          : res.status === 502 || res.status === 504
+            ? "voice provider unreachable"
+            : detail
+              ? `HTTP ${res.status}: ${String(detail).slice(0, 120)}`
+              : `HTTP ${res.status}`;
+        if (item.abort.signal.aborted) return;
+        if (res.status === 429 || res.status >= 500) {
+          await new Promise((r) => setTimeout(r, 700 * (attempt + 1)));
+          continue;
+        }
+        break;
+      }
+
+      if (!res || !res.ok) {
+        this.engageFallback(lastReason, item);
         return;
       }
 
       const audioData = await res.arrayBuffer();
-      const ctx = await this.ensureAudioContext();
-      // Some browsers mutate the buffer during decode — pass a copy
-      const buffer = await ctx.decodeAudioData(audioData.slice(0));
-
-      const source = ctx.createBufferSource();
-      source.buffer = buffer;
-      // ElevenLabs returns natural pace; we apply a soft playback rate for client-side speed.
-      source.playbackRate.value = Math.max(0.5, Math.min(1.6, this.speed));
-
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 1024;
-      analyser.smoothingTimeConstant = 0.6;
-
-      source.connect(analyser);
-      analyser.connect(ctx.destination);
-
-      this.currentSource = source;
-      this.analyser = analyser;
-
-      const onDone = () => {
-        if (this.currentSource !== source) return; // already replaced
-        this.currentSource = null;
-        this.analyser = null;
-        if (this.visemeRaf != null) {
-          cancelAnimationFrame(this.visemeRaf);
-          this.visemeRaf = null;
-        }
-        this.callbacks.onViseme?.("rest");
-        this.callbacks.onSentenceEnd();
-        // Drain queue
-        if (this.queue.length > 0) {
-          this.playNext();
-        } else {
-          this.active = false;
-          this.callbacks.onEnd();
-        }
-      };
-
-      source.onended = onDone;
-      source.start();
-
-      // Amplitude-driven viseme loop — runs at rAF, throttled to ~14fps for
-      // the SVG mouth so it feels like natural speech rather than buzzing.
-      this.startVisemeLoop(analyser);
+      const contentType = res.headers.get("content-type") || "audio/wav";
+      if (!audioData || audioData.byteLength < 64) {
+        this.engageFallback("empty audio", item);
+        return;
+      }
+      await this.playSesameBytes(audioData, contentType, item.abort.signal);
+      this.finishSentence();
     } catch (err: any) {
       if (item.abort.signal.aborted || err?.name === "AbortError") {
         // Cancelled — playNext may already have been called by cancel(); just stop here.
@@ -275,6 +250,68 @@ export class EvaTtsEngine {
       // goes silent. The user gets a one-time toast explaining the swap.
       console.warn("[EvaTts] sentence failed, falling back to browser TTS:", err?.message || err);
       this.engageFallback(`network error (${(err?.message || err || "unknown")})`, item);
+    }
+  }
+
+  private finishSentence() {
+    this.callbacks.onViseme?.("rest");
+    this.callbacks.onSentenceEnd();
+    if (this.queue.length > 0) {
+      this.playNext();
+    } else {
+      this.active = false;
+      this.callbacks.onEnd();
+    }
+  }
+
+  /** Play CSM/Edge/OpenAI bytes the same way Admin Test does (HTML audio). */
+  private async playSesameBytes(audioData: ArrayBuffer, contentType: string, signal: AbortSignal): Promise<void> {
+    const type = /audio\//i.test(contentType) ? contentType.split(";")[0] : "audio/wav";
+    const blob = new Blob([audioData], { type });
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.playbackRate = Math.max(0.5, Math.min(1.6, this.speed));
+    this.htmlAudio = audio;
+
+    try {
+      const ctx = await this.ensureAudioContext();
+      const node = ctx.createMediaElementSource(audio);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 1024;
+      analyser.smoothingTimeConstant = 0.6;
+      node.connect(analyser);
+      analyser.connect(ctx.destination);
+      this.analyser = analyser;
+      this.startVisemeLoop(analyser);
+    } catch {
+      // Playing through the element still yields Sesame audio even if Web Audio visemes fail.
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      const done = () => {
+        audio.onended = null;
+        audio.onerror = null;
+        resolve();
+      };
+      audio.onended = done;
+      audio.onerror = () => reject(new Error("html-audio-error"));
+      if (signal.aborted) {
+        done();
+        return;
+      }
+      signal.addEventListener("abort", () => {
+        try { audio.pause(); } catch {}
+        done();
+      }, { once: true });
+      audio.play().catch(reject);
+    });
+
+    URL.revokeObjectURL(url);
+    if (this.htmlAudio === audio) this.htmlAudio = null;
+    this.analyser = null;
+    if (this.visemeRaf != null) {
+      cancelAnimationFrame(this.visemeRaf);
+      this.visemeRaf = null;
     }
   }
 

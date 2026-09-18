@@ -407,6 +407,104 @@ async function sleep(ms: number): Promise<void> {
 
 const DEEPINFRA_MAX_CHARS = 200;
 
+export function splitSesameUtterances(text: string, max = DEEPINFRA_MAX_CHARS): string[] {
+  const clean = conversationForAiUtterance(text);
+  if (!clean) return [];
+  if (clean.length <= max) return [clean];
+  const parts: string[] = [];
+  const sentences = clean.split(/(?<=[.!?])\s+/);
+  let buf = "";
+  const pushHard = (chunk: string) => {
+    for (let i = 0; i < chunk.length; i += max) parts.push(chunk.slice(i, i + max));
+  };
+  for (const sentence of sentences) {
+    const next = buf ? `${buf} ${sentence}` : sentence;
+    if (next.length <= max) {
+      buf = next;
+      continue;
+    }
+    if (buf) parts.push(buf);
+    if (sentence.length <= max) buf = sentence;
+    else {
+      pushHard(sentence);
+      buf = "";
+    }
+  }
+  if (buf) parts.push(buf);
+  return parts;
+}
+
+function findWavDataChunk(bytes: Uint8Array): { offset: number; size: number; channels: number; rate: number; bits: number } | null {
+  if (bytes.byteLength < 44) return null;
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]) !== "RIFF") return null;
+  if (String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11]) !== "WAVE") return null;
+  let offset = 12;
+  let channels = 1;
+  let rate = 24000;
+  let bits = 16;
+  while (offset + 8 <= bytes.byteLength) {
+    const id = String.fromCharCode(bytes[offset], bytes[offset + 1], bytes[offset + 2], bytes[offset + 3]);
+    const size = view.getUint32(offset + 4, true);
+    if (id === "fmt ") {
+      channels = view.getUint16(offset + 10, true) || 1;
+      rate = view.getUint32(offset + 12, true) || rate;
+      bits = view.getUint16(offset + 22, true) || 16;
+    }
+    if (id === "data") {
+      return { offset: offset + 8, size: Math.min(size, bytes.byteLength - (offset + 8)), channels, rate, bits };
+    }
+    offset += 8 + size + (size % 2);
+  }
+  return null;
+}
+
+export function concatWavArrayBuffers(parts: ArrayBuffer[]): ArrayBuffer {
+  const usable = parts.filter((p) => p && p.byteLength >= 44);
+  if (!usable.length) return parts[0] || new ArrayBuffer(0);
+  if (usable.length === 1) return usable[0];
+  const parsed = usable.map((p) => ({ bytes: new Uint8Array(p), chunk: findWavDataChunk(new Uint8Array(p)) }));
+  if (parsed.some((p) => !p.chunk)) return usable[0];
+  const fmt = parsed[0].chunk!;
+  const pcm: Uint8Array[] = [];
+  let dataSize = 0;
+  for (const p of parsed) {
+    const chunk = p.chunk!;
+    if (chunk.channels !== fmt.channels || chunk.rate !== fmt.rate || chunk.bits !== fmt.bits) {
+      return usable[0];
+    }
+    const slice = p.bytes.subarray(chunk.offset, chunk.offset + chunk.size);
+    pcm.push(slice);
+    dataSize += slice.byteLength;
+  }
+  const out = new ArrayBuffer(44 + dataSize);
+  const bytes = new Uint8Array(out);
+  const view = new DataView(out);
+  const writeStr = (o: number, s: string) => {
+    for (let i = 0; i < s.length; i++) bytes[o + i] = s.charCodeAt(i);
+  };
+  writeStr(0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  writeStr(8, "WAVE");
+  writeStr(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, fmt.channels, true);
+  view.setUint32(24, fmt.rate, true);
+  const block = fmt.channels * (fmt.bits / 8);
+  view.setUint32(28, fmt.rate * block, true);
+  view.setUint16(32, block, true);
+  view.setUint16(34, fmt.bits, true);
+  writeStr(36, "data");
+  view.setUint32(40, dataSize, true);
+  let o = 44;
+  for (const slice of pcm) {
+    bytes.set(slice, o);
+    o += slice.byteLength;
+  }
+  return out;
+}
+
 async function audioFromProviderResponse(
   fetchImpl: typeof fetch,
   res: Response,

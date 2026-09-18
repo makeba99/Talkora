@@ -30,7 +30,7 @@ import {
 import webpush from "web-push";
 import { sendPushCampaign, previewPushAudience } from "./push-service";
 import { externalCache } from "./cache";
-import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, aiTutorRateLimiter, aiSttRateLimiter, messageRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
+import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, aiTutorRateLimiter, aiTutorTtsRateLimiter, aiSttRateLimiter, messageRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
 import { setCleanupContext, getCleanupStats, runCleanupNow } from "./cleanup";
 import { getAiTutorConfig, setAiTutorConfig, maskConfig, mergeIncoming, sanitizeKey, voiceConfigPublic, resolveBrainEndpoint, type AiTutorConfig } from "./ai-config";
 import {
@@ -2376,7 +2376,7 @@ export async function registerRoutes(
   // Synthesize a single sentence via OpenAI TTS (primary→secondary voice keys).
   // Returns audio bytes. Active-session gate stops other room participants
   // from burning quota on someone else's AI session.
-  app.post("/api/ai-tutor/tts", isAuthenticated, aiTutorRateLimiter, async (req: any, res) => {
+  app.post("/api/ai-tutor/tts", isAuthenticated, aiTutorTtsRateLimiter, async (req: any, res) => {
     try {
       const { text, voice = "Eva", roomId, voiceId } = req.body || {};
       if (typeof text !== "string" || !text.trim()) {

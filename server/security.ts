@@ -118,6 +118,26 @@ export const uploadRateLimiter = rateLimit({
 // AI Tutor endpoints invoke external LLM/TTS APIs — each call can cost real
 // money and cause significant latency. Cap at 20 requests per minute per
 // session to prevent runaway usage while still allowing fluent conversations.
+export const aiTutorTtsRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: sessionKey,
+  handler: async (req: Request, res: Response) => {
+    await logSecurityEvent({
+      userId: (req as any).user?.id ?? null,
+      eventType: "rate_limit_exceeded",
+      severity: "medium",
+      description: `AI Tutor TTS rate limit exceeded on ${req.path}`,
+      requestPath: req.path,
+    });
+    res.status(429).json({
+      message: "AI Tutor voice rate limit reached. Please wait a moment.",
+    });
+  },
+});
+
 export const aiTutorRateLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,
