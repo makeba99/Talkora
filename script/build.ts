@@ -13,7 +13,7 @@ const gzipCompress = promisify(zlib.gzip);
 // so we leave them alone and let the runtime serve them as-is.
 const PRECOMPRESS_EXTS = new Set([
   ".html", ".js", ".mjs", ".css", ".svg", ".json", ".xml",
-  ".txt", ".map", ".webmanifest", ".ico",
+  ".txt", ".webmanifest", ".ico",
 ]);
 
 async function precompressTree(dir: string): Promise<void> {
@@ -35,14 +35,12 @@ async function precompressTree(dir: string): Promise<void> {
       const st = await stat(full);
       if (st.size < 512) return;
       const buf = await readFile(full);
-      // Max-quality Brotli (q11) — we only pay the CPU cost ONCE at build
-      // time, so we use the absolute maximum compression for every byte we
-      // can save on the wire. This is the single biggest win available
-      // because it's invisible to clients and free at request time.
+      // q4 is ~10–50× faster than q11 on large Vite bundles and is what
+      // CDNs use for on-the-fly Brotli. q11 was adding many minutes to Railway.
       const [br, gz] = await Promise.all([
         brotliCompress(buf, {
           params: {
-            [zlib.constants.BROTLI_PARAM_QUALITY]: 11,
+            [zlib.constants.BROTLI_PARAM_QUALITY]: 4,
             [zlib.constants.BROTLI_PARAM_MODE]:
               ext === ".js" || ext === ".mjs" || ext === ".css" || ext === ".html" || ext === ".svg" || ext === ".json" || ext === ".xml" || ext === ".txt"
                 ? zlib.constants.BROTLI_MODE_TEXT
@@ -50,7 +48,7 @@ async function precompressTree(dir: string): Promise<void> {
             [zlib.constants.BROTLI_PARAM_SIZE_HINT]: buf.length,
           },
         }),
-        gzipCompress(buf, { level: 9 }),
+        gzipCompress(buf, { level: 6 }),
       ]);
       // Only emit the compressed variants if they actually save bytes —
       // tiny files sometimes get larger after compression headers.
@@ -126,7 +124,7 @@ async function buildAll() {
   console.log("building client...");
   await viteBuild();
 
-  console.log("pre-compressing static assets (brotli q11 + gzip 9)...");
+  console.log("pre-compressing static assets (brotli q4 + gzip 6)...");
   const t0 = Date.now();
   await precompressTree("dist/public");
   console.log(`pre-compressed in ${Date.now() - t0}ms`);
