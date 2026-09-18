@@ -116,11 +116,11 @@ export const uploadRateLimiter = rateLimit({
 });
 
 // AI Tutor endpoints invoke external LLM/TTS APIs — each call can cost real
-// money and cause significant latency. Cap at 20 requests per minute per
-// session to prevent runaway usage while still allowing fluent conversations.
+// money and cause significant latency. TTS is one request per spoken sentence
+// (plus a retry on GPU blips), so a fluent minute of chat needs more than 20.
 export const aiTutorTtsRateLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 60,
+  max: 90,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: sessionKey,
@@ -140,7 +140,7 @@ export const aiTutorTtsRateLimiter = rateLimit({
 
 export const aiTutorRateLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 20,
+  max: 45,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: sessionKey,

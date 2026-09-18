@@ -24,6 +24,11 @@ describe("sanitizeSpokenTutorLine", () => {
   it("keeps complete spoken answers", () => {
     expect(sanitizeSpokenTutorLine("Paris is great in the spring.")).toBe("Paris is great in the spring.");
   });
+
+  it("never speaks unavailable / system-status lines", () => {
+    expect(sanitizeSpokenTutorLine("Talking AI is unavailable right now. Please try again in a moment.")).toBeNull();
+    expect(sanitizeSpokenTutorLine("Configured AI voice unavailable")).toBeNull();
+  });
 });
 
 describe("extractCompleteSentences", () => {

@@ -5,6 +5,7 @@
 
 import { talkingAiDailyLimit, type EntitlementUser } from "@shared/entitlements";
 import { storage } from "./storage";
+import { isTutorSystemErrorLine } from "./ai-anti-repeat";
 
 function usageDayKey(): string {
   return new Date().toISOString().slice(0, 10); // UTC day
@@ -53,6 +54,7 @@ export function normalizeAiHistory(
   for (const m of history) {
     const text = typeof m?.text === "string" ? m.text.trim() : typeof m?.content === "string" ? m.content.trim() : "";
     if (!text) continue;
+    if (isTutorSystemErrorLine(text)) continue;
     const roleRaw = String(m?.role || "").toLowerCase();
     const role: "user" | "assistant" =
       roleRaw === "ai" || roleRaw === "assistant" || roleRaw === "system" ? "assistant" : "user";
