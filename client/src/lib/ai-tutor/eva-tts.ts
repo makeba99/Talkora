@@ -327,7 +327,7 @@ export class EvaTtsEngine {
     audio.setAttribute("playsinline", "true");
     audio.volume = 1;
     audio.src = url;
-    audio.playbackRate = Math.max(1.06, Math.min(1.2, this.speed || 1.12));
+    audio.playbackRate = Math.max(1.1, Math.min(1.28, this.speed || 1.18));
     this.htmlAudio = audio;
     this.startFakeVisemeLoop();
 

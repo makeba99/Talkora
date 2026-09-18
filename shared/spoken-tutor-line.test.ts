@@ -14,6 +14,13 @@ describe("sanitizeSpokenTutorLine", () => {
     expect(sanitizeSpokenTutorLine("So anyway...")).toBeNull();
   });
 
+  it("keeps spoken emotional reactions that a voice can actually say", () => {
+    expect(sanitizeSpokenTutorLine("Oh wow, that sounds amazing.")).toBe("Oh wow, that sounds amazing.");
+    expect(sanitizeSpokenTutorLine("Haha, I can picture that.")).toBe("Haha, I can picture that.");
+    expect(sanitizeSpokenTutorLine("Aww, I'm happy for you.")).toBe("Aww, I'm happy for you.");
+    expect(sanitizeSpokenTutorLine("Ah, that's so sweet.")).toBe("Ah, that's so sweet.");
+  });
+
   it("keeps complete spoken answers", () => {
     expect(sanitizeSpokenTutorLine("Paris is great in the spring.")).toBe("Paris is great in the spring.");
   });

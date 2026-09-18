@@ -86,15 +86,15 @@ function speechOverlap(transcript: string, spoken: string): number {
 }
 
 const FEMALE_INTROS = [
-  "Hey, I'm Maya. So glad you're here — what's on your mind?",
+  "Hey, I'm Maya. Oh it's so good to hear you — what's on your mind?",
   "Hi there. I'm Maya. Tell me anything — I'm listening.",
-  "Hey you, I'm Maya. Take your time — what do you wanna talk about?",
+  "Hey you, I'm Maya. Haha, take your time — what do you wanna talk about?",
   "Hi, I'm Maya. Whenever you're ready, just start talking.",
 ];
 
 const MALE_INTROS = [
   "Hey — I'm Miles. What's up?",
-  "Miles here. Good to meet you — what do you want to practice?",
+  "Miles here. Oh nice, good to meet you — what do you want to practice?",
   "Yo, I'm Miles. Let's talk — what's on your mind?",
   "Hey. Miles. Whenever you're ready, just start.",
 ];
@@ -150,7 +150,7 @@ function loadSavedAiSettings(): AiTutorSettings {
       voiceId: null,
       avatarId: ["aurora", "ember", "nova", "onyx"].includes(savedAvatarId) ? savedAvatarId : DEFAULT_AI_SETTINGS.avatarId,
       speed: typeof parsed.speed === "number"
-        ? (parsed.speed <= 0.85 ? 1.12 : Math.max(0.9, Math.min(1.25, parsed.speed)))
+        ? (parsed.speed <= 1.12 ? 1.18 : Math.max(0.95, Math.min(1.32, parsed.speed)))
         : DEFAULT_AI_SETTINGS.speed,
       tone: typeof parsed.tone === "number" ? Math.max(0, Math.min(1, parsed.tone)) : DEFAULT_AI_SETTINGS.tone,
       wakeWordEnabled: typeof parsed.wakeWordEnabled === "boolean" ? parsed.wakeWordEnabled : DEFAULT_AI_SETTINGS.wakeWordEnabled,
