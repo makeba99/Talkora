@@ -81,6 +81,18 @@ describe("SesameCsmProvider", () => {
     expect(infer?.data.audio_prompt_speaker_a).toEqual({ handled: "https://example.com/prompt.wav" });
   });
 
+  it("skips the live Space immediately when HF_TOKEN is missing", async () => {
+    const prev = process.env.HF_TOKEN;
+    delete process.env.HF_TOKEN;
+    delete process.env.AI_VOICE_HF_TOKEN;
+    delete process.env.HUGGINGFACE_TOKEN;
+    const provider = new SesameCsmProvider();
+    const result = await provider.synthesize({ text: "Hello", voiceId: "maya" });
+    if (prev) process.env.HF_TOKEN = prev;
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe("sesame-no-token");
+  });
+
   it("fails closed when Gradio throws so callers can fall back", async () => {
     const provider = new SesameCsmProvider({
       connect: async () => {

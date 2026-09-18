@@ -20,6 +20,13 @@ import {
 } from "./sesame-payload";
 
 const TIMEOUT_MS = 90_000;
+const SKIP_AFTER_GPU_MS = 10 * 60 * 1000;
+
+let skipSesameUntil = 0;
+
+function markSesameUnavailable(ms = SKIP_AFTER_GPU_MS) {
+  skipSesameUntil = Date.now() + ms;
+}
 
 type GradioLike = {
   predict: (endpoint: string, data?: unknown[] | Record<string, unknown>) => Promise<{ data: unknown }>;
@@ -128,6 +135,19 @@ export class SesameCsmProvider implements VoiceProvider {
     if (!text) return fail(400, "empty text", speakerA);
 
     const token = sesameHfToken();
+    const usingLiveSpace = this.deps.connect === defaultConnect;
+    // Unauthenticated ZeroGPU callers get ~180s quota; sesame/csm-1b requests
+    // 180s up front, so /infer always fails without HF_TOKEN. Skip immediately
+    // so in-room tutors fall back to Edge instead of hanging.
+    if (usingLiveSpace && !token) {
+      this.lastError = "HF_TOKEN not configured";
+      return fail(503, "sesame-no-token", speakerA);
+    }
+    if (usingLiveSpace && Date.now() < skipSesameUntil) {
+      this.lastError = "sesame temporarily skipped after GPU quota error";
+      return fail(503, "sesame-skipped", speakerA);
+    }
+
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     const onAbort = () => controller.abort();
@@ -200,6 +220,9 @@ export class SesameCsmProvider implements VoiceProvider {
           : aborted
             ? "sesame-timeout"
             : "sesame-failed";
+      if (usingLiveSpace && (userSafe === "sesame-gpu-quota" || userSafe === "sesame-timeout")) {
+        markSesameUnavailable();
+      }
       return fail(aborted ? 504 : 502, userSafe, speakerA);
     } finally {
       clearTimeout(timer);
@@ -210,4 +233,5 @@ export class SesameCsmProvider implements VoiceProvider {
 
 export function clearSesamePromptCache(): void {
   promptCache.clear();
+  skipSesameUntil = 0;
 }
