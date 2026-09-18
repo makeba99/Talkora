@@ -2700,11 +2700,11 @@ function AiTutorTab() {
                   <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-muted-foreground space-y-1">
                     <p>
                       Sesame CSM-1B via the Hugging Face Space API (<code>/infer</code>). Token stays server-side as <code>HF_TOKEN</code> (Classic Read).
-                      If generation fails, rooms automatically keep speaking with Edge neural.
+                      If Sesame fails, rooms use the free on-device browser voice — Maya stays female, Miles stays male.
                     </p>
                     <p>
                       The hosted Space reserves <strong>180s of ZeroGPU per try</strong>. Free Hugging Face accounts get 5 min/day, and failed tests still spend that reservation.
-                      After a GPU block, Test plays Edge so you can hear the room voice.
+                      After a GPU block, Test still plays a female Edge sample. In rooms Maya uses a free female browser voice.
                     </p>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
