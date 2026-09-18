@@ -22,7 +22,7 @@ import { SPEECH_LANG_MAP } from "./types";
 /** Pure-filler transcript pattern — recognized but carries no real content */
 export const FILLER_ONLY_PATTERN = /^(um+|uh+|hmm+|hm+|err+|erm+|ah+|mm+|mhm+|ugh+)(\s+(um+|uh+|hmm+|hm+|err+|erm+|ah+|mm+|mhm+|ugh+))*\.?$/i;
 
-export type WakePersona = "maya" | "miles" | "eva" | "ai";
+export type WakePersona = "maya" | "miles" | "ai";
 
 export interface WakeMatch {
   persona: WakePersona;
@@ -61,7 +61,6 @@ function normalizeWakeText(raw: string): string {
 function personaFromAgentToken(token: string): WakePersona {
   const t = token.toLowerCase().replace(/\s+/g, "");
   if (/^(miles|myles|dude)$/.test(t)) return "miles";
-  if (/^(eva|evelyn)$/.test(t)) return "eva";
   return "maya";
 }
 
@@ -132,7 +131,7 @@ export function matchWakePhrase(raw: string): WakeMatch | null {
 
 /** True when the phrase is distinctive enough to fire on interim STT. */
 export function isStrongWakeMatch(match: WakeMatch, raw: string): boolean {
-  if (match.persona === "maya" || match.persona === "miles" || match.persona === "eva") {
+  if (match.persona === "maya" || match.persona === "miles") {
     // Name-only: wait for leftover words or a final result so "Maya what's…" is not cut off.
     return match.afterText.trim().length > 1;
   }

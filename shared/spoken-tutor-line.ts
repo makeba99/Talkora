@@ -1,12 +1,16 @@
 /** Lines that must never be spoken by the in-room tutor. */
 const FILLER_ONLY =
-  /^(um+|uh+|hmm+|hm+|mm+|m+hm+|mm[\s-]?hmm+|err+|ah+|okay|ok|right|yeah|yep|yup)[.!?]*$/i;
+  /^(um+|uh+|hmm+|hm+|mm+|m+hm+|mm[\s-]?hmm+|err+|okay|ok|right|yeah|yep|yup)[.!?]*$/i;
 
 const LEADING_FILLER =
-  /^(?:um+|uh+|hmm+|hm+|mm+|m+hm+|mm[\s-]?hmm+|err+|ah+)[,.!?]?\s+/i;
+  /^(?:um+|uh+|hmm+|hm+|mm+|m+hm+|mm[\s-]?hmm+|err+)[,.!?]?\s+/i;
 
 const LEADING_STALL =
   /^(?:let me think|one sec(?:ond)?|hold on|give me a (?:moment|sec)|got it hold on)[,.!?]?\s+/i;
+
+/** Prompt fragment: faster, emotional spoken reactions without stall hmm/mm. */
+export const SPOKEN_AUDIO_STYLE =
+  "SPOKEN AUDIO: You are read aloud by a conversational voice, a bit quicker than a lecture. Sound like a real friend: warm, reactive, slightly fast. Never stall with hmm, mm, uh, um, or \"let me think\". Never fragments or trailing ellipsis. Do make human emotional noise as spoken words in a full sentence — \"Oh wow, that sounds amazing.\", \"Haha, I can picture that.\", \"Aww, I'm happy for you.\", \"Oh no, that's rough.\", \"Wait, really?\" Never write *laughs*, *sighs*, emojis, or stage directions. Every reply is complete sentences, ready to speak as-is.";
 
 export function sanitizeSpokenTutorLine(text: string): string | null {
   let t = String(text || "").replace(/\s+/g, " ").trim();

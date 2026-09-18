@@ -86,25 +86,17 @@ function speechOverlap(transcript: string, spoken: string): number {
 }
 
 const FEMALE_INTROS = [
-  "Hey, I'm Maya. So glad you're here — what's on your mind?",
+  "Hey, I'm Maya. Oh it's so good to hear you — what's on your mind?",
   "Hi there. I'm Maya. Tell me anything — I'm listening.",
-  "Hey you, I'm Maya. Take your time — what do you wanna talk about?",
+  "Hey you, I'm Maya. Haha, take your time — what do you wanna talk about?",
   "Hi, I'm Maya. Whenever you're ready, just start talking.",
 ];
 
 const MALE_INTROS = [
   "Hey — I'm Miles. What's up?",
-  "Miles here. Good to meet you — what do you want to practice?",
+  "Miles here. Oh nice, good to meet you — what do you want to practice?",
   "Yo, I'm Miles. Let's talk — what's on your mind?",
   "Hey. Miles. Whenever you're ready, just start.",
-];
-
-// Lebroskiu legacy intros kept for Eva persona if still selected elsewhere
-const EVA_INTROS = [
-  "Hey, I'm Lebroskiu. So glad you're here — what's on your mind?",
-  "Hi there. I'm Lebroskiu. Tell me anything — I'm listening.",
-  "Hey you, I'm Lebroskiu. Take your time — what do you wanna talk about?",
-  "Hi, I'm Lebroskiu. Whenever you're ready, just start talking.",
 ];
 
 // Persona-queue item — requests from other room participants
@@ -148,9 +140,10 @@ function loadSavedAiSettings(): AiTutorSettings {
       ...DEFAULT_AI_SETTINGS,
       ...parsed,
       voiceId: null,
-      avatarId: ["aurora", "ember", "nova", "onyx"].includes(savedAvatarId) ? savedAvatarId : DEFAULT_AI_SETTINGS.avatarId,
+      avatarId: ["aurora", "nova"].includes(savedAvatarId) ? savedAvatarId : DEFAULT_AI_SETTINGS.avatarId,
+      voice: parsed.voice === "Male" ? "Male" : "Female",
       speed: typeof parsed.speed === "number"
-        ? (parsed.speed <= 0.85 ? 1.12 : Math.max(0.9, Math.min(1.25, parsed.speed)))
+        ? (parsed.speed <= 1.12 ? 1.18 : Math.max(0.95, Math.min(1.32, parsed.speed)))
         : DEFAULT_AI_SETTINGS.speed,
       tone: typeof parsed.tone === "number" ? Math.max(0, Math.min(1, parsed.tone)) : DEFAULT_AI_SETTINGS.tone,
       wakeWordEnabled: typeof parsed.wakeWordEnabled === "boolean" ? parsed.wakeWordEnabled : DEFAULT_AI_SETTINGS.wakeWordEnabled,
@@ -910,11 +903,10 @@ export function useAiTutor(deps: AiTutorDeps) {
 
   // ── Start with a specific persona (voice + name, locked for session) ──────
   const startWithPersona = useCallback((voice: VoicePersona, pName: string, speakerId?: string | null) => {
+    const resolvedVoice: VoicePersona = voice === "Male" || /miles|noah|dude/i.test(pName) ? "Male" : "Female";
+    const resolvedName = resolvedVoice === "Male" ? "Miles" : "Maya";
     // If a session is already running, fully tear it down first so the new
-    // persona actually takes effect. The previous early-return caused a real
-    // bug: clicking Eva while a Dude session was still active silently kept
-    // playing Dude's male browser voice — the picker would close but the
-    // voice never switched. Now we always honour the user's new pick.
+    // persona actually takes effect.
     if (aiActive) {
       try { ttsRef.current?.cancel(); } catch {}
       try { stopMicAll(); } catch {}
@@ -932,47 +924,35 @@ export function useAiTutor(deps: AiTutorDeps) {
     }
     // Lock the persona for this session
     personaLockedRef.current = true;
-    setPersonaName(pName);
+    setPersonaName(resolvedName);
     primeEvaAudio();
 
-    // Update voice + avatar settings together so face matches gender.
-    // Female (Afik K) gets the admin-configured female ElevenLabs voiceId (Lebroskiu etc.).
-    // Male (Dude) gets the admin-configured male ElevenLabs voiceId (Adam, Daniel, etc.).
-    const avatarId = voice === "Male" ? "nova" : "aurora";
+    const avatarId = resolvedVoice === "Male" ? "nova" : "aurora";
     const voiceId = speakerId
-      || (voice === "Male"
+      || (resolvedVoice === "Male"
         ? (serverMaleVoiceIdRef.current || serverVoiceIdRef.current)
         : (serverVoiceIdRef.current || null));
-    setAiSettings(s => ({ ...s, voice, voiceId, avatarId, personaName: pName }));
-    // Also configure TTS immediately (don't wait for React state cycle)
-    ttsRef.current?.configure(voice, aiSettings.speed, voiceId, serverTtsProviderRef.current);
-    warmupEvaTts(voice, voiceId);
+    setAiSettings(s => ({ ...s, voice: resolvedVoice, voiceId, avatarId, personaName: resolvedName }));
+    ttsRef.current?.configure(resolvedVoice, aiSettings.speed, voiceId, serverTtsProviderRef.current);
+    warmupEvaTts(resolvedVoice, voiceId);
 
-    // Clear any previous mic error
     setMicError(null);
     sttRef.current?.resetMicDenied();
 
-    socket?.emit("room:ai-tutor-start", { roomId, userId, username, avatarId, voice, voiceId });
+    socket?.emit("room:ai-tutor-start", { roomId, userId, username, avatarId, voice: resolvedVoice, voiceId });
     setAiActive(true);
-    // Keep text chat open so the user can type if the mic is closed / denied.
     setAiChatPanelOpen(true);
     chatPanelOpenRef.current = true;
     setAiConversation([]);
     setAiDebugLog([]);
     setAiLastBroadcast(null);
 
-    // Persona-specific intro — Eva gets her own warm, female intros so she
-    // never says "I'm Dude" or "I'm Afi K" through the ElevenLabs voice.
-    const intros = voice === "Eva"
-      ? EVA_INTROS
-      : voice === "Female"
-        ? FEMALE_INTROS
-        : MALE_INTROS;
+    const intros = resolvedVoice === "Male" ? MALE_INTROS : FEMALE_INTROS;
     const intro = intros[Math.floor(Math.random() * intros.length)];
     const introMsg: ConversationEntry = { id: `a-intro-${Date.now()}`, role: "ai", text: intro };
     setAiConversation([introMsg]);
     setTimeout(() => speakAi(intro), 10);
-    addDebug("info", `Session started with persona: ${pName} (${voice})`);
+    addDebug("info", `Session started with persona: ${resolvedName} (${resolvedVoice})`);
   }, [aiActive, socket, roomId, userId, username, aiSettings, addDebug, stopMicAll, speakAi]);
 
   // ── Keep toggleAiTutorRef in sync (wake callback uses this to avoid stale closure) ──
@@ -990,11 +970,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       setAiConversation([]);
       setAiDebugLog([]);
       setAiLastBroadcast(null);
-      const intros = aiSettings.voice === "Eva"
-        ? EVA_INTROS
-        : aiSettings.voice === "Male"
-          ? MALE_INTROS
-          : FEMALE_INTROS;
+      const intros = aiSettings.voice === "Male" ? MALE_INTROS : FEMALE_INTROS;
       const intro = intros[Math.floor(Math.random() * intros.length)];
       const introMsg: ConversationEntry = { id: `a-intro-${Date.now()}`, role: "ai", text: intro };
       setAiConversation([introMsg]);
@@ -1055,8 +1031,6 @@ export function useAiTutor(deps: AiTutorDeps) {
     setWakeListening(false);
     if (persona === "miles") {
       startWithPersonaRef.current?.("Male", "Miles");
-    } else if (persona === "eva") {
-      startWithPersonaRef.current?.("Eva", "Eva", "read_speech_a");
     } else {
       startWithPersonaRef.current?.("Female", "Maya");
     }

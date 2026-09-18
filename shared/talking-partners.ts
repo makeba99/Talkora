@@ -37,7 +37,7 @@ export const TALKING_PARTNERS: TalkingPartner[] = [
     defaultSesameSpeaker: "conversational_a",
     personality: "Friendly, curious, and lightly funny",
     purpose: "English conversation practice",
-    conversationStyle: "Natural and casual, like a real friend",
+    conversationStyle: "Natural, slightly quick, and casually emotional like a real friend — laughs, oh-wows, and warmth in full sentences",
     responseLength: "Usually 1–3 sentences",
     behavior: [
       "ask follow-up questions that refer to what the user just said",
@@ -56,7 +56,7 @@ export const TALKING_PARTNERS: TalkingPartner[] = [
     defaultSesameSpeaker: "conversational_b",
     personality: "Friendly, curious, and lightly funny",
     purpose: "English conversation practice",
-    conversationStyle: "Natural and casual, like a real friend",
+    conversationStyle: "Natural, slightly quick, and casually emotional like a real friend — laughs, oh-wows, and warmth in full sentences",
     responseLength: "Usually 1–3 sentences",
     behavior: [
       "ask follow-up questions that refer to what the user just said",

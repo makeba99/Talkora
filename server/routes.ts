@@ -6,6 +6,7 @@ import { isAuthenticated } from "./replit_integrations/auth";
 import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema, insertUserCommentSchema, insertBadgeApplicationSchema, insertAnnouncementSchema, BADGE_TYPES, VIP_PLANS, vipPlanFromAmount, vipRank, BADGE_CELEBRATION_GIF, BADGE_CELEBRATION_MOOD, BADGE_CELEBRATION_DURATION_MS, VIP_SHOUTOUT_GIF, VIP_SHOUTOUT_DAILY_LIMIT, LOBBY_PROFILE_STYLES, LOBBY_PROFILE_SIZES } from "@shared/schema";
 import type { User } from "@shared/schema";
 import { SEO_STATIC_PAGES } from "@shared/seo-pages";
+import { SPOKEN_AUDIO_STYLE } from "@shared/spoken-tutor-line";
 import { z } from "zod";
 import multer, { type StorageEngine } from "multer";
 import path from "path";
@@ -2153,7 +2154,7 @@ export async function registerRoutes(
       if (isRepetitive) warnings.push('repetitive_responses_detected');
       if (youtubeActive) warnings.push('youtube_active_during_session');
 
-      const temperature = isRepetitive ? 0.82 : 0.62;
+      const temperature = isRepetitive ? 0.86 : 0.72;
 
       // Build system prompt — engaging, voice-first AI personality
       const correctionLine = correctionMode !== "off"
@@ -2210,17 +2211,17 @@ export async function registerRoutes(
         `VOICE ACTIVATION: If the user says "hello", "are you there", "can you hear me", or similar check-ins, respond immediately and warmly — confirm you're listening in one short sentence.`,
         `Listen first: extract the user's exact intent, reference their words naturally, and answer that specific point. Never ignore or change the topic.`,
         `Lead with the answer: put the most important part of your response first so it can be spoken within the first second. Context and elaboration come after.`,
-        `SPOKEN AUDIO: Never start a reply with hmm, mm, uh, um, okay, or "let me think". Never output a sentence fragment or trailing ellipsis. Every reply must be complete sentences that can be read aloud as-is.`,
+        SPOKEN_AUDIO_STYLE,
         (isEva || isLebroski)
-          ? `Keep replies short and natural: 1–2 sentences unless they ask for more. Sound like a person, not an assistant.`
-          : `Keep replies short and voice-first: usually 1–2 sentences. If the user asks for detail, give a complete answer — correctness matters more than brevity then.`,
+          ? `Keep replies short and natural: 1–2 sentences unless they ask for more. Sound like a person, not an assistant. Speak a bit quicker than a slow teacher.`
+          : `Keep replies short and voice-first: usually 1–2 sentences, at a natural slightly-quick pace. If the user asks for detail, give a complete answer — correctness matters more than brevity then.`,
         `INCOMPLETE SPEECH: If the user's message trails off, is clearly a fragment, or references something unmentioned (e.g. "what about the..." or "so I was thinking..."), ask the single most useful clarification question — short, natural, spoken. If the input could mean two different things, briefly name both options instead of just asking: e.g., "Do you mean X, or more like Y?"`,
         `GARBLED INPUT: If the transcription appears cut off mid-word, makes no semantic sense, is a single disconnected syllable, or reads like random phonemes — say something natural like "I missed that — could you say it again?" Do not try to interpret or guess garbled input.`,
         `If the user's speech is genuinely unclear, ${isAfiK ? `say "what do you mean huh?" or ask one short playful clarifier` : 'ask one short clarification question instead of guessing'}.`,
         `If asked to repeat or rephrase something, do it concisely in different words — don't just copy your last reply.`,
         `NEXT STEPS: After a complete answer, occasionally (not every turn — maybe 1 in 3) offer one natural continuation: a short follow-up question, a suggestion for what to practice next, or an invitation to keep going. One sentence max. Never stack it on top of another question.`,
         (isEva || isLebroski)
-          ? `Your tone is warm, direct, and real. You feel present. No filler, no performance — just you.`
+          ? `Your tone is warm, direct, and real. You feel present. React with spoken emotion — haha, oh wow, aww — then talk.`
           : personality === 'Formal' && !isAfiK
             ? `Your tone is warm but polished — professional without being stiff.`
             : isAfiK
@@ -2230,7 +2231,7 @@ export async function registerRoutes(
           ? `Lean into grammar and structure, but keep it warm and encouraging — never lecture.`
           : `Keep it conversational. React like a real person would — curiosity, humor, or a quick take.`,
         `Speak naturally. Avoid markdown, bullet lists, and academic-style explanations.`,
-        `Never start with hollow filler like "Great!", "Wow!", "Of course!" or "Certainly!". Just respond.`,
+        `Never start with empty assistant-speak like "Of course!" or "Certainly!". Real reactions are good: "Oh wow,", "Haha,", "Aww,", "Oh no," — then a full sentence about what they said.`,
         `Never ask more than one question at a time. Often zero questions is better.`,
          `Never repeat phrasing from previous turns. If the conversation loops, take a new angle. The recent assistant replies are already in the conversation; treat them as banned wording and do not reuse their sentence structure.`,
          recentReplyBlock,
@@ -2397,7 +2398,7 @@ export async function registerRoutes(
         text: text.trim(),
         personaVoice: voice,
         voiceId: typeof voiceId === "string" && /^[a-z0-9_-]{2,64}$/i.test(voiceId) ? voiceId : null,
-        speed: typeof req.body?.speed === "number" ? req.body.speed : 1.12,
+        speed: typeof req.body?.speed === "number" ? req.body.speed : 1.18,
       });
       if (!result.ok || !result.body) {
         if (result.error === "browser-tts" || result.status === 501) {
@@ -2565,7 +2566,7 @@ export async function registerRoutes(
        const recentReplyBlock = recentAiReplies.length
          ? `RECENT ASSISTANT REPLIES (use as banned phrasing; do not repeat their wording or generic question pattern): ${recentAiReplies.map((reply) => `"${reply}"`).join(" | ")}`
          : '';
-      const temperature = isRepetitive ? 0.85 : 0.65;
+      const temperature = isRepetitive ? 0.88 : 0.74;
 
       const correctionLine = correctionMode !== 'off'
         ? `When you catch a grammar or vocabulary mistake, weave the fix in naturally mid-reply (e.g., "Oh, you mean...") — quick and light, then keep going.`
@@ -2619,17 +2620,17 @@ export async function registerRoutes(
         `VOICE ACTIVATION: If the user says "hello", "are you there", "can you hear me", or similar check-ins, respond immediately and warmly — confirm you're listening in one short sentence.`,
         `Listen first: extract the user's exact intent, reference their words naturally, and answer that specific point. Never ignore or change the topic.`,
         `Lead with the answer: put the most important part of your response first so it can be spoken within the first second. Context and elaboration come after.`,
-        `SPOKEN AUDIO: Never start a reply with hmm, mm, uh, um, okay, or "let me think". Never output a sentence fragment or trailing ellipsis. Every reply must be complete sentences that can be read aloud as-is.`,
+        SPOKEN_AUDIO_STYLE,
         (isEva || isLebroski)
-          ? `Keep replies short and natural: 1–2 sentences unless they ask for more. Sound like a person, not an assistant.`
-          : `Keep replies short and voice-first: usually 1–2 sentences. If the user asks for detail, explanation, or something complex, give a complete, well-structured answer — correctness and completeness matter more than brevity in those cases.`,
+          ? `Keep replies short and natural: 1–2 sentences unless they ask for more. Sound like a person, not an assistant. Speak a bit quicker than a slow teacher.`
+          : `Keep replies short and voice-first: usually 1–2 sentences, at a natural slightly-quick pace. If the user asks for detail, explanation, or something complex, give a complete, well-structured answer — correctness and completeness matter more than brevity in those cases.`,
         `INCOMPLETE SPEECH: If the user's message trails off, is clearly a fragment, or references something unmentioned (e.g. "what about the..." or "so I was thinking..."), ask the single most useful clarification question — short, natural, spoken. If the input could mean two different things, briefly name both options: e.g., "Do you mean X, or more like Y?"`,
         `GARBLED INPUT: If the transcription appears cut off mid-word, makes no semantic sense, is a single disconnected syllable, or reads like random phonemes — say something natural like "I missed that — could you say it again?" Do not try to interpret or guess garbled input.`,
         `If the user's speech is genuinely unclear, ask one short clarification question instead of guessing.`,
         `If asked to repeat or rephrase something, do it concisely in different words — don't just copy your last reply.`,
         `NEXT STEPS: After a complete answer, occasionally (not every turn — maybe 1 in 3) offer one natural continuation: a short follow-up question, a suggestion for what to practice next, or an invitation to keep going. One sentence max. Never stack it on top of another question.`,
         (isEva || isLebroski)
-          ? `Your tone is warm, direct, and real. You feel present. No filler, no performance — just you.`
+          ? `Your tone is warm, direct, and real. You feel present. React with spoken emotion — haha, oh wow, aww — then talk.`
           : personality === 'Formal'
             ? `Your tone is warm but polished — professional without being stiff.`
             : `Your tone is friendly, confident, and slightly playful — like a smart friend who actually enjoys the conversation.`,
@@ -2638,8 +2639,8 @@ export async function registerRoutes(
           : `Keep it conversational and reactive — respond to what the user actually said, like a real person would.`,
         `Speak naturally. Avoid markdown, bullet lists, and academic-style explanations.`,
         (isEva || isLebroski)
-          ? `Never start with hollow filler — no "Great!", "Of course!", "Sure!", "Absolutely!". Just respond from the first word.`
-          : `Never open with hollow filler: no "Great!", "Wow!", "Of course!", "Certainly!". Just respond.`,
+          ? `Never start with empty assistant-speak like "Of course!" or "Certainly!". Real reactions are good: "Oh wow,", "Haha,", "Aww," — then a full sentence.`
+          : `Never start with empty assistant-speak like "Of course!" or "Certainly!". Real reactions are good: "Oh wow,", "Haha,", "Aww," — then a full sentence.`,
         `Never ask more than one question at a time. Often zero questions is better.`,
          `Never repeat phrasing from previous turns. If the conversation loops, pivot to a fresh angle. Treat recent assistant replies in the conversation as banned wording.`,
          recentReplyBlock,
