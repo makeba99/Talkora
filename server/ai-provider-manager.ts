@@ -19,6 +19,7 @@ import {
 import { openAiSynthesize } from "./openai-tts";
 import { edgeSynthesize, resolveEdgeVoiceId, isMalePersona } from "./edge-tts";
 import { getSesameProvider } from "./voice";
+import { sesameHfToken, sesameUserMessage } from "./voice/sesame-payload";
 
 export type KeySlot = "primary" | "secondary";
 export type ProviderKind = "brain" | "voice";
@@ -880,36 +881,54 @@ export async function testBrainKey(slot: KeySlot, overrideKey?: string): Promise
   }
 }
 
+export async function testSesameVoice(): Promise<{
+  ok: boolean;
+  message: string;
+  status: KeyHealth;
+  audio?: ArrayBuffer;
+  contentType?: string;
+  hasHfToken?: boolean;
+}> {
+  await ensureUsageLoaded();
+  const cfg = await getAiTutorConfig();
+  const sesame = await getSesameProvider().synthesize({
+    text: "Hi, this is Maya.",
+    voiceId: cfg.voice.femaleVoice || "conversational_a",
+    bypassSkip: true,
+  });
+  const hasHfToken = !!sesameHfToken();
+  if (sesame.ok && sesame.body) {
+    markSuccess("voice", "primary", { characters: 16 });
+    return {
+      ok: true,
+      message: "Connection successful (Sesame CSM-1B)",
+      status: "HEALTHY",
+      audio: sesame.body,
+      contentType: sesame.contentType,
+      hasHfToken,
+    };
+  }
+  return {
+    ok: false,
+    message: sesameUserMessage(sesame.error || "sesame-failed"),
+    status: "ERROR",
+    hasHfToken,
+  };
+}
+
 export async function testVoiceKey(slot: KeySlot, overrideKey?: string): Promise<{
   ok: boolean;
   message: string;
   status: KeyHealth;
   audio?: ArrayBuffer;
   contentType?: string;
+  hasHfToken?: boolean;
 }> {
   await ensureUsageLoaded();
   const cfg = await getAiTutorConfig();
 
   if (cfg.voice.provider === "sesame") {
-    const sesame = await getSesameProvider().synthesize({
-      text: "Hello. This is a Vextorn Sesame voice test.",
-      voiceId: cfg.voice.femaleVoice || "maya",
-    });
-    if (sesame.ok && sesame.body) {
-      markSuccess("voice", slot, { characters: 48 });
-      return {
-        ok: true,
-        message: "Connection successful (Sesame CSM-1B)",
-        status: "HEALTHY",
-        audio: sesame.body,
-        contentType: sesame.contentType,
-      };
-    }
-    return {
-      ok: false,
-      message: sesame.error || "Sesame CSM-1B unavailable",
-      status: "ERROR",
-    };
+    return testSesameVoice();
   }
 
   // Free Edge neural TTS — no API key required

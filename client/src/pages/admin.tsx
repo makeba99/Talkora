@@ -2388,7 +2388,12 @@ function AiTutorTab() {
       } else {
         toast({
           title: `✗ ${body.message || "Test failed"}`,
-          description: `${kind} ${slot}`,
+          description:
+            kind === "sesame"
+              ? body.hasHfToken
+                ? "Railway has HF_TOKEN loaded. If this still fails, the token is Fine-grained — replace it with a Classic Read token and wait for restart."
+                : "Railway did not load HF_TOKEN yet. Set HF_TOKEN and wait for the service restart."
+              : `${kind} ${slot}`,
           variant: "destructive",
         });
       }
@@ -2681,9 +2686,16 @@ function AiTutorTab() {
                 </div>
               ) : voiceProvider === "sesame" ? (
                 <>
-                  <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-muted-foreground">
-                    Sesame CSM-1B via the Hugging Face Space API (<code>/infer</code>). Token stays server-side as <code>HF_TOKEN</code>.
-                    Hosted Space latency is not guaranteed — Edge is used automatically if generation fails.
+                  <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-muted-foreground space-y-1">
+                    <p>
+                      Sesame CSM-1B via the Hugging Face Space API (<code>/infer</code>). Token stays server-side as <code>HF_TOKEN</code>.
+                      If generation fails, rooms automatically keep speaking with Edge neural.
+                    </p>
+                    <p>
+                      Use a <strong>Classic Read</strong> token (not Fine-grained). The hosted Space asks for 180s of ZeroGPU;
+                      Fine-grained tokens are treated as guests (~120s) and <code>/infer</code> always fails. After changing
+                      Railway variables, wait for the service to restart, then Save and Test.
+                    </p>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1.5">
@@ -2925,7 +2937,7 @@ function AiTutorTab() {
               <RefreshCw className="h-4 w-4" />
             </Button>
             <p className="text-xs text-muted-foreground">
-              Free setup: Groq brain + Edge neural voice. Env: GROQ_API_KEY, AI_VOICE_PROVIDER=edge.
+              Free setup: Groq brain + Edge neural. Sesame: Railway <code>HF_TOKEN</code> (Classic Read) and <code>AI_VOICE_PROVIDER=sesame</code>.
             </p>
           </div>
         </>

@@ -85,6 +85,68 @@ export function sesameSpaceId(): string {
   return (process.env.AI_VOICE_SESAME_SPACE || DEFAULT_SESAME_SPACE).trim() || DEFAULT_SESAME_SPACE;
 }
 
+export function sanitizeHfToken(raw: string | undefined | null): string {
+  let token = String(raw || "").trim();
+  if (!token) return "";
+  token = token.replace(/^Bearer\s+/i, "").trim();
+  token = token.replace(/^["']+|["']+$/g, "").trim();
+  return token;
+}
+
 export function sesameHfToken(): string {
-  return (process.env.HF_TOKEN || process.env.AI_VOICE_HF_TOKEN || process.env.HUGGINGFACE_TOKEN || "").trim();
+  return sanitizeHfToken(
+    process.env.HF_TOKEN ||
+      process.env.AI_VOICE_HF_TOKEN ||
+      process.env.HUGGINGFACE_TOKEN ||
+      process.env.HUGGING_FACE_HUB_TOKEN ||
+      process.env.HUGGINGFACEHUB_API_TOKEN,
+  );
+}
+
+export function sesameErrorText(err: unknown): string {
+  if (!err) return "";
+  if (typeof err === "string") return err;
+  const e = err as Record<string, unknown>;
+  return [e.message, e.title, e.original_msg, e.detail, e.error]
+    .filter((value) => typeof value === "string" && value.trim())
+    .join(" ");
+}
+
+export function classifySesameError(err: unknown): { code: string; status: number } {
+  const text = sesameErrorText(err);
+  if (/401|unauthorized|invalid token|invalid credentials|InvalidRepoToken/i.test(text)) {
+    return { code: "sesame-unauthorized", status: 401 };
+  }
+  if (
+    /gpu duration|zerogpu|illegal duration|maximum allowed|gpu quota|quota exceeded/i.test(
+      text,
+    )
+  ) {
+    return { code: "sesame-gpu-quota", status: 503 };
+  }
+  if (/abort|timeout|timed out/i.test(text)) {
+    return { code: "sesame-timeout", status: 504 };
+  }
+  return { code: "sesame-failed", status: 502 };
+}
+
+export function sesameUserMessage(code: string): string {
+  switch (code) {
+    case "sesame-no-token":
+      return "HF_TOKEN is missing on Railway. Add a Hugging Face Classic Read token (hf_...), then restart the service.";
+    case "sesame-unauthorized":
+      return "Hugging Face rejected HF_TOKEN. Create a Classic Read token (not Fine-grained) at huggingface.co/settings/tokens and paste it into Railway HF_TOKEN.";
+    case "sesame-gpu-quota":
+      return "Sesame's Space asks for 180s of ZeroGPU. Fine-grained or unused tokens are treated as guests (~120s) so /infer always fails. Use a Classic Read token, wait for Railway to restart, then test again.";
+    case "sesame-timeout":
+      return "Sesame timed out waiting for the Hugging Face Space. Retry in a minute; in-room tutors will use Edge until it recovers.";
+    case "sesame-skipped":
+      return "Sesame is paused for 10 minutes after a ZeroGPU quota error so rooms stay on Edge. Retry after that, or restart the service.";
+    case "sesame-no-audio":
+      return "Sesame /infer returned no audio file.";
+    case "sesame-audio-download-failed":
+      return "Sesame produced audio but the file could not be downloaded.";
+    default:
+      return "Sesame CSM-1B failed. In-room tutors keep speaking with Edge neural until this succeeds.";
+  }
 }

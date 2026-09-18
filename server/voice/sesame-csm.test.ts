@@ -1,9 +1,12 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
   buildSesameInferPayload,
+  classifySesameError,
   conversationForAiUtterance,
   fileUrlFromPredict,
   resolveSesameSpeaker,
+  sanitizeHfToken,
+  sesameUserMessage,
 } from "./sesame-payload";
 import { SESAME_INFER_API } from "./types";
 import { clearSesamePromptCache, SesameCsmProvider } from "./sesame-csm";
@@ -86,6 +89,8 @@ describe("SesameCsmProvider", () => {
     delete process.env.HF_TOKEN;
     delete process.env.AI_VOICE_HF_TOKEN;
     delete process.env.HUGGINGFACE_TOKEN;
+    delete process.env.HUGGING_FACE_HUB_TOKEN;
+    delete process.env.HUGGINGFACEHUB_API_TOKEN;
     const provider = new SesameCsmProvider();
     const result = await provider.synthesize({ text: "Hello", voiceId: "maya" });
     if (prev) process.env.HF_TOKEN = prev;
@@ -115,5 +120,70 @@ describe("SesameCsmProvider", () => {
     const result = await provider.synthesize({ text: "Hello", voiceId: "maya" });
     expect(result.ok).toBe(false);
     expect(result.error).toBe("sesame-gpu-quota");
+  });
+
+  it("maps ZeroGPU title-only errors (no 'gpu duration' substring)", async () => {
+    const provider = new SesameCsmProvider({
+      connect: async () => ({
+        predict: async () => {
+          const err = new Error("") as Error & { title?: string };
+          err.title = "ZeroGPU illegal duration";
+          throw err;
+        },
+      }),
+    });
+    const result = await provider.synthesize({ text: "Hello", voiceId: "maya" });
+    expect(result.error).toBe("sesame-gpu-quota");
+  });
+
+  it("passes Gradio FileData prompts through without re-wrapping", async () => {
+    const fileA = {
+      path: "/tmp/gradio/a.wav",
+      url: "https://sesame-csm-1b.hf.space/gradio_api/file=/tmp/gradio/a.wav",
+      meta: { _type: "gradio.FileData" },
+    };
+    let inferAudio: unknown;
+    const provider = new SesameCsmProvider({
+      connect: async () => ({
+        predict: async (endpoint, data) => {
+          if (endpoint === "/update_text" || endpoint === "/update_text_1") {
+            return { data: "speaker text" };
+          }
+          if (endpoint === "/update_audio" || endpoint === "/update_audio_1") {
+            return { data: fileA };
+          }
+          if (endpoint === "/infer") {
+            inferAudio = (data as { audio_prompt_speaker_a: unknown }).audio_prompt_speaker_a;
+            return { data: { url: "https://example.com/out.wav" } };
+          }
+          throw new Error(`unexpected ${endpoint}`);
+        },
+      }),
+      handleFile: () => ({ wrapped: true }),
+      fetchAudio: async () => ({
+        ok: true,
+        status: 200,
+        contentType: "audio/wav",
+        body: new ArrayBuffer(128),
+      }),
+    });
+    const result = await provider.synthesize({ text: "Hello", voiceId: "maya" });
+    expect(result.ok).toBe(true);
+    expect(inferAudio).toEqual(fileA);
+  });
+});
+
+describe("sesame token and error helpers", () => {
+  it("strips Bearer and quotes from HF tokens", () => {
+    expect(sanitizeHfToken('Bearer hf_abc')).toBe("hf_abc");
+    expect(sanitizeHfToken('"hf_abc"')).toBe("hf_abc");
+  });
+
+  it("classifies ZeroGPU title as gpu quota", () => {
+    expect(classifySesameError({ title: "ZeroGPU illegal duration" }).code).toBe("sesame-gpu-quota");
+  });
+
+  it("explains gpu quota in admin copy", () => {
+    expect(sesameUserMessage("sesame-gpu-quota")).toMatch(/Classic Read/);
   });
 });
