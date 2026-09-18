@@ -2404,9 +2404,9 @@ function AiTutorTab() {
           title: `✗ ${body.message || "Test failed"}`,
           description:
             kind === "sesame"
-              ? body.hasHfToken
-                ? "Railway has HF_TOKEN loaded. If this still fails, the token is Fine-grained — replace it with a Classic Read token and wait for restart."
-                : "Railway did not load HF_TOKEN yet. Set HF_TOKEN and wait for the service restart."
+              ? body.hasGpuKey || body.hasHfToken
+                ? body.message || "GPU host rejected the request. Check fal.ai / DeepInfra billing."
+                : "Set Railway FAL_KEY or DEEPINFRA_TOKEN and wait for restart. These are pay-as-you-go after signup credits — the HF Space is not used."
               : `${kind} ${slot}`,
           variant: "destructive",
         });
@@ -2686,7 +2686,7 @@ function AiTutorTab() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="edge">Edge neural (free, natural)</SelectItem>
-                    <SelectItem value="sesame">Sesame CSM-1B (Hugging Face)</SelectItem>
+                    <SelectItem value="sesame">Sesame CSM-1B (fal.ai / DeepInfra GPU)</SelectItem>
                     <SelectItem value="browser">Browser (free, device voices)</SelectItem>
                     <SelectItem value="openai">OpenAI TTS (paid)</SelectItem>
                   </SelectContent>
@@ -2703,10 +2703,10 @@ function AiTutorTab() {
                   <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-muted-foreground space-y-1">
                     <p>
                       Sesame CSM-1B is generated server-side (Maya = conversational_a, Miles = conversational_b).
-                      Railway <code>HF_TOKEN</code> (Classic Read) is routed to DeepInfra, the live Hugging Face Inference Provider for sesame/csm-1b.
+                      Railway <code>FAL_KEY</code> (fal-ai/csm-1b) or <code>DEEPINFRA_TOKEN</code> talks to a real GPU. This is pay-as-you-go after signup credits — not free. The public Hugging Face Space is never called.
                     </p>
                     <p>
-                      Open <a className="underline" href="https://huggingface.co/sesame/csm-1b" target="_blank" rel="noreferrer">huggingface.co/sesame/csm-1b</a> while logged in and click Agree, then Test Sesame Voice. The public Space is not used (it asks for 180s of ZeroGPU).
+                      Get a key at <a className="underline" href="https://fal.ai/dashboard/keys" target="_blank" rel="noreferrer">fal.ai/dashboard/keys</a> or <a className="underline" href="https://deepinfra.com" target="_blank" rel="noreferrer">deepinfra.com</a>. DeepInfra is cheaper (~$7 / 1M characters). fal.ai is about $0.03 / 1k characters. Still accept the license at <a className="underline" href="https://huggingface.co/sesame/csm-1b" target="_blank" rel="noreferrer">huggingface.co/sesame/csm-1b</a> if the host requires it.
                     </p>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -2949,7 +2949,7 @@ function AiTutorTab() {
               <RefreshCw className="h-4 w-4" />
             </Button>
             <p className="text-xs text-muted-foreground">
-              Free setup: Groq brain + Edge neural. Sesame: Railway <code>HF_TOKEN</code> (accept sesame/csm-1b) and <code>AI_VOICE_PROVIDER=sesame</code>.
+              Sesame: Railway <code>FAL_KEY</code> or <code>DEEPINFRA_TOKEN</code> (GPU, paid after credits) + <code>AI_VOICE_PROVIDER=sesame</code>.
             </p>
           </div>
         </>

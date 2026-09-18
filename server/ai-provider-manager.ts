@@ -20,7 +20,7 @@ import { openAiSynthesize } from "./openai-tts";
 import { edgeSynthesize, resolveEdgeVoiceId, isMalePersona } from "./edge-tts";
 import { isSesameSpeakerId } from "@shared/talking-partners";
 import { getSesameProvider } from "./voice";
-import { sesameHfToken, sesameUserMessage, splitSesameUtterances, concatWavArrayBuffers } from "./voice/sesame-payload";
+import { sesameHfToken, sesameFalKey, sesameDeepinfraKey, sesameUserMessage, splitSesameUtterances, concatWavArrayBuffers } from "./voice/sesame-payload";
 
 export type KeySlot = "primary" | "secondary";
 export type ProviderKind = "brain" | "voice";
@@ -904,6 +904,7 @@ export async function testSesameVoice(): Promise<{
   audio?: ArrayBuffer;
   contentType?: string;
   hasHfToken?: boolean;
+  hasGpuKey?: boolean;
   fallback?: string;
 }> {
   await ensureUsageLoaded();
@@ -914,6 +915,7 @@ export async function testSesameVoice(): Promise<{
     bypassSkip: true,
   });
   const hasHfToken = !!sesameHfToken();
+  const hasGpuKey = !!(sesameFalKey() || sesameDeepinfraKey() || hasHfToken);
   if (sesame.ok && sesame.body) {
     markSuccess("voice", "primary", { characters: 16 });
     return {
@@ -923,6 +925,7 @@ export async function testSesameVoice(): Promise<{
       audio: sesame.body,
       contentType: sesame.contentType,
       hasHfToken,
+      hasGpuKey,
     };
   }
     const gpuBlocked =
@@ -940,6 +943,7 @@ export async function testSesameVoice(): Promise<{
         message: sesameUserMessage(sesame.error || "sesame-failed"),
         status: sesame.error === "sesame-gated" || sesame.error === "sesame-unauthorized" ? "ERROR" : "WARNING",
         hasHfToken,
+        hasGpuKey,
       };
     }
   return {
@@ -947,6 +951,7 @@ export async function testSesameVoice(): Promise<{
     message: sesameUserMessage(sesame.error || "sesame-failed"),
     status: "ERROR",
     hasHfToken,
+    hasGpuKey,
   };
 }
 

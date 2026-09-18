@@ -16,8 +16,6 @@ import {
   fileUrlFromPredict,
   inferViaDeepInfra,
   inferViaFal,
-  inferViaGradioCallApi,
-  inferViaHfInference,
   resolveSesameSpeaker,
   sesameDeepinfraKey,
   sesameErrorText,
@@ -28,13 +26,6 @@ import {
 } from "./sesame-payload";
 
 const TIMEOUT_MS = 90_000;
-const SKIP_AFTER_GPU_MS = 10 * 60 * 1000;
-
-let skipSesameUntil = 0;
-
-function markSesameUnavailable(ms = SKIP_AFTER_GPU_MS) {
-  skipSesameUntil = Date.now() + ms;
-}
 
 type GradioLike = {
   predict: (endpoint: string, data?: unknown[] | Record<string, unknown>) => Promise<{ data: unknown }>;
@@ -143,16 +134,25 @@ export class SesameCsmProvider implements VoiceProvider {
   async health(): Promise<VoiceHealth> {
     const token = sesameHfToken();
     const falKey = sesameFalKey();
-    if (!token && !falKey && !sesameDeepinfraKey()) {
-      return { available: false, reachable: false, detail: "HF_TOKEN not configured" };
+    const deepinfraKey = sesameDeepinfraKey();
+    if (!token && !falKey && !deepinfraKey) {
+      return {
+        available: false,
+        reachable: false,
+        detail: "Set FAL_KEY (fal-ai/csm-1b) or DEEPINFRA_TOKEN — the public HF Space is not used",
+      };
     }
-    if (token || sesameDeepinfraKey()) {
-      const auth = token ? await verifyHfToken(token) : "ok";
-      if (auth === "unauthorized" && !sesameDeepinfraKey() && !falKey) {
-        return { available: true, reachable: false, detail: "HF_TOKEN rejected" };
-      }
+    if (falKey) {
+      return { available: true, reachable: true, detail: "Sesame CSM-1B via fal.ai (fal-ai/csm-1b)" };
+    }
+    if (deepinfraKey) {
       return { available: true, reachable: true, detail: "Sesame CSM-1B via DeepInfra" };
     }
+    const auth = await verifyHfToken(token);
+    if (auth === "unauthorized") {
+      return { available: true, reachable: false, detail: "HF_TOKEN rejected" };
+    }
+    return { available: true, reachable: true, detail: "Sesame CSM-1B via Hugging Face → DeepInfra" };
   }
 
   async synthesize(req: VoiceSynthesizeRequest): Promise<VoiceSynthesizeResult> {
@@ -163,96 +163,68 @@ export class SesameCsmProvider implements VoiceProvider {
     const token = sesameHfToken();
     const falKey = sesameFalKey();
     const deepinfraKey = sesameDeepinfraKey();
-    const usingLiveSpace = this.deps.connect === defaultConnect;
-    if (usingLiveSpace && !token && !falKey && !deepinfraKey) {
-      this.lastError = "HF_TOKEN not configured";
+    const liveGpuPath = this.deps.connect === defaultConnect;
+    if (liveGpuPath && !token && !falKey && !deepinfraKey) {
+      this.lastError = "FAL_KEY or DEEPINFRA_TOKEN not configured";
       return fail(503, "sesame-no-token", speakerA);
     }
-    if (usingLiveSpace && (token || deepinfraKey)) {
-      if (token) {
-        const auth = await verifyHfToken(token);
-        if (auth === "unauthorized" && !deepinfraKey && !falKey) {
-          this.lastError = "Hugging Face rejected HF_TOKEN (401/403)";
-          return fail(401, "sesame-unauthorized", speakerA);
-        }
-      }
-      const deepinfra = await inferViaDeepInfra({
-        text,
-        speakerA,
-        hfToken: token || undefined,
-        deepinfraKey: deepinfraKey || undefined,
-        signal: req.signal,
-      });
-      if (deepinfra.ok) {
-        this.lastError = null;
-        skipSesameUntil = 0;
-        return {
-          ok: true,
-          status: 200,
-          contentType: deepinfra.contentType || "audio/wav",
-          body: deepinfra.body,
-          voiceUsed: speakerA,
-          provider: "sesame",
-        };
-      }
-      this.lastError = deepinfra.error;
-      console.warn("[sesame-csm] DeepInfra CSM failed:", deepinfra.error);
-    }
-    if (usingLiveSpace && token) {
-      const hf = await inferViaHfInference({
-        text,
-        speakerA,
-        token,
-        signal: req.signal,
-      });
-      if (hf.ok) {
-        this.lastError = null;
-        skipSesameUntil = 0;
-        return {
-          ok: true,
-          status: 200,
-          contentType: hf.contentType || "audio/wav",
-          body: hf.body,
-          voiceUsed: speakerA,
-          provider: "sesame",
-        };
-      }
-      this.lastError = hf.error;
-      console.warn("[sesame-csm] HF Inference failed:", hf.error);
-    }
-    if (usingLiveSpace && (falKey || token)) {
-      const fal = await inferViaFal({
-        text,
-        speakerA,
-        falKey: falKey || undefined,
-        hfToken: token || undefined,
-        signal: req.signal,
-      });
-      if (fal.ok) {
-        this.lastError = null;
-        skipSesameUntil = 0;
-        return {
-          ok: true,
-          status: 200,
-          contentType: fal.contentType || "audio/wav",
-          body: fal.body,
-          voiceUsed: speakerA,
-          provider: "sesame",
-        };
-      }
-      this.lastError = fal.error;
-      console.warn("[sesame-csm] fal.ai CSM failed:", fal.error);
-    }
 
-    const spaceId = sesameSpaceId();
-    const officialZeroGpuSpace = /^sesame\/csm-1b$/i.test(spaceId);
-    if (usingLiveSpace && officialZeroGpuSpace) {
-      // The public Space always requests 180s of ZeroGPU and cannot run from Railway.
-      return fail(503, "sesame-gpu-quota", speakerA);
-    }
-    if (usingLiveSpace && !req.bypassSkip && Date.now() < skipSesameUntil) {
-      this.lastError = "sesame temporarily skipped after GPU quota error";
-      return fail(503, "sesame-skipped", speakerA);
+    const succeed = (body: ArrayBuffer, contentType: string): VoiceSynthesizeResult => {
+      this.lastError = null;
+      return {
+        ok: true,
+        status: 200,
+        contentType: contentType || "audio/wav",
+        body,
+        voiceUsed: speakerA,
+        provider: "sesame",
+      };
+    };
+
+    // Railway live path: paid GPU hosts only. Never open sesame/csm-1b ZeroGPU.
+    if (liveGpuPath) {
+      if (falKey) {
+        const fal = await inferViaFal({
+          text,
+          speakerA,
+          falKey,
+          signal: req.signal,
+        });
+        if (fal.ok) return succeed(fal.body, fal.contentType);
+        this.lastError = fal.error;
+        console.warn("[sesame-csm] fal.ai CSM failed:", fal.error);
+      }
+      if (deepinfraKey || token) {
+        if (token && !deepinfraKey && !falKey) {
+          const auth = await verifyHfToken(token);
+          if (auth === "unauthorized") {
+            this.lastError = "Hugging Face rejected HF_TOKEN (401/403)";
+            return fail(401, "sesame-unauthorized", speakerA);
+          }
+        }
+        const deepinfra = await inferViaDeepInfra({
+          text,
+          speakerA,
+          hfToken: token || undefined,
+          deepinfraKey: deepinfraKey || undefined,
+          signal: req.signal,
+        });
+        if (deepinfra.ok) return succeed(deepinfra.body, deepinfra.contentType);
+        this.lastError = deepinfra.error;
+        console.warn("[sesame-csm] DeepInfra CSM failed:", deepinfra.error);
+      }
+      if (!falKey && token) {
+        const fal = await inferViaFal({
+          text,
+          speakerA,
+          hfToken: token,
+          signal: req.signal,
+        });
+        if (fal.ok) return succeed(fal.body, fal.contentType);
+        this.lastError = fal.error;
+        console.warn("[sesame-csm] HF→fal CSM failed:", fal.error);
+      }
+      return fail(502, classifySesameError(this.lastError || "sesame-failed").code, speakerA);
     }
 
     const controller = new AbortController();
@@ -283,14 +255,7 @@ export class SesameCsmProvider implements VoiceProvider {
         return fail(400, "prompt too long", speakerA);
       }
 
-      const infer = usingLiveSpace
-        ? await inferViaGradioCallApi({
-            spaceId: sesameSpaceId(),
-            payload,
-            token: token || undefined,
-            signal: controller.signal,
-          })
-        : await client.predict(SESAME_INFER_API, {
+      const infer = await client.predict(SESAME_INFER_API, {
             text_prompt_speaker_a: payload.text_prompt_speaker_a,
             text_prompt_speaker_b: payload.text_prompt_speaker_b,
             audio_prompt_speaker_a: payload.audio_prompt_speaker_a,
@@ -329,12 +294,6 @@ export class SesameCsmProvider implements VoiceProvider {
       const classified = aborted
         ? { code: "sesame-timeout", status: 504 }
         : classifySesameError(err);
-      if (
-        usingLiveSpace &&
-        (classified.code === "sesame-gpu-quota" || classified.code === "sesame-timeout")
-      ) {
-        markSesameUnavailable();
-      }
       return fail(classified.status, classified.code, speakerA);
     } finally {
       clearTimeout(timer);
@@ -345,5 +304,4 @@ export class SesameCsmProvider implements VoiceProvider {
 
 export function clearSesamePromptCache(): void {
   promptCache.clear();
-  skipSesameUntil = 0;
 }

@@ -7387,6 +7387,7 @@ export async function registerRoutes(
           message: result.message,
           status: result.status,
           hasHfToken: result.hasHfToken,
+          hasGpuKey: result.hasGpuKey,
         });
       }
       if (slot !== "primary" && slot !== "secondary") {
