@@ -228,9 +228,7 @@ function NeumorphicPersonaCard(props: {
 
 const AI_TUTOR_AVATARS = [
   { id: "aurora", label: "Maya", gender: "Female", hairStart: "#f5f8ff", hairMid: "#c4cbe4", hairEnd: "#66718f", bang: "#ffffff", eye: "#58bdf4", suit: "#22d3ee", skinStart: "#ffe8da", skinMid: "#d79a82", skinEnd: "#8b575b" },
-  { id: "nova", label: "Noah", gender: "Male", hairStart: "#3a2a22", hairMid: "#19120f", hairEnd: "#070504", bang: "#3a2a22", eye: "#3f5f6f", suit: "#0ea5e9", skinStart: "#f0d4bd", skinMid: "#b9785f", skinEnd: "#68413d" },
-  { id: "ember", label: "Elena", gender: "Female", hairStart: "#e9edf8", hairMid: "#aeb9d2", hairEnd: "#48536f", bang: "#f8fbff", eye: "#3fa3d8", suit: "#7c3aed", skinStart: "#f8dac8", skinMid: "#c68670", skinEnd: "#7a4a51" },
-  { id: "onyx", label: "Liam", gender: "Male", hairStart: "#4c3a2e", hairMid: "#201712", hairEnd: "#080604", bang: "#4c3a2e", eye: "#5b4635", suit: "#0f766e", skinStart: "#e8c6aa", skinMid: "#a96e55", skinEnd: "#5f3834" },
+  { id: "nova", label: "Miles", gender: "Male", hairStart: "#3a2a22", hairMid: "#19120f", hairEnd: "#070504", bang: "#3a2a22", eye: "#3f5f6f", suit: "#0ea5e9", skinStart: "#f0d4bd", skinMid: "#b9785f", skinEnd: "#68413d" },
 ] as const;
 
 interface Participant extends User {
@@ -9266,7 +9264,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         setMentionQuery(null);
         setReplyingTo(null);
         if (wake.persona === "miles") startWithPersona("Male", "Miles");
-        else if (wake.persona === "eva") startWithPersona("Eva", "Eva");
         else startWithPersona("Female", "Maya");
         if (wake.afterText) {
           setTimeout(() => sendAiMessage(wake.afterText), 1100);
@@ -17313,7 +17310,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                   <span className="text-[14px] font-semibold" style={{ color: "rgba(230,235,245,0.95)" }}>Choose Your Tutor</span>
                 </div>
                 <p className="text-[12px] text-center mb-7 mt-3" style={{ color: "rgba(170,180,200,0.65)" }}>
-                  Pick a tutor — Maya, Miles, Eva, or Noah — or just say “hey”.
+                  Pick a tutor — Maya or Miles — or just say “hey”.
                 </p>
 
                 {/* Persona cards (dark neumorphic) */}
@@ -17336,26 +17333,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     description="Calm · Direct · Human-like male voice"
                     nameColor="rgba(160,200,255,0.95)"
                     accentColor="rgba(100,160,255,0.90)"
-                  />
-
-                  <NeumorphicPersonaCard
-                    testId="button-persona-eva"
-                    onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Eva", "Eva", "read_speech_a"); }}
-                    avatar={<NeumorphicAvatarRing glowRgb="180,140,255" intense content={<img loading="lazy" decoding="async" src={femaleTutorUrl} alt="Eva avatar" className="w-full h-full object-cover rounded-full" />} />}
-                    name="Eva"
-                    description="Clear · Bright · Slightly faster female voice"
-                    nameColor="rgba(210,190,255,0.95)"
-                    accentColor="rgba(170,130,255,0.90)"
-                  />
-
-                  <NeumorphicPersonaCard
-                    testId="button-persona-noah"
-                    onClick={() => { setAiPersonaPickerOpen(false); startWithPersona("Male", "Noah", "read_speech_b"); }}
-                    avatar={<NeumorphicAvatarRing glowRgb="80,210,190" intense content={<img loading="lazy" decoding="async" src={maleTutorUrl} alt="Noah avatar" className="w-full h-full object-cover rounded-full" />} />}
-                    name="Noah"
-                    description="Steady · Natural · Slightly faster male voice"
-                    nameColor="rgba(160,230,210,0.95)"
-                    accentColor="rgba(80,200,180,0.90)"
                   />
                 </div>
 
@@ -17965,9 +17942,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     <button
                       onClick={() => !aiTutorActive && setAiTutorSettings(s => ({
                         ...s,
-                        // Cycle Female → Male → Eva → Female
-                        voice: s.voice === "Female" ? "Male" : s.voice === "Male" ? "Eva" : "Female",
+                        voice: s.voice === "Female" ? "Male" : "Female",
                         voiceId: null,
+                        personaName: s.voice === "Female" ? "Miles" : "Maya",
                       }))}
                       data-testid="button-voice-toggle"
                       disabled={aiTutorActive}
@@ -17976,8 +17953,8 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                         ? { background: "rgba(80,80,100,0.30)", border: "1px solid rgba(255,200,80,0.25)", color: "rgba(255,200,80,0.70)", cursor: "not-allowed" }
                         : { background: "rgba(0,180,255,0.15)", border: "1px solid rgba(0,225,255,0.35)", color: "rgba(0,225,255,0.90)", cursor: "pointer" }}>
                       {aiTutorActive
-                        ? (aiTutorSettings.voice === "Female" ? `♀ ${aiPersonaName}` : aiTutorSettings.voice === "Male" ? `♂ ${aiPersonaName}` : `✨ ${aiPersonaName}`)
-                        : (aiTutorSettings.voice === "Female" ? "♀ Maya" : aiTutorSettings.voice === "Male" ? "♂ Miles" : "✨ Maya")}
+                        ? (aiTutorSettings.voice === "Male" ? `♂ ${aiPersonaName}` : `♀ ${aiPersonaName}`)
+                        : (aiTutorSettings.voice === "Male" ? "♂ Miles" : "♀ Maya")}
                     </button>
                   </div>
                   <div>
@@ -17986,7 +17963,9 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                       <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.38)" }}>LivePortrait</span>
                     </div>
                     <div className="grid grid-cols-2 gap-1.5">
-                      {AI_TUTOR_AVATARS.filter(avatar => avatar.gender === "Female" || aiTutorSettings.voice === "Eva").map(avatar => (
+                      {AI_TUTOR_AVATARS.filter(avatar =>
+                        aiTutorSettings.voice === "Male" ? avatar.gender === "Male" : avatar.gender === "Female",
+                      ).map(avatar => (
                         <button
                           key={avatar.id}
                           onClick={() => setAiTutorSettings(s => ({ ...s, avatarId: avatar.id }))}
@@ -18026,7 +18005,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     <div>
                       <span className="text-[11px] font-semibold block" style={{ color: "rgba(255,255,255,0.70)" }}>Hands-Free</span>
                       <span className="text-[9px] leading-tight block mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
-                        {aiTutorSettings.wakeWordEnabled ? `Say Maya, Miles, Eva, or "hey AI"` : "Wake word disabled"}
+                        {aiTutorSettings.wakeWordEnabled ? `Say Maya, Miles, or "hey AI"` : "Wake word disabled"}
                       </span>
                     </div>
                     <div
