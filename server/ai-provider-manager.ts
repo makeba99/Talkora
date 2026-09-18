@@ -19,7 +19,7 @@ import {
 import { openAiSynthesize } from "./openai-tts";
 import { edgeSynthesize, resolveEdgeVoiceId, isMalePersona } from "./edge-tts";
 import { isSesameSpeakerId } from "@shared/talking-partners";
-import { getSesameProvider, getSesameHostSnapshot } from "./voice";
+import { getSesameProvider, getSesameHostSnapshot, sesameHostAlertFromSnapshot } from "./voice";
 import { sesameHfToken, sesameFalKey, sesameDeepinfraKey, sesameHasPaidGpu, sesameUserMessage, splitSesameUtterances, concatWavArrayBuffers } from "./voice/sesame-payload";
 
 export type KeySlot = "primary" | "secondary";
@@ -170,6 +170,12 @@ export async function markAiAlertsRead(): Promise<void> {
   await ensureAlertsLoaded();
   alertsCache = alertsCache.map((a) => ({ ...a, read: true }));
   await persistAlerts();
+}
+
+async function maybePushSesameHostAlert() {
+  const alert = sesameHostAlertFromSnapshot(getSesameHostSnapshot());
+  if (!alert) return;
+  await pushAiAlert(alert);
 }
 
 function stateMap(kind: ProviderKind) {
@@ -683,8 +689,17 @@ export async function generateSpeech(opts: {
       };
     }
     markFailure("voice", "primary", "ERROR", lastError);
+    await maybePushSesameHostAlert();
     const edge = await edgeFallbackResult(`Sesame failed (${lastError})`);
-    if (edge) return edge;
+    if (edge) {
+      await pushAiAlert({
+        kind: "voice",
+        severity: "failover",
+        title: "Sesame GPU failed — Edge speaking",
+        message: `Rooms stayed audible with Edge. ${getSesameHostSnapshot().message}`,
+      });
+      return edge;
+    }
     return {
       ok: false,
       status: 502,
@@ -940,6 +955,7 @@ export async function testSesameVoice(): Promise<{
       sesame.error === "sesame-gated" ||
       sesame.error === "sesame-credits";
     if (gpuBlocked) {
+      await maybePushSesameHostAlert();
       return {
         ok: false,
         message: sesameUserMessage(sesame.error || "sesame-failed"),

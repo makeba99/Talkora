@@ -790,11 +790,11 @@ export function sesameUserMessage(code: string): string {
     case "sesame-no-token":
       return "Sesame CSM needs a paid GPU (FAL_KEY or DEEPINFRA_TOKEN). Completely free rooms already use Microsoft Edge neural (Ava/Andrew) — no key.";
     case "sesame-unauthorized":
-      return "Hugging Face rejected HF_TOKEN. Prefer FAL_KEY or DEEPINFRA_TOKEN. If you keep HF_TOKEN, use a Classic Read token and accept sesame/csm-1b.";
+      return "GPU key rejected. Create a new FAL_KEY and DEEPINFRA_TOKEN (those keys have no expiry date). Do not use Hugging Face fine-grained tokens with an expiry.";
     case "sesame-gated":
       return "sesame/csm-1b is gated. Open huggingface.co/sesame/csm-1b while logged in, click Agree, then set FAL_KEY or DEEPINFRA_TOKEN.";
     case "sesame-credits":
-      return "This GPU host needs billing. fal.ai: fal.ai/dashboard/keys (signup credits then pay-as-you-go). DeepInfra: deepinfra.com (~$7 per 1M characters). Neither is free after credits.";
+      return "GPU credits ran out (HTTP 402) — the keys did not expire. Enable auto top-up on fal.ai and DeepInfra, then retry. Completely free rooms already use Edge.";
     case "sesame-gpu-quota":
       return "The public sesame/csm-1b Space is disabled. Set FAL_KEY or DEEPINFRA_TOKEN for a real GPU.";
     case "sesame-timeout":

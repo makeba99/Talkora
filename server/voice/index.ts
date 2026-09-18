@@ -15,7 +15,7 @@ export function getVoiceProvider(id: string): VoiceProvider | null {
 
 export type { VoiceProvider, VoiceSynthesizeRequest, VoiceSynthesizeResult } from "./types";
 export { SesameCsmProvider } from "./sesame-csm";
-export { getSesameHostSnapshot } from "./sesame-status";
+export { getSesameHostSnapshot, sesameHostAlertFromSnapshot } from "./sesame-status";
 export {
   buildSesameInferPayload,
   resolveSesameSpeaker,

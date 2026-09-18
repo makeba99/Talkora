@@ -34,9 +34,9 @@ Use the table below — copy the values from your Replit Secrets panel for the s
 |---|---|
 | `ELEVENLABS_API_KEY` | AI Tutor "Eva" voice |
 | `OPENAI_API_KEY` | AI Tutor text responses |
-| `HF_TOKEN` | Optional fallback only. Prefer `FAL_KEY` or `DEEPINFRA_TOKEN`. |
-| `DEEPINFRA_TOKEN` | Direct DeepInfra GPU for sesame/csm-1b (~$7 / 1M characters). |
-| `FAL_KEY` | fal.ai key for **fal-ai/csm-1b** (~$0.03 / 1k characters). Signup credits, then pay-as-you-go. |
+| `HF_TOKEN` | Optional leftover only. **Skip for live CSM.** Fine-grained HF tokens can have an expiry date — do not use those. |
+| `DEEPINFRA_TOKEN` | Direct DeepInfra GPU for sesame/csm-1b (~$7 / 1M characters). Account API key — **no calendar expiry**. Add a card / auto recharge so 402 never hits. |
+| `FAL_KEY` | fal.ai key for **fal-ai/csm-1b** (~$0.03 / 1k characters). Account API key — **no calendar expiry**. Enable auto top-up. |
 | `AI_VOICE_PROVIDER` | `edge` (default), `openai`, `browser`, or `sesame` |
 | `TENOR_API_KEY` | GIF search (has free public fallback) |
 | `GOOGLE_CLIENT_ID` | Google OAuth login |
@@ -48,7 +48,7 @@ The start command is `node dist/index.cjs`. A typical deploy should finish in a 
 
 **Completely free voice:** set `AI_VOICE_PROVIDER=edge` (or leave unset). Maya/Miles speak with Microsoft Edge neural voices (Ava / Andrew). No API key. This is the only $0 path that is not the robotic device voice.
 
-**Sesame CSM-1B** needs `FAL_KEY` or `DEEPINFRA_TOKEN` (paid GPU). Without those keys the server automatically uses Edge so rooms still speak. The public Hugging Face Space is never called.
+**Sesame CSM-1B** needs `FAL_KEY` or `DEEPINFRA_TOKEN` (paid GPU). Set **both** so one host can fail over. Those keys do not expire by date; they stop when credits run out (HTTP 402) or you delete/rotate the key. Admin → AI Tutor shows live Sesame GPU status and alerts on 402/401. Rooms still speak Edge if GPU dies. The public Hugging Face Space is never called.
 
 ### 5. Verify
 - Visit your Railway domain — you should see the Vextorn lobby
