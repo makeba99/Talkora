@@ -59,6 +59,7 @@ export async function edgeSynthesize(
   text: string,
   voice: string,
   rate = "+0%",
+  opts?: { pitch?: string; volume?: string },
 ): Promise<EdgeTtsResult> {
   const trimmed = text.trim().slice(0, 4096);
   if (!trimmed) return { ok: false, status: 400, contentType: "", error: "empty text" };
@@ -66,8 +67,8 @@ export async function edgeSynthesize(
   try {
     const tts = new EdgeTTS(trimmed, voice || EDGE_FEMALE_DEFAULT, {
       rate,
-      volume: "+0%",
-      pitch: "+0Hz",
+      volume: opts?.volume || "+0%",
+      pitch: opts?.pitch || "+0Hz",
     });
 
     const result = await Promise.race([
