@@ -32,7 +32,7 @@ import { sendPushCampaign, previewPushAudience } from "./push-service";
 import { externalCache } from "./cache";
 import { securityBus, logSecurityEvent, authRateLimiter, apiRateLimiter, uploadRateLimiter, aiTutorRateLimiter, aiTutorTtsRateLimiter, aiSttRateLimiter, messageRateLimiter, threatDetectionMiddleware, privilegeCheckMiddleware } from "./security";
 import { setCleanupContext, getCleanupStats, runCleanupNow } from "./cleanup";
-import { getAiTutorConfig, setAiTutorConfig, maskConfig, mergeIncoming, sanitizeKey, voiceConfigPublic, resolveBrainEndpoint, type AiTutorConfig } from "./ai-config";
+import { getAiTutorConfig, setAiTutorConfig, maskConfig, mergeIncoming, sanitizeKey, voiceConfigPublic, resolveBrainEndpoint, effectiveVoiceProvider, type AiTutorConfig } from "./ai-config";
 import {
   generateAIResponse,
   generateSpeech,
@@ -2325,11 +2325,8 @@ export async function registerRoutes(
       const cfg = await getAiTutorConfig();
       const hasOpenAiVoice = !!(sanitizeKey(cfg.voice.primaryKey) || sanitizeKey(cfg.voice.secondaryKey));
       const publicCfg = voiceConfigPublic(cfg);
-      let provider: string = cfg.voice.provider;
+      let provider: string = effectiveVoiceProvider(cfg);
       if (provider === "openai" && !hasOpenAiVoice) provider = "edge";
-      if (provider === "sesame" && !sesameHasPaidGpu()) {
-        provider = "edge";
-      }
       if (provider === "browser") {
         res.json({
           provider: "edge",
@@ -7340,6 +7337,7 @@ export async function registerRoutes(
         config: maskConfig(cfg),
         status,
         alerts,
+        runtimeVoice: effectiveVoiceProvider(cfg),
         hasKeys: {
           brainPrimary: !!sanitizeKey(cfg.brain.primaryKey),
           brainSecondary: !!sanitizeKey(cfg.brain.secondaryKey),
@@ -7361,7 +7359,8 @@ export async function registerRoutes(
       await setAiTutorConfig(merged);
       // Drop stale RATE_LIMITED / INVALID cooldown from the previous key.
       await resetHealthForChangedKeys(current, merged);
-      res.json({ ok: true, config: maskConfig(merged) });
+      const saved = await getAiTutorConfig();
+      res.json({ ok: true, config: maskConfig(saved), runtimeVoice: effectiveVoiceProvider(saved) });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }

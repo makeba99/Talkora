@@ -137,7 +137,54 @@ export function isGroqKey(key: string): boolean {
   return /^gsk_/i.test(sanitizeKey(key));
 }
 
-/** Keep brain/voice providers consistent with saved keys (gsk_ → Groq, no TTS key → Edge). */
+function openaiTtsName(id: string): boolean {
+  return /^(nova|shimmer|alloy|onyx|echo|fable|coral|sage|ash)$/i.test(id);
+}
+
+function alignVoicesToProvider(
+  voiceProvider: VoiceProvider,
+  femaleIn: string,
+  maleIn: string,
+): { femaleVoice: string; maleVoice: string } {
+  let femaleVoice = femaleIn;
+  let maleVoice = maleIn;
+  if (voiceProvider === "edge") {
+    if (!femaleVoice || openaiTtsName(femaleVoice)) femaleVoice = DEFAULT_EDGE_FEMALE;
+    if (!maleVoice || openaiTtsName(maleVoice)) maleVoice = DEFAULT_EDGE_MALE;
+  }
+  if (voiceProvider === "sesame") {
+    const maya = process.env.AI_VOICE_SESAME_MAYA || "conversational_a";
+    const miles = process.env.AI_VOICE_SESAME_MILES || "conversational_b";
+    if (!femaleVoice || /Neural$/i.test(femaleVoice) || openaiTtsName(femaleVoice)) {
+      femaleVoice = maya;
+    }
+    if (!maleVoice || /Neural$/i.test(maleVoice) || openaiTtsName(maleVoice)) {
+      maleVoice = miles;
+    }
+  }
+  return { femaleVoice: femaleVoice || DEFAULT_EDGE_FEMALE, maleVoice: maleVoice || DEFAULT_EDGE_MALE };
+}
+
+/**
+ * What rooms actually speak with. Admin-saved Sesame is kept in storage even
+ * without GPU keys; this is Edge until FAL_KEY / DEEPINFRA_TOKEN is present.
+ */
+export function effectiveVoiceProvider(cfg: AiTutorConfig): VoiceProvider {
+  const saved = asVoiceProvider(cfg.voice.provider, "edge");
+  const env = asVoiceProvider(process.env.AI_VOICE_PROVIDER, saved);
+  let provider = saved;
+  if (env === "sesame" && sesameHasPaidGpu() && (saved === "edge" || saved === "browser")) {
+    provider = "sesame";
+  }
+  const hasVoiceKey =
+    !!sanitizeKey(cfg.voice.primaryKey) || !!sanitizeKey(cfg.voice.secondaryKey);
+  if (provider === "openai" && !hasVoiceKey) return "edge";
+  if (provider === "sesame" && !sesameHasPaidGpu()) return "edge";
+  if (provider === "browser") return "edge";
+  return provider;
+}
+
+/** Keep brain/voice providers consistent with saved keys (gsk_ → Groq). Persist admin voice choice. */
 export function normalizeAiTutorConfig(cfg: AiTutorConfig): AiTutorConfig {
   const primary = sanitizeKey(cfg.brain.primaryKey);
   const secondary = sanitizeKey(cfg.brain.secondaryKey);
@@ -151,48 +198,12 @@ export function normalizeAiTutorConfig(cfg: AiTutorConfig): AiTutorConfig {
     brainModel = resolveGroqModel(brainModel);
   }
 
-  let voiceProvider = asVoiceProvider(cfg.voice.provider, "edge");
-  const envVoice = asVoiceProvider(process.env.AI_VOICE_PROVIDER, voiceProvider);
-  voiceProvider = envVoice;
-  const hasVoiceKey =
-    !!sanitizeKey(cfg.voice.primaryKey) || !!sanitizeKey(cfg.voice.secondaryKey);
-  // Paid OpenAI TTS without keys → free Edge neural
-  if (voiceProvider === "openai" && !hasVoiceKey) {
-    voiceProvider = "edge";
-  }
-  // Sesame CSM is not free. Without FAL_KEY / DEEPINFRA_TOKEN use Edge neural.
-  if (voiceProvider === "sesame" && !sesameHasPaidGpu()) {
-    voiceProvider = "edge";
-  }
-
-  let femaleVoice = cfg.voice.femaleVoice || DEFAULT_EDGE_FEMALE;
-  let maleVoice = cfg.voice.maleVoice || DEFAULT_EDGE_MALE;
-  if (voiceProvider === "edge") {
-    if (
-      !femaleVoice ||
-      /^(nova|shimmer|alloy|onyx|echo|fable|coral|sage|ash)$/i.test(femaleVoice) ||
-      /^(conversational|read_speech)_/i.test(femaleVoice)
-    ) {
-      femaleVoice = DEFAULT_EDGE_FEMALE;
-    }
-    if (
-      !maleVoice ||
-      /^(nova|shimmer|alloy|onyx|echo|fable|coral|sage|ash)$/i.test(maleVoice) ||
-      /^(conversational|read_speech)_/i.test(maleVoice)
-    ) {
-      maleVoice = DEFAULT_EDGE_MALE;
-    }
-  }
-  if (voiceProvider === "sesame") {
-    const maya = process.env.AI_VOICE_SESAME_MAYA || "conversational_a";
-    const miles = process.env.AI_VOICE_SESAME_MILES || "conversational_b";
-    if (!femaleVoice || /Neural$/i.test(femaleVoice) || /^(nova|shimmer|alloy|onyx|echo|fable|coral|sage|ash)$/i.test(femaleVoice)) {
-      femaleVoice = maya;
-    }
-    if (!maleVoice || /Neural$/i.test(maleVoice) || /^(nova|shimmer|alloy|onyx|echo|fable|coral|sage|ash)$/i.test(maleVoice)) {
-      maleVoice = miles;
-    }
-  }
+  const voiceProvider = asVoiceProvider(cfg.voice.provider, "edge");
+  const { femaleVoice, maleVoice } = alignVoicesToProvider(
+    voiceProvider,
+    cfg.voice.femaleVoice || "",
+    cfg.voice.maleVoice || "",
+  );
 
   return {
     version: 2,
@@ -389,12 +400,17 @@ function fillEmptyFromEnv(cfg: AiTutorConfig): AiTutorConfig {
     },
     voice: {
       ...cfg.voice,
-      // Railway/env wins so in-room AI Tutor can be switched to Sesame without
-      // a stale "browser" or "edge" value in app_settings blocking it.
-      provider: asVoiceProvider(
-        process.env.AI_VOICE_PROVIDER,
-        asVoiceProvider(cfg.voice.provider, d.voice.provider),
-      ),
+      // Admin save wins. Railway AI_VOICE_PROVIDER=sesame only upgrades a stale
+      // Edge/browser row when a paid GPU key exists — it never overwrites Sesame
+      // with Edge, which was snapping the admin panel back to Ava/Andrew.
+      provider: (() => {
+        const saved = asVoiceProvider(cfg.voice.provider, d.voice.provider);
+        const env = asVoiceProvider(process.env.AI_VOICE_PROVIDER, saved);
+        if (env === "sesame" && sesameHasPaidGpu() && (saved === "edge" || saved === "browser")) {
+          return "sesame" as VoiceProvider;
+        }
+        return saved;
+      })(),
       primaryKey: sanitizeKey(cfg.voice.primaryKey) || d.voice.primaryKey,
       secondaryKey: sanitizeKey(cfg.voice.secondaryKey) || d.voice.secondaryKey,
       femaleVoice: cfg.voice.femaleVoice || d.voice.femaleVoice,
