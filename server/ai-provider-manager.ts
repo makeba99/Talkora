@@ -597,9 +597,12 @@ export async function generateSpeech(opts: {
   // Server admin config is authoritative for gender → voice mapping.
   const configured = isMale ? cfg.voice.maleVoice : cfg.voice.femaleVoice;
   const clientVid = typeof opts.voiceId === "string" ? opts.voiceId.trim() : "";
+  let voiceProvider = cfg.voice.provider;
+  if (process.env.AI_VOICE_PROVIDER === "sesame") voiceProvider = "sesame";
+  else if (voiceProvider === "browser" && sesameHfToken()) voiceProvider = "sesame";
   // Prefer a real Sesame speaker id from the client; otherwise admin gender map.
   let voiceName =
-    (cfg.voice.provider === "sesame" && isSesameSpeakerId(clientVid) && clientVid) ||
+    (voiceProvider === "sesame" && isSesameSpeakerId(clientVid) && clientVid) ||
     (clientVid && clientVid === configured ? clientVid : configured);
   const model = cfg.voice.model || "tts-1-hd";
   const text = opts.text.trim();
@@ -607,7 +610,7 @@ export async function generateSpeech(opts: {
     return { ok: false, status: 400, contentType: "", error: "empty text", usedSlot: null, failover: false, voiceUsed: voiceName };
   }
 
-  if (cfg.voice.provider === "browser") {
+  if (voiceProvider === "browser") {
     return {
       ok: false,
       status: 501,
@@ -638,7 +641,10 @@ export async function generateSpeech(opts: {
   };
 
   // ── Sesame CSM-1B (Gradio /infer) ──────────────────────────────────────
-  if (cfg.voice.provider === "sesame") {
+  if (voiceProvider === "sesame") {
+    if (!isSesameSpeakerId(String(voiceName)) || /Neural$/i.test(String(voiceName))) {
+      voiceName = isMale ? "conversational_b" : "conversational_a";
+    }
     const chunks = splitSesameUtterances(text);
     const wavs: ArrayBuffer[] = [];
     let lastError = "sesame-failed";
@@ -675,6 +681,8 @@ export async function generateSpeech(opts: {
       };
     }
     markFailure("voice", "primary", "ERROR", lastError);
+    const edge = await edgeFallbackResult(`Sesame failed (${lastError})`);
+    if (edge) return edge;
     return {
       ok: false,
       status: 502,
@@ -687,7 +695,7 @@ export async function generateSpeech(opts: {
   }
 
   // ── Free Microsoft Edge neural voices (no API key) ─────────────────────
-  if (cfg.voice.provider === "edge") {
+  if (voiceProvider === "edge") {
     voiceName = resolveEdgeVoiceId(configured, isMale ? "male" : "female");
     const result = await edgeSynthesize(text, voiceName);
     if (result.ok && result.body) {

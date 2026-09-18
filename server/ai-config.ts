@@ -151,6 +151,8 @@ export function normalizeAiTutorConfig(cfg: AiTutorConfig): AiTutorConfig {
   }
 
   let voiceProvider = asVoiceProvider(cfg.voice.provider, "edge");
+  const envVoice = asVoiceProvider(process.env.AI_VOICE_PROVIDER, voiceProvider);
+  voiceProvider = envVoice;
   const hasVoiceKey =
     !!sanitizeKey(cfg.voice.primaryKey) || !!sanitizeKey(cfg.voice.secondaryKey);
   // Paid OpenAI TTS without keys → free Edge neural
@@ -384,9 +386,7 @@ function fillEmptyFromEnv(cfg: AiTutorConfig): AiTutorConfig {
       // a stale "browser" or "edge" value in app_settings blocking it.
       provider: asVoiceProvider(
         process.env.AI_VOICE_PROVIDER,
-        cfg.voice.provider === "browser"
-          ? d.voice.provider
-          : asVoiceProvider(cfg.voice.provider, d.voice.provider),
+        asVoiceProvider(cfg.voice.provider, d.voice.provider),
       ),
       primaryKey: sanitizeKey(cfg.voice.primaryKey) || d.voice.primaryKey,
       secondaryKey: sanitizeKey(cfg.voice.secondaryKey) || d.voice.secondaryKey,

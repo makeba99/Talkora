@@ -19,6 +19,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { extractSentences } from "@/lib/ai-tutor/tts";
 import { createTts, type TtsLike } from "@/lib/ai-tutor/tts-factory";
+import { primeEvaAudio } from "@/lib/ai-tutor/eva-tts";
 import {
   SttEngine,
   WakeWordDetector,
@@ -960,6 +961,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     // Lock the persona for this session
     personaLockedRef.current = true;
     setPersonaName(pName);
+    primeEvaAudio();
 
     // Update voice + avatar settings together so face matches gender.
     // Female (Afik K) gets the admin-configured female ElevenLabs voiceId (Lebroskiu etc.).
@@ -1066,6 +1068,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       onViseme: shape => setCurrentViseme(shape),
     });
     engine.configure(voice as VoicePersona, speed, voiceId, serverTtsProviderRef.current);
+    primeEvaAudio();
     engine.enqueue(text);
   }, []);
 

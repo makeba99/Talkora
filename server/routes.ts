@@ -2317,10 +2317,7 @@ export async function registerRoutes(
   });
 
   // ── AI Tutor TTS (multi-provider proxy) ──────────────────────────────────
-  // Capability probe — client uses this to decide whether Eva can speak.
-  // Female/Male personas use browser SpeechSynthesis and don't call this.
-  // Returns the admin-configured TTS provider and voice ID (no secrets) so the
-  // client can decide whether to route Afik / Male through ElevenLabs.
+  // Capability probe — rooms always speak via /api/ai-tutor/tts (Sesame/Edge/OpenAI).
   app.get("/api/ai-tutor/voice-config", isAuthenticated, async (_req, res) => {
     try {
       const cfg = await getAiTutorConfig();
@@ -2329,10 +2326,11 @@ export async function registerRoutes(
       let provider: string = cfg.voice.provider;
       if (provider === "openai" && !hasOpenAiVoice) provider = "edge";
       if (provider === "browser") {
+        // Rooms must not switch to SpeechSynthesis when Sesame is configured.
         res.json({
-          provider: "browser",
-          voiceId: publicCfg.voiceId || null,
-          maleVoiceId: publicCfg.maleVoiceId || null,
+          provider: "sesame",
+          voiceId: publicCfg.voiceId || "conversational_a",
+          maleVoiceId: publicCfg.maleVoiceId || "conversational_b",
         });
         return;
       }
