@@ -611,8 +611,8 @@ export async function generateSpeech(opts: {
     (clientVid && clientVid === configured ? clientVid : configured);
   const model = cfg.voice.model || "tts-1-hd";
   const text = opts.text.trim();
-  const speakSpeed = Number.isFinite(opts.speed) ? Number(opts.speed) : 1.18;
-  const edgeRate = `${speakSpeed >= 1 ? "+" : ""}${Math.round((Math.max(0.95, Math.min(1.32, speakSpeed)) - 1) * 100)}%`;
+  const speakSpeed = Number.isFinite(opts.speed) ? Number(opts.speed) : 1.24;
+  const edgeRate = `${speakSpeed >= 1 ? "+" : ""}${Math.round((Math.max(0.95, Math.min(1.35, speakSpeed)) - 1) * 100)}%`;
   if (!text) {
     return { ok: false, status: 400, contentType: "", error: "empty text", usedSlot: null, failover: false, voiceUsed: voiceName };
   }

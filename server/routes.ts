@@ -2213,8 +2213,8 @@ export async function registerRoutes(
         `Lead with the answer: put the most important part of your response first so it can be spoken within the first second. Context and elaboration come after.`,
         SPOKEN_AUDIO_STYLE,
         (isEva || isLebroski)
-          ? `Keep replies short and natural: 1–2 sentences unless they ask for more. Sound like a person, not an assistant. Speak a bit quicker than a slow teacher.`
-          : `Keep replies short and voice-first: usually 1–2 sentences, at a natural slightly-quick pace. If the user asks for detail, give a complete answer — correctness matters more than brevity then.`,
+          ? `Keep replies short and natural: two short sentences unless they ask for more. Sound like a person taking a quick breath between thoughts.`
+          : `Keep replies short and voice-first: usually two short sentences at a slightly-quick chatting pace so a breath can sit between them. If the user asks for detail, give a complete answer — correctness matters more than brevity then.`,
         `INCOMPLETE SPEECH: If the user's message trails off, is clearly a fragment, or references something unmentioned (e.g. "what about the..." or "so I was thinking..."), ask the single most useful clarification question — short, natural, spoken. If the input could mean two different things, briefly name both options instead of just asking: e.g., "Do you mean X, or more like Y?"`,
         `GARBLED INPUT: If the transcription appears cut off mid-word, makes no semantic sense, is a single disconnected syllable, or reads like random phonemes — say something natural like "I missed that — could you say it again?" Do not try to interpret or guess garbled input.`,
         `If the user's speech is genuinely unclear, ${isAfiK ? `say "what do you mean huh?" or ask one short playful clarifier` : 'ask one short clarification question instead of guessing'}.`,
@@ -2398,7 +2398,7 @@ export async function registerRoutes(
         text: text.trim(),
         personaVoice: voice,
         voiceId: typeof voiceId === "string" && /^[a-z0-9_-]{2,64}$/i.test(voiceId) ? voiceId : null,
-        speed: typeof req.body?.speed === "number" ? req.body.speed : 1.18,
+        speed: typeof req.body?.speed === "number" ? req.body.speed : 1.24,
       });
       if (!result.ok || !result.body) {
         if (result.error === "browser-tts" || result.status === 501) {
@@ -2622,8 +2622,8 @@ export async function registerRoutes(
         `Lead with the answer: put the most important part of your response first so it can be spoken within the first second. Context and elaboration come after.`,
         SPOKEN_AUDIO_STYLE,
         (isEva || isLebroski)
-          ? `Keep replies short and natural: 1–2 sentences unless they ask for more. Sound like a person, not an assistant. Speak a bit quicker than a slow teacher.`
-          : `Keep replies short and voice-first: usually 1–2 sentences, at a natural slightly-quick pace. If the user asks for detail, explanation, or something complex, give a complete, well-structured answer — correctness and completeness matter more than brevity in those cases.`,
+          ? `Keep replies short and natural: two short sentences unless they ask for more. Sound like a person taking a quick breath between thoughts.`
+          : `Keep replies short and voice-first: usually two short sentences at a slightly-quick chatting pace so a breath can sit between them. If the user asks for detail, explanation, or something complex, give a complete, well-structured answer — correctness and completeness matter more than brevity in those cases.`,
         `INCOMPLETE SPEECH: If the user's message trails off, is clearly a fragment, or references something unmentioned (e.g. "what about the..." or "so I was thinking..."), ask the single most useful clarification question — short, natural, spoken. If the input could mean two different things, briefly name both options: e.g., "Do you mean X, or more like Y?"`,
         `GARBLED INPUT: If the transcription appears cut off mid-word, makes no semantic sense, is a single disconnected syllable, or reads like random phonemes — say something natural like "I missed that — could you say it again?" Do not try to interpret or guess garbled input.`,
         `If the user's speech is genuinely unclear, ask one short clarification question instead of guessing.`,

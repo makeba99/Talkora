@@ -10,7 +10,7 @@ const LEADING_STALL =
 
 /** Prompt fragment: faster, emotional spoken reactions without stall hmm/mm. */
 export const SPOKEN_AUDIO_STYLE =
-  "SPOKEN AUDIO: You are read aloud by a conversational voice, a bit quicker than a lecture. Sound like a real friend: warm, reactive, slightly fast. Never stall with hmm, mm, uh, um, or \"let me think\". Never fragments or trailing ellipsis. Do make human emotional noise as spoken words in a full sentence — \"Oh wow, that sounds amazing.\", \"Haha, I can picture that.\", \"Aww, I'm happy for you.\", \"Oh no, that's rough.\", \"Wait, really?\" Never write *laughs*, *sighs*, emojis, or stage directions. Every reply is complete sentences, ready to speak as-is.";
+  "SPOKEN AUDIO: You are read aloud a bit quickly, like chatting in person — not a slow lecture and not a rush. Prefer two short sentences so a natural breath can sit between them. Sound like a real friend: warm, reactive, with tiny inhales in the audio. Never stall with hmm, mm, uh, um, or \"let me think\". Never fragments or trailing ellipsis. Do make human emotional noise as spoken words in a full sentence — \"Oh wow, that sounds amazing.\", \"Haha, I can picture that.\", \"Aww, I'm happy for you.\", \"Oh no, that's rough.\", \"Wait, really?\" Never write *laughs*, *sighs*, emojis, or stage directions. Every reply is complete sentences, ready to speak as-is.";
 
 export function sanitizeSpokenTutorLine(text: string): string | null {
   let t = String(text || "").replace(/\s+/g, " ").trim();

@@ -22,6 +22,48 @@ import type { VoicePersona } from "./types";
 const SILENT_WAV =
   "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=";
 
+/** Soft inhale/exhale noise so sentence gaps sound like a person breathing. */
+function makeBreathWav(durationMs = 280, sampleRate = 22050): Blob {
+  const n = Math.max(64, Math.floor((sampleRate * durationMs) / 1000));
+  const pcm = new Int16Array(n);
+  let prev = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / n;
+    const env = Math.sin(Math.PI * t) * (t < 0.58 ? 0.12 : 0.055);
+    const white = Math.random() * 2 - 1;
+    prev = prev * 0.88 + white * 0.12;
+    pcm[i] = Math.max(-32767, Math.min(32767, prev * env * 32767));
+  }
+  const bytes = pcm.byteLength;
+  const out = new ArrayBuffer(44 + bytes);
+  const view = new DataView(out);
+  const u8 = new Uint8Array(out);
+  const w = (o: number, s: string) => {
+    for (let i = 0; i < s.length; i++) u8[o + i] = s.charCodeAt(i);
+  };
+  w(0, "RIFF");
+  view.setUint32(4, 36 + bytes, true);
+  w(8, "WAVE");
+  w(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  w(36, "data");
+  view.setUint32(40, bytes, true);
+  u8.set(new Uint8Array(pcm.buffer), 44);
+  return new Blob([out], { type: "audio/wav" });
+}
+
+let breathObjectUrl: string | null = null;
+function breathWavUrl(): string {
+  if (!breathObjectUrl) breathObjectUrl = URL.createObjectURL(makeBreathWav());
+  return breathObjectUrl;
+}
+
 let primedAudio: HTMLAudioElement | null = null;
 
 function ensurePrimedAudio(): HTMLAudioElement {
@@ -286,7 +328,7 @@ export class EvaTtsEngine {
       }
       if (!this.currentSource && !this.htmlAudio) this.callbacks.onStart();
       await this.playSesameBytes(item.ready.data, item.ready.type, item.abort.signal);
-      this.finishSentence();
+      await this.finishSentence(item.abort.signal);
     } catch (err: any) {
       if (item.abort.signal.aborted || err?.name === "AbortError") {
         if (!this.queue.length) {
@@ -301,15 +343,45 @@ export class EvaTtsEngine {
     }
   }
 
-  private finishSentence() {
+  private async finishSentence(signal?: AbortSignal) {
     this.callbacks.onViseme?.("rest");
     this.callbacks.onSentenceEnd();
     if (this.queue.length > 0) {
-      this.playNext();
+      await this.playBreathGap(signal);
+      void this.playNext();
     } else {
       this.active = false;
       this.callbacks.onEnd();
     }
+  }
+
+  private playBreathGap(signal?: AbortSignal): Promise<void> {
+    if (signal?.aborted || this.queue.length === 0) return Promise.resolve();
+    return new Promise((resolve) => {
+      const audio = ensurePrimedAudio();
+      const url = breathWavUrl();
+      const done = () => {
+        audio.onended = null;
+        audio.onerror = null;
+        audio.volume = 1;
+        resolve();
+      };
+      try {
+        audio.pause();
+      } catch {}
+      audio.volume = 0.42;
+      audio.playbackRate = 1;
+      audio.src = url;
+      audio.onended = done;
+      audio.onerror = done;
+      const t = window.setTimeout(done, 420);
+      signal?.addEventListener("abort", () => {
+        window.clearTimeout(t);
+        try { audio.pause(); } catch {}
+        done();
+      }, { once: true });
+      void audio.play().catch(() => done());
+    });
   }
 
   /** Play CSM bytes with HTMLAudioElement — same path as Admin Test Sesame Voice. */
@@ -327,7 +399,7 @@ export class EvaTtsEngine {
     audio.setAttribute("playsinline", "true");
     audio.volume = 1;
     audio.src = url;
-    audio.playbackRate = Math.max(1.1, Math.min(1.28, this.speed || 1.18));
+    audio.playbackRate = Math.max(1.16, Math.min(1.32, this.speed || 1.24));
     this.htmlAudio = audio;
     this.startFakeVisemeLoop();
 

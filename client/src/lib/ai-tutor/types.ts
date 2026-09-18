@@ -105,7 +105,7 @@ export const DEFAULT_AI_SETTINGS: AiTutorSettings = {
   voice: "Female",
   voiceId: null,
   avatarId: "aurora",
-  speed: 1.18,
+  speed: 1.24,
   tone: 0.7,
   wakeWordEnabled: true,
 };

@@ -143,7 +143,7 @@ function loadSavedAiSettings(): AiTutorSettings {
       avatarId: ["aurora", "nova"].includes(savedAvatarId) ? savedAvatarId : DEFAULT_AI_SETTINGS.avatarId,
       voice: parsed.voice === "Male" ? "Male" : "Female",
       speed: typeof parsed.speed === "number"
-        ? (parsed.speed <= 1.12 ? 1.18 : Math.max(0.95, Math.min(1.32, parsed.speed)))
+        ? (parsed.speed <= 1.18 ? 1.24 : Math.max(0.95, Math.min(1.35, parsed.speed)))
         : DEFAULT_AI_SETTINGS.speed,
       tone: typeof parsed.tone === "number" ? Math.max(0, Math.min(1, parsed.tone)) : DEFAULT_AI_SETTINGS.tone,
       wakeWordEnabled: typeof parsed.wakeWordEnabled === "boolean" ? parsed.wakeWordEnabled : DEFAULT_AI_SETTINGS.wakeWordEnabled,
