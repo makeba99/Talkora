@@ -3910,7 +3910,6 @@ function OutreachTab({ users }: { users: { id: string; email: string | null; dis
 const PLATFORM_FEATURES = [
   { id: "voiceEffects",  label: "Voice Effects",        description: "Voice presets & pitch modulation inside rooms",  Icon: AudioLines,   color: "cyan"   },
   { id: "aiTutor",       label: "AI Tutor",             description: "Eva / Afik AI tutor panel inside rooms",         Icon: BrainCircuit, color: "amber"  },
-  { id: "talkingPartner",label: "AI Talking Partner",   description: "Dedicated /talk voice conversation with Maya or Miles", Icon: AudioLines, color: "cyan" },
   { id: "screenShare",   label: "Screen Share",         description: "Screen sharing capability in voice rooms",       Icon: Monitor,      color: "blue"   },
   { id: "youtubeWatch",  label: "YouTube Watch",        description: "YouTube watch-together side panel",              Icon: Youtube,      color: "red"    },
   { id: "movieParty",    label: "Movie Party",          description: "Archive.org movie watch party panel",            Icon: Film,         color: "violet" },

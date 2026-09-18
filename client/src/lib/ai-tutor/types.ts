@@ -14,9 +14,6 @@ export interface AiTutorSettings {
   personaName?: string;
   /** When true the background wake-word listener is active (default on). */
   wakeWordEnabled: boolean;
-  /** Dedicated Talking Partner catalog id (maya, miles, …). */
-  partnerId?: string;
-  talkingPartner?: boolean;
 }
 
 export interface ConversationEntry {

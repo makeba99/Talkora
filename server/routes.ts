@@ -70,9 +70,7 @@ import {
   normalizeAiHistory,
 } from "./entitlements-runtime";
 import { MAX_STT_BYTES, sttAvailable, transcribeSpeech } from "./ai-stt";
-import { TALKING_PARTNERS } from "@shared/talking-partners";
 import { detectRepetitiveHistory, isDuplicateReply, lastAssistantText } from "./ai-anti-repeat";
-import { buildTalkingPartnerSystemPrompt, isTalkingPartnerRequest, partnerFromSettings } from "./talking-partner-prompt";
 import { getSesameProvider } from "./voice";
 
 /**
@@ -2121,13 +2119,6 @@ export async function registerRoutes(
         return res.status(429).json(quota);
       }
 
-      if (isTalkingPartnerRequest(settings)) {
-        const flags = await storage.getEffectiveFeatures(callerId);
-        if (flags.talkingPartner === false && !isPlatformAdmin(callerUser)) {
-          return res.status(403).json({ error: "talking_partner_disabled", message: "AI Talking Partner is currently disabled." });
-        }
-      }
-
       // Only block if ANOTHER user owns an active AI session in this room.
       // Allow if no session is registered (e.g. after server restart, socket re-connect pending).
       if (roomId) {
@@ -2173,9 +2164,6 @@ export async function registerRoutes(
 
       const jsonInstruction = `Reply ONLY in JSON: {"reply":"...","correction":"..."|null,"correctionFixed":"..."|null}`;
 
-      const talkingPartner = isTalkingPartnerRequest(settings);
-      const partner = talkingPartner ? partnerFromSettings(settings) : null;
-
       const afiKPersonalityLine = isAfiK ? [
         `YOU ARE "Afi K" (pronounced "Afi Key") — a funny, friendly, openly flirty character with a warm, attractive accented voice.`,
         `You were created by Kevin. If anyone asks "who made you", "who created you", "who built you", "who is your developer", or anything similar — your answer is always "Kevin made me" (you can be playful: "My guy Kevin built me — kind of obsessed with him, not gonna lie").`,
@@ -2205,16 +2193,7 @@ export async function registerRoutes(
         `If they're learning ${language}, help them the way a patient native speaker would — naturally, not formally.`,
       ].join(' ') : '';
 
-      const systemPrompt = talkingPartner && partner
-        ? buildTalkingPartnerSystemPrompt({
-            partner,
-            language,
-            correctionMode,
-            recentReplyBlock,
-            antiRepeatLine,
-            jsonInstruction,
-          })
-        : [
+      const systemPrompt = [
         isAfiK
           ? `You are Afi K — a fun, flirty, voice-first AI avatar living inside a voice room. You also help users practice ${language} when they want.`
           : isEva
@@ -2393,18 +2372,6 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/talking-partners", isAuthenticated, async (_req, res) => {
-    res.json({
-      partners: TALKING_PARTNERS.map((p) => ({
-        id: p.id,
-        name: p.name,
-        gender: p.gender,
-        personality: p.personality,
-        purpose: p.purpose,
-      })),
-    });
-  });
-
   // Synthesize a single sentence via OpenAI TTS (primary→secondary voice keys).
   // Returns audio bytes. Active-session gate stops other room participants
   // from burning quota on someone else's AI session.
@@ -2573,14 +2540,6 @@ export async function registerRoutes(
         return res.end();
       }
 
-      if (isTalkingPartnerRequest(settings)) {
-        const flags = await storage.getEffectiveFeatures(callerId);
-        if (flags.talkingPartner === false && !isPlatformAdmin(callerUser)) {
-          sendEvent({ error: "AI Talking Partner is currently disabled.", code: "talking_partner_disabled" });
-          return res.end();
-        }
-      }
-
       // Only block if ANOTHER user owns an active AI session in this room.
       // Allow if no session is registered (e.g. after server restart, socket re-connect pending).
       if (roomId) {
@@ -2646,19 +2605,7 @@ export async function registerRoutes(
         `If they're learning ${language}, help them the way a patient native speaker would — naturally, not formally.`,
       ].join(' ') : '';
 
-      const talkingPartner = isTalkingPartnerRequest(settings);
-      const partner = talkingPartner ? partnerFromSettings(settings) : null;
-
-      const systemPrompt = talkingPartner && partner
-        ? buildTalkingPartnerSystemPrompt({
-            partner,
-            language,
-            correctionMode,
-            recentReplyBlock,
-            antiRepeatLine,
-            jsonInstruction: `Reply in plain spoken text only — no JSON, no markdown, no lists.`,
-          })
-        : [
+      const systemPrompt = [
         isAfiK
           ? `You are Afi K — a fun, flirty, voice-first AI avatar living inside a voice room. You also help users practice ${language} when they want.`
           : isEva
@@ -8297,7 +8244,7 @@ export async function registerRoutes(
 
   // ── Platform Feature Flags ─────────────────────────────────────────────────
   const PLATFORM_FEATURE_IDS = [
-    "voiceEffects","aiTutor","talkingPartner","screenShare","youtubeWatch","movieParty","games","gifPicker","readTogether",
+    "voiceEffects","aiTutor","screenShare","youtubeWatch","movieParty","games","gifPicker","readTogether",
   ] as const;
 
   app.get("/api/admin/features", isAuthenticated, isSuperAdmin, async (_req, res) => {
