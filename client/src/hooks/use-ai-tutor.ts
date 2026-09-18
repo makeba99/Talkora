@@ -269,7 +269,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       .then((cfg: { provider: string; voiceId: string | null; maleVoiceId?: string | null } | null) => {
         if (!cfg) return;
         serverTtsProviderRef.current = cfg.provider || "unknown";
-        const cloud = cfg.provider === "openai" || cfg.provider === "elevenlabs" || cfg.provider === "edge";
+        const cloud = cfg.provider === "openai" || cfg.provider === "elevenlabs" || cfg.provider === "edge" || cfg.provider === "sesame";
         if (cloud && cfg.voiceId) {
           serverVoiceIdRef.current = cfg.voiceId;
         }
@@ -303,9 +303,8 @@ export function useAiTutor(deps: AiTutorDeps) {
   }, [refreshServerVoiceConfig]);
 
   // ── TTS Engine ────────────────────────────────────────────────────────────
-  // Wrapped via createTts() — Eva routes to ElevenLabs, Female/Male use browser
-  // reports availability, otherwise falls back to the browser SpeechSynthesis
-  // engine. Either way the contract is identical.
+  // Maya / Miles / Eva all speak through /api/ai-tutor/tts (Sesame, Edge, or OpenAI).
+  // Browser SpeechSynthesis is last-resort only.
   const ttsRef = useRef<TtsLike | null>(null);
 
   /**
@@ -1066,7 +1065,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       onSentenceEnd: () => {},
       onViseme: shape => setCurrentViseme(shape),
     });
-    engine.configure(voice as VoicePersona, speed, voiceId);
+    engine.configure(voice as VoicePersona, speed, voiceId, serverTtsProviderRef.current);
     engine.enqueue(text);
   }, []);
 

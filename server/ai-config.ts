@@ -22,7 +22,7 @@ export type KeyHealth =
   | "UNKNOWN";
 
 export type BrainProvider = "openai" | "groq";
-export type VoiceProvider = "openai" | "edge" | "browser";
+export type VoiceProvider = "openai" | "edge" | "browser" | "sesame";
 
 export const DEFAULT_EDGE_FEMALE = "en-US-AvaNeural";
 export const DEFAULT_EDGE_MALE = "en-US-AndrewNeural";
@@ -168,6 +168,16 @@ export function normalizeAiTutorConfig(cfg: AiTutorConfig): AiTutorConfig {
       maleVoice = DEFAULT_EDGE_MALE;
     }
   }
+  if (voiceProvider === "sesame") {
+    const maya = process.env.AI_VOICE_SESAME_MAYA || "conversational_a";
+    const miles = process.env.AI_VOICE_SESAME_MILES || "conversational_b";
+    if (!femaleVoice || /Neural$/i.test(femaleVoice) || /^(nova|shimmer|alloy|onyx|echo|fable|coral|sage|ash)$/i.test(femaleVoice)) {
+      femaleVoice = maya;
+    }
+    if (!maleVoice || /Neural$/i.test(maleVoice) || /^(nova|shimmer|alloy|onyx|echo|fable|coral|sage|ash)$/i.test(maleVoice)) {
+      maleVoice = miles;
+    }
+  }
 
   return {
     version: 2,
@@ -244,12 +254,20 @@ function envDefaults(): AiTutorConfig {
   const voice1 = sanitizeKey(process.env.AI_VOICE_KEY_1 || "");
   const voice2 = sanitizeKey(process.env.AI_VOICE_KEY_2 || "");
   // Free by default: Edge neural TTS (no key). OpenAI only when explicitly configured.
+  // Sesame CSM-1B when Hugging Face is configured — this is what in-room Maya/Miles use.
   const hasPaidVoice = !!(voice1 || process.env.AI_VOICE_USE_OPENAI === "1");
-  const voiceProvider: VoiceProvider =
-    (process.env.AI_VOICE_PROVIDER as VoiceProvider) ||
-    (hasPaidVoice ? "openai" : "edge");
+  const hasSesameToken = !!(
+    process.env.HF_TOKEN ||
+    process.env.AI_VOICE_HF_TOKEN ||
+    process.env.HUGGINGFACE_TOKEN
+  );
+  const voiceProvider: VoiceProvider = asVoiceProvider(
+    process.env.AI_VOICE_PROVIDER,
+    hasSesameToken ? "sesame" : hasPaidVoice ? "openai" : "edge",
+  );
 
   const edgeDefaults = voiceProvider === "edge" || voiceProvider === "browser";
+  const sesameDefaults = voiceProvider === "sesame";
   return {
     version: 2,
     brain: {
@@ -265,10 +283,18 @@ function envDefaults(): AiTutorConfig {
       secondaryKey: voice2 || (voiceProvider === "openai" ? brain2 : ""),
       femaleVoice:
         process.env.AI_VOICE_FEMALE ||
-        (edgeDefaults ? DEFAULT_EDGE_FEMALE : "nova"),
+        (sesameDefaults
+          ? process.env.AI_VOICE_SESAME_MAYA || "conversational_a"
+          : edgeDefaults
+            ? DEFAULT_EDGE_FEMALE
+            : "nova"),
       maleVoice:
         process.env.AI_VOICE_MALE ||
-        (edgeDefaults ? DEFAULT_EDGE_MALE : "onyx"),
+        (sesameDefaults
+          ? process.env.AI_VOICE_SESAME_MILES || "conversational_b"
+          : edgeDefaults
+            ? DEFAULT_EDGE_MALE
+            : "onyx"),
       model: process.env.AI_VOICE_MODEL || "tts-1-hd",
       warnThresholdPct: 80,
     },
@@ -280,7 +306,7 @@ function asBrainProvider(v: any, fallback: BrainProvider): BrainProvider {
 }
 
 function asVoiceProvider(v: any, fallback: VoiceProvider): VoiceProvider {
-  return v === "browser" || v === "openai" || v === "edge" ? v : fallback;
+  return v === "browser" || v === "openai" || v === "edge" || v === "sesame" ? v : fallback;
 }
 
 /** Migrate legacy v1 admin config into v2 Brain/Voice shape. */
@@ -354,7 +380,14 @@ function fillEmptyFromEnv(cfg: AiTutorConfig): AiTutorConfig {
     },
     voice: {
       ...cfg.voice,
-      provider: asVoiceProvider(cfg.voice.provider, d.voice.provider),
+      // Railway/env wins so in-room AI Tutor can be switched to Sesame without
+      // a stale "browser" or "edge" value in app_settings blocking it.
+      provider: asVoiceProvider(
+        process.env.AI_VOICE_PROVIDER,
+        cfg.voice.provider === "browser"
+          ? d.voice.provider
+          : asVoiceProvider(cfg.voice.provider, d.voice.provider),
+      ),
       primaryKey: sanitizeKey(cfg.voice.primaryKey) || d.voice.primaryKey,
       secondaryKey: sanitizeKey(cfg.voice.secondaryKey) || d.voice.secondaryKey,
       femaleVoice: cfg.voice.femaleVoice || d.voice.femaleVoice,

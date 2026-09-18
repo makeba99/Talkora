@@ -58,7 +58,7 @@ export class EvaTtsEngine {
     this.allowBrowserFallback = true;
     // Re-enable cloud TTS whenever admin/provider config refreshes — do NOT
     // leave the session stuck on robotic browser voice after a single glitch.
-    if (provider === "browser" || provider === "edge" || provider === "openai" || provider === "elevenlabs") {
+    if (provider === "browser" || provider === "edge" || provider === "openai" || provider === "elevenlabs" || provider === "sesame") {
       this.fallbackEngaged = false;
     }
   }
@@ -199,7 +199,7 @@ export class EvaTtsEngine {
           detail = j?.error || j?.detail?.message || j?.detail || "";
         } catch {}
         const reason = res.status === 502 || res.status === 504
-          ? "ElevenLabs unreachable"
+          ? "voice provider unreachable"
           : res.status === 501
             ? "no API key configured"
             : res.status === 401 || res.status === 403

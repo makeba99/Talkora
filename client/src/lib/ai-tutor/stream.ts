@@ -28,6 +28,7 @@ export interface FallbackResult {
   correction?: string | null;
   correctionFixed?: string | null;
   model?: string;
+  error?: string;
 }
 
 /** Stream tokens from the SSE endpoint. Returns true if any tokens were received. */
@@ -161,7 +162,7 @@ export async function streamTokens(
 
 /** Buffered fallback — returns the full reply at once. */
 export async function fetchBufferedReply(
-  options: Omit<StreamOptions, "signal">
+  options: Omit<StreamOptions, "signal"> & { signal?: AbortSignal }
 ): Promise<FallbackResult | null> {
   try {
     const res = await fetch("/api/ai-tutor/chat", {
@@ -176,6 +177,7 @@ export async function fetchBufferedReply(
         language: options.language,
         youtubeActive: options.youtubeActive,
       }),
+      signal: options.signal,
     });
     if (!res.ok) {
       let message = `HTTP ${res.status}`;
@@ -183,7 +185,7 @@ export async function fetchBufferedReply(
         const err = await res.json();
         message = err?.message || err?.error || message;
       } catch { /* ignore */ }
-      return { reply: "", model: "error", correction: null, correctionFixed: null, error: message } as any;
+      return { reply: "", model: "error", correction: null, correctionFixed: null, error: message };
     }
     const data = await res.json();
     return {

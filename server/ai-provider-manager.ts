@@ -18,6 +18,7 @@ import {
 } from "./ai-config";
 import { openAiSynthesize } from "./openai-tts";
 import { edgeSynthesize, resolveEdgeVoiceId, isMalePersona } from "./edge-tts";
+import { getSesameProvider } from "./voice";
 
 export type KeySlot = "primary" | "secondary";
 export type ProviderKind = "brain" | "voice";
@@ -617,6 +618,65 @@ export async function generateSpeech(opts: {
     };
   }
 
+  const edgeFallbackResult = async (reason: string) => {
+    const edgeVoice = resolveEdgeVoiceId(configured, isMale ? "male" : "female");
+    const result = await edgeSynthesize(text, edgeVoice);
+    if (result.ok && result.body) {
+      console.warn(`[ai-provider] ${reason} — using free Edge neural TTS`);
+      return {
+        ok: true as const,
+        status: 200,
+        contentType: result.contentType || "audio/mpeg",
+        body: result.body,
+        usedSlot: null as KeySlot | null,
+        failover: true,
+        voiceUsed: edgeVoice,
+      };
+    }
+    return null;
+  };
+
+  // ── Sesame CSM-1B (Gradio /infer) ──────────────────────────────────────
+  if (cfg.voice.provider === "sesame") {
+    const sesame = await getSesameProvider().synthesize({
+      text,
+      voiceId: voiceName || (isMale ? "miles" : "maya"),
+    });
+    if (sesame.ok && sesame.body) {
+      markSuccess("voice", "primary", { characters: text.length });
+      await maybeWarnThreshold("voice", cfg);
+      return {
+        ok: true,
+        status: 200,
+        contentType: sesame.contentType || "audio/wav",
+        body: sesame.body,
+        usedSlot: "primary",
+        failover: false,
+        voiceUsed: sesame.voiceUsed,
+      };
+    }
+    markFailure("voice", "primary", "ERROR", sesame.error || "sesame-failed");
+    const edge = await edgeFallbackResult("Sesame CSM-1B failed");
+    if (edge) {
+      await pushAiAlert({
+        kind: "voice",
+        severity: "failover",
+        title: "Sesame voice fallback",
+        message: "Sesame CSM-1B failed. Using free Microsoft Edge neural TTS.",
+      });
+      return edge;
+    }
+    return {
+      ok: false,
+      status: sesame.status || 502,
+      contentType: "",
+      error: sesame.error || "sesame-failed",
+      usedSlot: "primary",
+      failover: true,
+      voiceUsed: voiceName,
+    };
+  }
+
   // ── Free Microsoft Edge neural voices (no API key) ─────────────────────
   if (cfg.voice.provider === "edge") {
     voiceName = resolveEdgeVoiceId(configured, isMale ? "male" : "female");
@@ -829,6 +889,28 @@ export async function testVoiceKey(slot: KeySlot, overrideKey?: string): Promise
 }> {
   await ensureUsageLoaded();
   const cfg = await getAiTutorConfig();
+
+  if (cfg.voice.provider === "sesame") {
+    const sesame = await getSesameProvider().synthesize({
+      text: "Hello. This is a Vextorn Sesame voice test.",
+      voiceId: cfg.voice.femaleVoice || "maya",
+    });
+    if (sesame.ok && sesame.body) {
+      markSuccess("voice", slot, { characters: 48 });
+      return {
+        ok: true,
+        message: "Connection successful (Sesame CSM-1B)",
+        status: "HEALTHY",
+        audio: sesame.body,
+        contentType: sesame.contentType,
+      };
+    }
+    return {
+      ok: false,
+      message: sesame.error || "Sesame CSM-1B unavailable",
+      status: "ERROR",
+    };
+  }
 
   // Free Edge neural TTS — no API key required
   if (cfg.voice.provider === "edge" || (!sanitizeKey(overrideKey) && !getKey(cfg, "voice", slot) && cfg.voice.provider !== "openai")) {
