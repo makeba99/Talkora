@@ -8,3 +8,9 @@ vite.config.ts.*
 .env
 .env.local
 .env.railway
+personal-ai-messaging-agent/node_modules
+personal-ai-messaging-agent/data
+personal-ai-messaging-agent/frontend/dist
+personal-ai-messaging-agent/.env
+*.sqlite
+*.sqlite-journal

@@ -1,0 +1,35 @@
+{
+  "name": "personal-ai-messaging-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-first Personal AI Messaging Agent. Shared AI brain, independent platform connectors.",
+  "scripts": {
+    "dev": "concurrently -k -n api,ui -c cyan,magenta \"tsx watch backend/src/index.ts\" \"vite --config frontend/vite.config.ts\"",
+    "build": "vite build --config frontend/vite.config.ts && tsc -p tsconfig.build.json --noEmit",
+    "test": "vitest run --config tests/vitest.config.ts",
+    "start": "NODE_ENV=production tsx backend/src/index.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "express": "^5.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.15.3",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.7.0",
+    "concurrently": "^9.1.2",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4"
+  }
+}

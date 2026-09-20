@@ -9,7 +9,10 @@
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
     "test": "vitest run",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "agent:dev": "npm run dev --prefix personal-ai-messaging-agent",
+    "agent:test": "npm run test --prefix personal-ai-messaging-agent",
+    "agent:build": "npm run build --prefix personal-ai-messaging-agent"
   },
   "dependencies": {
     "@gradio/client": "^2.6.0",

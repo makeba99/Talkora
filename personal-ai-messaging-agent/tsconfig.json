@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "types": ["node"]
+  },
+  "include": [
+    "backend/**/*",
+    "agent/**/*",
+    "connectors/**/*",
+    "ai/**/*",
+    "database/**/*",
+    "security/**/*",
+    "logging/**/*",
+    "tests/**/*",
+    "frontend/src/**/*",
+    "frontend/vite.config.ts",
+    "connectors/free4talk/playwright-shim.d.ts"
+  ]
+}
