@@ -312,7 +312,13 @@ function PlatformDetail({ id }: { id: "free4talk" | "teams" }) {
           </div>
           {p.integration ? (
             <div className="card">
-              <h2>{p.integration.available ? "Official API" : "Integration unavailable"}</h2>
+              <h2>
+                {p.status === "not_configured"
+                  ? "Not configured"
+                  : p.integration.available
+                    ? "Official API"
+                    : "Integration unavailable"}
+              </h2>
               <p>{p.integration.reason}</p>
               <p className="muted">Exists</p>
               <ul>{(p.integration.exists || []).map((x: string) => <li key={x}>{x}</li>)}</ul>

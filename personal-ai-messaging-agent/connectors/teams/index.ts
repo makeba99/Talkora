@@ -124,7 +124,10 @@ export class TeamsConnector implements PlatformConnector {
       return {
         status: "not_configured" as const,
         message: "TEAMS_CLIENT_ID is not set. Not signed in.",
-        integration: { ...teamsReport, available: false, reason: "Missing TEAMS_CLIENT_ID." },
+        integration: {
+          ...teamsReport,
+          reason: "TEAMS_CLIENT_ID is not set. Graph chat APIs exist; this app will not pretend to be signed in until you register an Entra public client.",
+        },
       };
     }
     if (this.deviceFlow) {
