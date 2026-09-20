@@ -6,7 +6,7 @@ import { isAuthenticated } from "./replit_integrations/auth";
 import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema, insertUserCommentSchema, insertBadgeApplicationSchema, insertAnnouncementSchema, BADGE_TYPES, VIP_PLANS, vipPlanFromAmount, vipRank, BADGE_CELEBRATION_GIF, BADGE_CELEBRATION_MOOD, BADGE_CELEBRATION_DURATION_MS, VIP_SHOUTOUT_GIF, VIP_SHOUTOUT_DAILY_LIMIT, LOBBY_PROFILE_STYLES, LOBBY_PROFILE_SIZES } from "@shared/schema";
 import type { User } from "@shared/schema";
 import { SEO_STATIC_PAGES } from "@shared/seo-pages";
-import { SPOKEN_AUDIO_STYLE, MAYA_SPOKEN_STYLE, MILES_SPOKEN_STYLE } from "@shared/spoken-tutor-line";
+import { SPOKEN_AUDIO_STYLE, SPOKEN_EMOTION_STYLE, MAYA_SPOKEN_STYLE, MILES_SPOKEN_STYLE } from "@shared/spoken-tutor-line";
 import { z } from "zod";
 import multer, { type StorageEngine } from "multer";
 import path from "path";
@@ -2215,10 +2215,11 @@ export async function registerRoutes(
           ? `Lead with a small reaction first. Put the key thought in the next sentence so there is a small breath before it. Never dump everything in the first rushed clause.`
           : `Lead with a soft reaction first. Put the key insight in the next sentence so there is a small breath before it. Never dump the insight in the first rushed clause.`,
         SPOKEN_AUDIO_STYLE,
+        SPOKEN_EMOTION_STYLE,
         isMiles ? MILES_SPOKEN_STYLE : MAYA_SPOKEN_STYLE,
         isMiles
-          ? `Keep replies to two short sentences. First: a chill reaction. Then a breath. Second: the thought, slow like Maya. Linger, do not hurry.`
-          : `Keep replies to two short sentences. First: a gentle reaction. Then a breath. Second: the insight, slow and thoughtful. Linger, do not hurry.`,
+          ? `Keep replies to two short sentences. First: a chill reaction that matches their mood. Then a breath. Second: the thought, slow like Maya. Linger, do not hurry.`
+          : `Keep replies to two short sentences. First: a gentle reaction that matches their mood. Then a breath. Second: the insight, slow and thoughtful. Linger, do not hurry.`,
         `INCOMPLETE SPEECH: If the user's message trails off, is clearly a fragment, or references something unmentioned (e.g. "what about the..." or "so I was thinking..."), ask the single most useful clarification question — short, natural, spoken. If the input could mean two different things, briefly name both options instead of just asking: e.g., "Do you mean X, or more like Y?"`,
         `GARBLED INPUT: If the transcription appears cut off mid-word, makes no semantic sense, is a single disconnected syllable, or reads like random phonemes — say something natural like "I missed that — could you say it again?" Do not try to interpret or guess garbled input.`,
         `If the user's speech is genuinely unclear, ${isAfiK ? `say "what do you mean huh?" or ask one short playful clarifier` : 'ask one short clarification question instead of guessing'}.`,
@@ -2628,10 +2629,11 @@ export async function registerRoutes(
           ? `Lead with a small reaction first. Put the key thought in the next sentence so there is a small breath before it. Never dump everything in the first rushed clause.`
           : `Lead with a soft reaction first. Put the key insight in the next sentence so there is a small breath before it. Never dump the insight in the first rushed clause.`,
         SPOKEN_AUDIO_STYLE,
+        SPOKEN_EMOTION_STYLE,
         isMiles ? MILES_SPOKEN_STYLE : MAYA_SPOKEN_STYLE,
         isMiles
-          ? `Keep replies to two short sentences. First: a chill reaction. Then a breath. Second: the thought, slow like Maya. Linger, do not hurry. If they ask for detail, still stay unhurried.`
-          : `Keep replies to two short sentences. First: a gentle reaction. Then a breath. Second: the insight, slow and thoughtful. Linger, do not hurry. If they ask for detail, still stay unhurried.`,
+          ? `Keep replies to two short sentences. First: a chill reaction that matches their mood. Then a breath. Second: the thought, slow like Maya. Linger, do not hurry. If they ask for detail, still stay unhurried.`
+          : `Keep replies to two short sentences. First: a gentle reaction that matches their mood. Then a breath. Second: the insight, slow and thoughtful. Linger, do not hurry. If they ask for detail, still stay unhurried.`,
         `INCOMPLETE SPEECH: If the user's message trails off, is clearly a fragment, or references something unmentioned (e.g. "what about the..." or "so I was thinking..."), ask the single most useful clarification question — short, natural, spoken. If the input could mean two different things, briefly name both options: e.g., "Do you mean X, or more like Y?"`,
         `GARBLED INPUT: If the transcription appears cut off mid-word, makes no semantic sense, is a single disconnected syllable, or reads like random phonemes — say something natural like "I missed that — could you say it again?" Do not try to interpret or guess garbled input.`,
         `If the user's speech is genuinely unclear, ask one short clarification question instead of guessing.`,

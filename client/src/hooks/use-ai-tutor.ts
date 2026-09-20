@@ -17,7 +17,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { extractCompleteSentences, isTutorSystemErrorLine, sanitizeSpokenTutorLine } from "@shared/spoken-tutor-line";
+import { extractCompleteSentences, isTutorSystemErrorLine, packSpokenUtterances, sanitizeSpokenTutorLine, shapeSpokenProsody } from "@shared/spoken-tutor-line";
 import { createTts, type TtsLike } from "@/lib/ai-tutor/tts-factory";
 import { primeEvaAudio, warmupEvaTts } from "@/lib/ai-tutor/eva-tts";
 import {
@@ -322,7 +322,7 @@ export function useAiTutor(deps: AiTutorDeps) {
    * of answering itself.
    */
   const speakAi = useCallback((text: string) => {
-    const cleaned = sanitizeSpokenTutorLine(text);
+    const cleaned = shapeSpokenProsody(sanitizeSpokenTutorLine(text) || "");
     if (!cleaned) return;
     ttsBusyRef.current = true;
     lastSpokenRef.current = `${lastSpokenRef.current} ${cleaned}`
@@ -840,6 +840,21 @@ export function useAiTutor(deps: AiTutorDeps) {
 
     try {
       let spokeAny = false;
+      const pendingSpeak: string[] = [];
+      const flushPacked = (force: boolean) => {
+        while (pendingSpeak.length >= 2) {
+          for (const chunk of packSpokenUtterances(pendingSpeak.splice(0, 2), 2)) {
+            spokeAny = true;
+            speakAi(chunk);
+          }
+        }
+        if (force && pendingSpeak.length) {
+          for (const chunk of packSpokenUtterances(pendingSpeak.splice(0), 2)) {
+            spokeAny = true;
+            speakAi(chunk);
+          }
+        }
+      };
       const gotTokens = await streamTokens(
         {
           roomId,
@@ -864,13 +879,11 @@ export function useAiTutor(deps: AiTutorDeps) {
               prev.map(m => m.id === streamingId ? { ...m, text: fullReply } : m)
             );
 
-            // Flush complete sentences to TTS immediately (speak before full response)
+            // Pack two sentences so Sesame speaks reaction + thought in one arc.
             const [sentences, remainder] = extractCompleteSentences(sentenceBuffer);
             sentenceBuffer = remainder;
-            sentences.forEach(s => {
-              spokeAny = true;
-              speakAi(s);
-            });
+            pendingSpeak.push(...sentences);
+            flushPacked(false);
           },
           onMeta: event => {
             if (event === "switching_to_backup") addDebug("warn", "Primary AI unavailable — switching to backup.");
@@ -878,16 +891,17 @@ export function useAiTutor(deps: AiTutorDeps) {
           onDone: (model, latencyMs) => {
             addDebug("info", `Stream complete in ${latencyMs}ms · model: ${model}`);
             if (sanitizeSpokenTutorLine(sentenceBuffer)) {
-              spokeAny = true;
-              speakAi(sentenceBuffer.trim());
-            } else if (!spokeAny && fullReply.trim()) {
+              pendingSpeak.push(sentenceBuffer.trim());
+            }
+            sentenceBuffer = "";
+            flushPacked(true);
+            if (!spokeAny && fullReply.trim()) {
               const rescue = sanitizeSpokenTutorLine(`${fullReply.trim().replace(/[.!?]*$/, "")}.`);
               if (rescue) {
                 spokeAny = true;
                 speakAi(rescue);
               }
             }
-            sentenceBuffer = "";
             if (fullReply.trim()) {
               setAiLastBroadcast(fullReply);
               socket?.emit("room:ai-tutor-message", {

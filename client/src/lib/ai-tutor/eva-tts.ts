@@ -11,7 +11,7 @@
  * robotic device SpeechSynthesis voice while Sesame is configured.
  */
 
-import { sanitizeSpokenTutorLine } from "@shared/spoken-tutor-line";
+import { sanitizeSpokenTutorLine, shapeSpokenProsody } from "@shared/spoken-tutor-line";
 import { TUTOR_TTS_PLAYBACK_RATE, tutorPlaybackRate, tutorTtsSpeed } from "@shared/tutor-tts-pace";
 import { TtsEngine, type TtsCallbacks } from "./tts";
 export type { TtsCallbacks };
@@ -63,7 +63,7 @@ let mayaBreathUrl: string | null = null;
 let milesBreathUrl: string | null = null;
 function breathWavUrl(thoughtfulMaya: boolean): string {
   if (thoughtfulMaya) {
-    if (!mayaBreathUrl) mayaBreathUrl = URL.createObjectURL(makeBreathWav(420, 22050));
+    if (!mayaBreathUrl) mayaBreathUrl = URL.createObjectURL(makeBreathWav(280, 22050));
     return mayaBreathUrl;
   }
   if (!milesBreathUrl) milesBreathUrl = URL.createObjectURL(makeBreathWav(260, 22050));
@@ -163,7 +163,7 @@ export class EvaTtsEngine {
   }
 
   enqueue(sentence: string) {
-    const text = sanitizeSpokenTutorLine((sentence || "").trim());
+    const text = shapeSpokenProsody(sanitizeSpokenTutorLine((sentence || "").trim()) || "");
     if (!text) return;
     if (this.fallbackEngaged) {
       this.ensureFallback().enqueue(text);
@@ -392,7 +392,7 @@ export class EvaTtsEngine {
       audio.src = url;
       audio.onended = done;
       audio.onerror = done;
-      const t = window.setTimeout(done, 360);
+          const t = window.setTimeout(done, 240);
       signal?.addEventListener("abort", () => {
         window.clearTimeout(t);
         try { audio.pause(); } catch {}

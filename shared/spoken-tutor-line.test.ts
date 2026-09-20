@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractCompleteSentences, sanitizeSpokenTutorLine } from "./spoken-tutor-line";
+import { extractCompleteSentences, packSpokenUtterances, sanitizeSpokenTutorLine, shapeSpokenProsody } from "./spoken-tutor-line";
 
 describe("sanitizeSpokenTutorLine", () => {
   it("drops hmm/mm fillers and stall phrases", () => {
@@ -36,5 +36,37 @@ describe("extractCompleteSentences", () => {
     const [done, rest] = extractCompleteSentences("Nice. I was thinking about the");
     expect(done).toEqual(["Nice."]);
     expect(rest).toContain("thinking about the");
+  });
+});
+
+describe("shapeSpokenProsody", () => {
+  it("turns dashes and ellipses into comma breaths Sesame can speak", () => {
+    expect(shapeSpokenProsody("I missed that — could you say it again?")).toBe(
+      "I missed that, could you say it again?",
+    );
+    expect(shapeSpokenProsody("Wait... really?")).toBe("Wait, really?");
+  });
+
+  it("adds a comma after a spoken reaction and drops stage directions", () => {
+    expect(shapeSpokenProsody("Oh wow that sounds amazing.")).toBe("Oh wow, that sounds amazing.");
+    expect(shapeSpokenProsody("Haha I can picture that.")).toBe("Haha, I can picture that.");
+    expect(shapeSpokenProsody("Aww, I'm happy for you. *laughs*")).toBe("Aww, I'm happy for you.");
+  });
+
+  it("is safe to run twice", () => {
+    const once = shapeSpokenProsody("Oh wow that is huge!");
+    expect(shapeSpokenProsody(once)).toBe(once);
+  });
+});
+
+describe("packSpokenUtterances", () => {
+  it("keeps reaction and insight in one spoken chunk", () => {
+    expect(
+      packSpokenUtterances(["Oh wow, that sounds amazing.", "Tell me what you liked most about Paris."]),
+    ).toEqual(["Oh wow, that sounds amazing. Tell me what you liked most about Paris."]);
+  });
+
+  it("leaves a leftover third sentence as its own chunk", () => {
+    expect(packSpokenUtterances(["One.", "Two.", "Three."])).toEqual(["One. Two.", "Three."]);
   });
 });
