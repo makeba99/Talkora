@@ -37,6 +37,8 @@ export function bumpRateLimit(db: Database, key: string): void {
 }
 
 export class AgentRuntime {
+  private f4tUnsub: (() => void) | null = null;
+
   constructor(
     private readonly db: Database,
     private readonly connectors: ConnectorMap,
@@ -54,11 +56,64 @@ export class AgentRuntime {
     return getSettings(this.db);
   }
 
+  async setFree4TalkMonitoring(on: boolean): Promise<{ monitoring: boolean }> {
+    const f4t = this.connectors.free4talk as
+      | (PlatformConnector & {
+          setMonitoring?: (value: boolean) => Promise<{ monitoring: boolean }>;
+          getMonitoring?: () => boolean;
+        })
+      | undefined;
+    if (!f4t?.setMonitoring) return { monitoring: false };
+    await f4t.setMonitoring(on);
+    if (on && !this.f4tUnsub) {
+      this.f4tUnsub = await f4t.watchForNewMessages((msg) => {
+        this.ingestVisibleMessage(msg).catch((err) => {
+          logEvent(this.db, {
+            level: "error",
+            event: "f4t_live_ingest_failed",
+            platform: "free4talk",
+            detail: { message: err instanceof Error ? err.message : String(err) },
+          });
+        });
+      });
+    }
+    if (!on && this.f4tUnsub) {
+      this.f4tUnsub();
+      this.f4tUnsub = null;
+    }
+    logEvent(this.db, { event: on ? "f4t_monitoring_on" : "f4t_monitoring_off", platform: "free4talk", detail: { on } });
+    return { monitoring: on };
+  }
+
   pausePlatform(platform: string, paused: boolean) {
     const now = new Date().toISOString();
     this.db.prepare(`UPDATE platform_settings SET paused = ?, updated_at = ? WHERE platform = ?`).run(paused ? 1 : 0, now, platform);
     this.db.prepare(`UPDATE platform_connections SET paused = ?, updated_at = ? WHERE platform = ?`).run(paused ? 1 : 0, now, platform);
     logEvent(this.db, { event: paused ? "platform_paused" : "platform_resumed", platform, detail: { paused } });
+  }
+
+  async ingestVisibleMessage(msg: NormalizedMessage): Promise<"draft" | "sent" | "skip" | "dup"> {
+    const convoId = this.upsertConversation(msg.platform, msg.conversationExternalId, msg.conversationTitle, msg.sentAt);
+    if (msg.platform === "free4talk") {
+      await this.snapshotVisibleRoom(msg.conversationExternalId, convoId);
+    }
+    if (msg.direction !== "inbound") {
+      this.insertMessage(convoId, msg);
+      return "skip";
+    }
+    this.insertMessage(convoId, msg);
+    const row = this.db
+      .prepare(
+        `SELECT m.*, c.platform as convo_platform, c.title as convo_title, c.category, c.auto_enabled as convo_auto, c.paused as convo_paused, c.external_id as convo_external
+         FROM messages m
+         JOIN conversations c ON c.id = m.conversation_id
+         WHERE m.platform = ? AND m.external_id = ?`,
+      )
+      .get(msg.platform, msg.externalId) as any;
+    if (!row) return "skip";
+    const already = this.db.prepare(`SELECT id FROM drafts WHERE source_message_id = ? LIMIT 1`).get(row.id);
+    if (already) return "dup";
+    return this.handleInbound(row, getSettings(this.db));
   }
 
   async ingestFromConnectors(): Promise<{ ingested: number; skipped: string[] }> {
@@ -157,6 +212,9 @@ export class AgentRuntime {
   }
 
   private async handleInbound(msg: any, settings: ReturnType<typeof getSettings>): Promise<"draft" | "sent" | "skip"> {
+    if (settings.emergencyStop) {
+      logEvent(this.db, { event: "tick_blocked_emergency", platform: msg.platform, conversationId: msg.conversation_id, detail: {} });
+    }
     const platformPaused = this.db.prepare(`SELECT paused, auto_enabled, max_replies_per_hour FROM platform_settings WHERE platform = ?`).get(msg.platform) as any;
     if (platformPaused?.paused || msg.convo_paused) {
       logEvent(this.db, { event: "skipped_paused", platform: msg.platform, conversationId: msg.conversation_id, detail: {} });
@@ -170,7 +228,7 @@ export class AgentRuntime {
     }
 
     const history = this.db
-      .prepare(`SELECT direction, sender_name, body, sent_at FROM messages WHERE conversation_id = ? ORDER BY sent_at ASC`)
+      .prepare(`SELECT direction, sender_name, body, sent_at FROM messages WHERE conversation_id = ? ORDER BY sent_at ASC LIMIT 40`)
       .all(msg.conversation_id) as any[];
     const style = this.db.prepare(`SELECT examples, notes FROM style_profiles WHERE id = 'default'`).get() as any;
     const memory = this.db
@@ -231,12 +289,18 @@ export class AgentRuntime {
       detail: { draftId, engine: generated.engine, language: generated.language },
     });
 
-    const autoOk =
-      settings.mode === "auto" &&
+    if (settings.emergencyStop || platformPaused?.paused || msg.convo_paused) return "draft";
+
+    const f4tLiveAuto =
+      msg.platform === "free4talk" &&
       Boolean(platformPaused?.auto_enabled) &&
-      Boolean(msg.convo_auto);
-    if (settings.mode === "draft") return "draft";
-    if (settings.mode === "approval" && !autoOk) return "draft";
+      !settings.simulationEnabled &&
+      settings.liveSendEnabled;
+
+    const autoOk =
+      f4tLiveAuto ||
+      (settings.mode === "auto" && Boolean(platformPaused?.auto_enabled) && Boolean(msg.convo_auto));
+    if (settings.mode === "draft" && !f4tLiveAuto) return "draft";
     if (!autoOk) return "draft";
 
     const draft = this.db.prepare(`SELECT * FROM drafts WHERE id = ?`).get(draftId);
@@ -313,6 +377,18 @@ export class AgentRuntime {
         conversationId: draft.conversation_id,
         detail: error instanceof IntegrationUnavailable ? error.toJSON() : { message },
       });
+      throw error;
+    }
+  }
+
+  private async snapshotVisibleRoom(roomId: string, convoId: string): Promise<void> {
+    const connector = this.connectors.free4talk;
+    if (!connector) return;
+    try {
+      const visible = await connector.getMessages(roomId);
+      for (const m of visible) this.insertMessage(convoId, m);
+    } catch (error) {
+      if (error instanceof IntegrationUnavailable) return;
       throw error;
     }
   }

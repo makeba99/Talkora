@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { Free4TalkConnector, free4talkReport } from "../connectors/free4talk/index.ts";
+import { Free4TalkConnector, free4talkReport, parseFree4TalkRoomUrl } from "../connectors/free4talk/index.ts";
+import { probeRoomDom } from "../connectors/free4talk/dom.ts";
 import { IntegrationUnavailable } from "../connectors/platform-connector.ts";
 import {
   getMe,
@@ -14,29 +15,59 @@ import {
 } from "../connectors/teams/graph.ts";
 import { normalizeMessage } from "../connectors/platform-connector.ts";
 
+describe("Free4Talk room URL", () => {
+  it("accepts only the public /room/:id page", () => {
+    const ok = parseFree4TalkRoomUrl("https://www.free4talk.com/room/abc123");
+    expect(ok).toEqual({ ok: true, url: "https://www.free4talk.com/room/abc123", roomId: "abc123" });
+  });
+
+  it("rejects heroku hosts, identity hosts, and non-room paths", () => {
+    expect(parseFree4TalkRoomUrl("https://free4talk-foo.herokuapp.com/abc").ok).toBe(false);
+    expect(parseFree4TalkRoomUrl("https://identity.free4talk.com/identity/get/me/").ok).toBe(false);
+    expect(parseFree4TalkRoomUrl("https://www.free4talk.com/").ok).toBe(false);
+    expect(parseFree4TalkRoomUrl("https://evil.example/room/abc").ok).toBe(false);
+  });
+});
+
 describe("Free4Talk connector", () => {
   const connector = new Free4TalkConnector("/tmp/f4t-test", false);
 
-  it("reports Integration unavailable for retrieval and send", async () => {
-    await expect(connector.getConversations()).rejects.toBeInstanceOf(IntegrationUnavailable);
+  it("does not invent a messaging API; room DOM is the only send/read path", async () => {
     await expect(connector.getMessages("x")).rejects.toBeInstanceOf(IntegrationUnavailable);
     await expect(connector.sendMessage("x", "hi")).rejects.toBeInstanceOf(IntegrationUnavailable);
     await expect(connector.sendMessage("x", "hi", { simulate: true })).rejects.toBeInstanceOf(IntegrationUnavailable);
     const status = await connector.getStatus();
-    expect(status.integration.available).toBe(false);
-    expect(status.integration.exists.length).toBeGreaterThan(0);
+    expect(status.integration.mode).toBe("authorized_browser");
+    expect(status.integration.exists.join(" ")).toMatch(/Type a message/i);
     expect(status.integration.missing.join(" ")).toMatch(/Official developer documentation/i);
-    expect(free4talkReport.available).toBe(false);
+    expect(free4talkReport.available).toBe(true);
   });
 
-  it("connect does not fake a messaging login", async () => {
+  it("stores a pasted room URL without launching a browser in tests", async () => {
+    const result = await connector.setRoomUrl("https://www.free4talk.com/room/room-one");
+    expect(result.ok).toBe(true);
+    expect(result.url).toBe("https://www.free4talk.com/room/room-one");
+    await expect(connector.getMessages("room-one")).rejects.toBeInstanceOf(IntegrationUnavailable);
+  });
+
+  it("connect does not collect a password", async () => {
     const result = await connector.connect();
-    expect(["integration_unavailable", "awaiting_user", "not_configured"]).toContain(result.status);
-    expect(result.message.toLowerCase()).not.toMatch(/password/);
+    expect(["integration_unavailable", "awaiting_user", "not_configured", "disconnected"]).toContain(result.status);
+    expect(result.message.toLowerCase()).not.toMatch(/enter your (google |free4talk )?password/);
+    expect(result.message.toLowerCase()).toMatch(/yourself|browser|google/);
   });
 
-  it("opens the real Free4Talk origin", async () => {
-    expect(await connector.openPlatform()).toEqual({ url: "https://www.free4talk.com" });
+  it("openPlatform stays on free4talk.com", async () => {
+    const opened = await connector.openPlatform();
+    expect(opened.url.startsWith("https://www.free4talk.com")).toBe(true);
+  });
+
+  it("exposes a DOM probe function that only reads visible nodes", () => {
+    expect(probeRoomDom.name).toBe("probeRoomDom");
+    expect(String(probeRoomDom)).toMatch(/input-send-box/);
+    expect(String(probeRoomDom)).toMatch(/isMyself/);
+    expect(String(probeRoomDom)).toMatch(/signedInAccountReady/);
+    expect(String(probeRoomDom)).not.toMatch(/herokuapp/);
   });
 });
 
@@ -56,7 +87,7 @@ describe("Teams Graph client (mocked HTTP)", () => {
           message: "Open microsoft.com/devicelogin",
         });
       }
-      if (url.includes("/token") && String(init?.body).includes("device_code")) {
+      if (url.includes("/token") && String(init.body).includes("device_code")) {
         return json({
           token_type: "Bearer",
           expires_in: 3600,

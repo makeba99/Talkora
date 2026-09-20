@@ -34,6 +34,16 @@ describe("HTTP app", () => {
     expect(json.bind).toContain("127.0.0.1");
   });
 
+  it("root page is a live status pointer, not an empty shell", async () => {
+    const { url } = await listen();
+    const res = await fetch(`${url}/`);
+    const html = await res.text();
+    expect(res.status).toBe(200);
+    expect(html).toMatch(/Listening on localhost/i);
+    expect(html).toMatch(/127\.0\.0\.1:5173/);
+    expect(html).toMatch(/standalone local-first/i);
+  });
+
   it("dashboard defaults to approval + simulation banner", async () => {
     const { url } = await listen();
     const json = await fetch(`${url}/api/dashboard`).then((r) => r.json());
@@ -49,11 +59,63 @@ describe("HTTP app", () => {
     expect(json.message.toLowerCase()).toMatch(/client_id|entra|password/);
   });
 
-  it("Free4Talk retrieve surfaces Integration unavailable", async () => {
+  it("Free4Talk is authorized browser only and rejects heroku room hosts", async () => {
     const { url } = await listen();
     const json = await fetch(`${url}/api/platforms`).then((r) => r.json());
     const f4t = json.platforms.find((p: any) => p.id === "free4talk");
-    expect(f4t.integration.available).toBe(false);
+    expect(f4t.integration.mode).toBe("authorized_browser");
+    expect(f4t.integration.available).toBe(true);
+    const bad = await fetch(`${url}/api/platforms/free4talk/room`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://free4talk-x.herokuapp.com/room/1" }),
+    });
+    expect(bad.status).toBe(400);
+    const body = await bad.json();
+    expect(body.ok).toBe(false);
+    expect(String(body.message || body.error)).toMatch(/not the public room page|heroku/i);
+    const good = await fetch(`${url}/api/platforms/free4talk/room`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: "https://www.free4talk.com/room/demo-room" }),
+    }).then((r) => r.json());
+    expect(good.ok).toBe(true);
+    expect(good.url).toBe("https://www.free4talk.com/room/demo-room");
+    const live = await fetch(`${url}/api/platforms/free4talk/room/send`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body: "hello from signed-in account", asSignedInAccount: true }),
+    });
+    expect(live.status).toBe(409);
+    const liveBody = await live.json();
+    expect(String(liveBody.error)).toMatch(/Live send is off|simulation/i);
+  });
+
+  it("prefills Hilda room URL, exposes monitor flags, and keeps auto-reply inactive by default", async () => {
+    const { url } = await listen();
+    const room = await fetch(`${url}/api/platforms/free4talk/room`).then((r) => r.json());
+    expect(room.suggestedUrl).toBe("https://www.free4talk.com/room/z2ee2");
+    expect(room.url).toBe("https://www.free4talk.com/room/z2ee2");
+    expect(room.roomId).toBe("z2ee2");
+    const platforms = await fetch(`${url}/api/platforms`).then((r) => r.json());
+    const f4t = platforms.platforms.find((p: any) => p.id === "free4talk");
+    expect(f4t.suggestedUrl).toBe("https://www.free4talk.com/room/z2ee2");
+    expect(f4t.autoEnabled).toBe(false);
+    expect(f4t.autoReplyActive).toBe(false);
+    const monitor = await fetch(`${url}/api/platforms/free4talk/monitor`).then((r) => r.json());
+    expect(monitor.monitoring).toBe(false);
+    expect(monitor.autoReplyActive).toBe(false);
+    expect(monitor.simulationEnabled).toBe(true);
+    expect(monitor.liveSendEnabled).toBe(false);
+    const on = await fetch(`${url}/api/platforms/free4talk/monitor`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ on: true }),
+    }).then((r) => r.json());
+    expect(on.monitoring).toBe(true);
+    const still = await fetch(`${url}/api/platforms/free4talk/monitor`).then((r) => r.json());
+    expect(still.monitoring).toBe(true);
+    expect(still.autoReplyActive).toBe(false);
   });
 
   it("settings, style, memory, emergency stop round-trip", async () => {

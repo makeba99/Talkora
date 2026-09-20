@@ -87,6 +87,13 @@ h1 { font-size: 26px; font-weight: 600; margin: 0 0 6px; }
   color: #ffb4b4;
   background: rgba(226, 75, 75, 0.1);
 }
+.banner.live {
+  border-color: var(--live);
+  color: #b6e4c8;
+  background: rgba(63, 157, 110, 0.12);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
 
 .grid {
   display: grid;

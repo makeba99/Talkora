@@ -57,24 +57,47 @@ class MockTeams implements PlatformConnector {
 }
 
 describe("AI reply engine", () => {
-  it("detects language and stays generic (no platform APIs)", async () => {
+  it("detects language and writes companion voice (not assistant voice)", async () => {
     expect(detectLanguage("Hola, ¿puedes confirmar?")).toBe("es");
     const result = await generateReply({
-      platform: "teams",
-      conversationTitle: "Chat",
-      conversationCategory: "work",
-      messages: [{ direction: "inbound", senderName: "Bob", body: "Can you confirm the time?", sentAt: "t" }],
-      styleExamples: ["Sure — I'll look and ping you."],
-      memory: [{ key: "pref", value: "short replies" }],
+      platform: "free4talk",
+      conversationTitle: "Free4Talk room z2ee2",
+      conversationCategory: "personal",
+      messages: [
+        { direction: "inbound", senderName: "Johan", body: "I remember some lez songs but forgot", sentAt: "t1" },
+        { direction: "inbound", senderName: "Johan", body: "Girls were looking asian", sentAt: "t2" },
+      ],
+      styleExamples: ["Yeah that tracks."],
+      memory: [],
       settings: { mode: "approval", simulationEnabled: true },
     });
     expect(result.reply.length).toBeGreaterThan(2);
     expect(result.engine).toBe("local-heuristic");
     expect(result.recommended_action).not.toBe("skip");
+    expect(result.reply.toLowerCase()).not.toMatch(/great question|happy to help|thanks for writing|i'll check and follow up|got it\.$/);
+    expect(result.reason.toLowerCase()).toMatch(/why|room|sharing|asked|companion|present|language/);
+  });
+
+  it("skips when no reply is needed", async () => {
+    const ack = await generateReply({
+      platform: "free4talk",
+      conversationTitle: "Free4Talk room z2ee2",
+      conversationCategory: "personal",
+      messages: [{ direction: "inbound", senderName: "Kevin", body: "Thanks, Got it.", sentAt: "t" }],
+      styleExamples: [],
+      memory: [],
+      settings: { mode: "approval", simulationEnabled: true },
+    });
+    expect(ack.recommended_action).toBe("skip");
+    expect(ack.reply).toBe("");
   });
 
   it("skips no-reply traffic", () => {
     expect(qualityCheck("ok enough", "This is an automated message, do not reply")).toMatchObject({ ok: false });
+  });
+
+  it("rejects assistant voice in quality check", () => {
+    expect(qualityCheck("Great question! I'd be happy to help.", "What songs?")).toMatchObject({ ok: false });
   });
 });
 
@@ -209,6 +232,123 @@ describe("security", () => {
     expect(blob.startsWith("v1:")).toBe(true);
     expect(decryptSecret(ROOT, blob)).toContain("abc");
     expect(redact({ refresh_token: "abc", hello: "world" })).toMatchObject({ refresh_token: "[redacted]", hello: "world" });
+  });
+});
+
+class MockFree4Talk implements PlatformConnector {
+  readonly platform = "free4talk" as const;
+  sent: Array<{ body: string; simulate?: boolean }> = [];
+  monitoring = false;
+  async connect() {
+    return { status: "connected" as const, message: "ok" };
+  }
+  async disconnect() {}
+  async getStatus() {
+    return {
+      status: "connected" as const,
+      message: "mock",
+      integration: { available: true, exists: [], missing: [], canBuild: [], requiredConfig: [] },
+      monitoring: this.monitoring,
+    };
+  }
+  async getConversations(): Promise<NormalizedConversation[]> {
+    return [{ platform: "free4talk", externalId: "z2ee2", title: "Free4Talk room z2ee2" }];
+  }
+  async getConversation() {
+    return null;
+  }
+  async getMessages() {
+    return [];
+  }
+  async watchForNewMessages() {
+    return () => undefined;
+  }
+  async setMonitoring(on: boolean) {
+    this.monitoring = on;
+    return { monitoring: on };
+  }
+  getMonitoring() {
+    return this.monitoring;
+  }
+  async sendMessage(_id: string, body: string, options?: { simulate?: boolean }): Promise<SendResult> {
+    this.sent.push({ body, simulate: options?.simulate });
+    return { simulated: Boolean(options?.simulate), externalId: `out-${this.sent.length}`, sentAt: new Date().toISOString() };
+  }
+  async markAsRead() {}
+  async getCurrentUser() {
+    return { id: "browser-session", displayName: "Free4Talk browser session" };
+  }
+  async logout() {}
+  async openPlatform() {
+    return { url: "https://www.free4talk.com/room/z2ee2" };
+  }
+}
+
+function f4tInbound(id: string, body = "Can you confirm the time?"): NormalizedMessage {
+  return {
+    platform: "free4talk",
+    externalId: id,
+    conversationExternalId: "z2ee2",
+    conversationTitle: "Free4Talk room z2ee2",
+    direction: "inbound",
+    senderName: "Johan",
+    body,
+    sentAt: new Date().toISOString(),
+    rawType: "free4talk.visible-dom",
+  };
+}
+
+describe("Free4Talk live monitor ingest", () => {
+  it("creates a pending draft and does not send while simulation is on", async () => {
+    const db = openDatabase(ROOT, ":memory:");
+    const f4t = new MockFree4Talk();
+    const runtime = new AgentRuntime(db, { free4talk: f4t }, ROOT);
+    db.prepare(`UPDATE platform_settings SET auto_enabled = 1 WHERE platform = 'free4talk'`).run();
+    const result = await runtime.ingestVisibleMessage(f4tInbound("vis-sim-1"));
+    expect(result).toBe("draft");
+    expect(f4t.sent.length).toBe(0);
+    const pending = db.prepare(`SELECT * FROM drafts WHERE status = 'pending'`).all() as any[];
+    expect(pending.length).toBe(1);
+    db.close();
+  });
+
+  it("live auto-sends only when Free4Talk Auto is on, simulation is off, live send is on, and STOP is off", async () => {
+    const db = openDatabase(ROOT, ":memory:");
+    const f4t = new MockFree4Talk();
+    const runtime = new AgentRuntime(db, { free4talk: f4t }, ROOT);
+    db.prepare(`UPDATE platform_settings SET auto_enabled = 1 WHERE platform = 'free4talk'`).run();
+    updateSettings(db, { simulationEnabled: false, liveSendEnabled: true });
+    const result = await runtime.ingestVisibleMessage(f4tInbound("vis-live-1"));
+    expect(result).toBe("sent");
+    expect(f4t.sent.length).toBe(1);
+    expect(f4t.sent[0].simulate).toBe(false);
+    db.close();
+  });
+
+  it("STOP keeps a pending draft and never calls send", async () => {
+    const db = openDatabase(ROOT, ":memory:");
+    const f4t = new MockFree4Talk();
+    const runtime = new AgentRuntime(db, { free4talk: f4t }, ROOT);
+    db.prepare(`UPDATE platform_settings SET auto_enabled = 1 WHERE platform = 'free4talk'`).run();
+    updateSettings(db, { simulationEnabled: false, liveSendEnabled: true });
+    runtime.emergencyStop(true);
+    const result = await runtime.ingestVisibleMessage(f4tInbound("vis-stop-1"));
+    expect(result).toBe("draft");
+    expect(f4t.sent.length).toBe(0);
+    const pending = db.prepare(`SELECT * FROM drafts WHERE status = 'pending'`).all() as any[];
+    expect(pending.length).toBe(1);
+    db.close();
+  });
+
+  it("does not live-send when Free4Talk Auto is off even if simulation is off", async () => {
+    const db = openDatabase(ROOT, ":memory:");
+    const f4t = new MockFree4Talk();
+    const runtime = new AgentRuntime(db, { free4talk: f4t }, ROOT);
+    updateSettings(db, { simulationEnabled: false, liveSendEnabled: true });
+    const result = await runtime.ingestVisibleMessage(f4tInbound("vis-noauto-1"));
+    expect(result).toBe("draft");
+    expect(f4t.sent.length).toBe(0);
+    db.close();
   });
 });
 

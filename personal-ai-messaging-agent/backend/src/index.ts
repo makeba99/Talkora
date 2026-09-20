@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { openDatabase, getSettings, updateSettings } from "../../database/index.ts";
-import { Free4TalkConnector, FREE4TALK_ORIGIN } from "../../connectors/free4talk/index.ts";
+import { Free4TalkConnector, FREE4TALK_ORIGIN, HILDA_ROOM_URL } from "../../connectors/free4talk/index.ts";
 import { TeamsConnector } from "../../connectors/teams/index.ts";
 import { IntegrationUnavailable } from "../../connectors/platform-connector.ts";
 import { AgentRuntime } from "../../agent/orchestrator.ts";
@@ -55,7 +55,41 @@ export function createApp(options?: { dbFile?: string; fetchFn?: typeof fetch })
   };
 
   app.get("/api/health", (_req, res) => {
-    res.json({ ok: true, name: "Personal AI Messaging Agent", bind: `${host()}:${port()}` });
+    res.json({ ok: true, name: "Personal AI Messaging Agent", bind: `${host()}:${port()}`, ui: `http://127.0.0.1:${frontendPort()}` });
+  });
+
+  app.get("/", (_req, res) => {
+    const ui = `http://127.0.0.1:${frontendPort()}`;
+    const api = `http://${host()}:${port()}`;
+    res.type("html").status(200).send(`<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Personal AI Messaging Agent — running</title>
+  <style>
+    body { margin:0; font-family: ui-sans-serif, system-ui, sans-serif; background:#14151c; color:#efe7d6; }
+    main { max-width: 40rem; margin: 12vh auto; padding: 0 1.5rem; }
+    h1 { font-size: 1.6rem; margin: 0 0 .4rem; }
+    .ok { color:#3f9d6e; font-weight:600; letter-spacing:.04em; text-transform:uppercase; font-size:.8rem; }
+    a { color:#7ec8c4; }
+    .card { border:1px solid #2a2d3a; border-radius:12px; padding:1.1rem 1.2rem; background:#1a1c25; margin-top:1.2rem; }
+    code { font-family: ui-monospace, monospace; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="ok">Listening on localhost</p>
+    <h1>Personal AI Messaging Agent</h1>
+    <p>This process is up. Standalone local-first messaging agent.</p>
+    <div class="card">
+      <p>API: <a href="${api}/api/health">${api}/api/health</a></p>
+      <p>Desk UI: <a href="${ui}">${ui}</a></p>
+    </div>
+    <p>Default mode is Approval. Simulation is on. Live send is off.</p>
+  </main>
+</body>
+</html>`);
   });
 
   app.get("/api/dashboard", asyncHandler(async (_req, res) => {
@@ -151,14 +185,158 @@ export function createApp(options?: { dbFile?: string; fetchFn?: typeof fetch })
 
   app.get("/api/platforms", asyncHandler(async (_req, res) => {
     const [free4talk, teamsStatus] = await Promise.all([f4t.getStatus(), teams.getStatus()]);
-    const settings = db.prepare(`SELECT * FROM platform_settings`).all();
+    const platformSettings = db.prepare(`SELECT * FROM platform_settings`).all() as any[];
+    const appSettings = getSettings(db);
+    const f4tAuto = Boolean(platformSettings.find((s) => s.platform === "free4talk")?.auto_enabled);
+    const autoReplyActive =
+      Boolean(free4talk.monitoring) &&
+      f4tAuto &&
+      !appSettings.simulationEnabled &&
+      appSettings.liveSendEnabled &&
+      !appSettings.emergencyStop;
     res.json({
       platforms: [
-        { id: "free4talk", openUrl: FREE4TALK_ORIGIN, ...free4talk },
+        {
+          id: "free4talk",
+          openUrl: FREE4TALK_ORIGIN,
+          suggestedUrl: HILDA_ROOM_URL,
+          autoEnabled: f4tAuto,
+          autoReplyActive,
+          ...free4talk,
+        },
         { id: "teams", openUrl: "https://teams.microsoft.com/", ...teamsStatus },
       ],
-      settings,
+      settings: platformSettings,
     });
+  }));
+
+  app.post("/api/platforms/free4talk/room", asyncHandler(async (req, res) => {
+    const url = typeof req.body?.url === "string" ? req.body.url : "";
+    const result = await f4t.setRoomUrl(url);
+    logEvent(db, { event: "free4talk_room_url", platform: "free4talk", detail: { ok: result.ok, href: result.probe?.href || null } });
+    res.status(result.ok ? 200 : 400).json({ error: result.ok ? undefined : result.message, ...result });
+  }));
+
+  app.get("/api/platforms/free4talk/room", asyncHandler(async (_req, res) => {
+    const status = await f4t.getStatus();
+    res.json({
+      url: status.room?.url || HILDA_ROOM_URL,
+      suggestedUrl: HILDA_ROOM_URL,
+      roomId: status.room?.roomId || "z2ee2",
+      probe: status.room?.probe || null,
+      status: status.status,
+      message: status.message,
+      monitoring: status.monitoring || false,
+    });
+  }));
+
+  app.get("/api/platforms/free4talk/room/messages", asyncHandler(async (_req, res) => {
+    const status = await f4t.getStatus();
+    if (!status.room?.roomId) {
+      res.json({ messages: [], message: status.message });
+      return;
+    }
+    try {
+      const messages = await f4t.getMessages(status.room.roomId);
+      res.json({ messages, probe: status.room.probe });
+    } catch (error) {
+      if (error instanceof IntegrationUnavailable) {
+        res.status(409).json({ error: "Integration unavailable", messages: [], ...error.toJSON() });
+        return;
+      }
+      throw error;
+    }
+  }));
+
+  app.post("/api/platforms/free4talk/room/send", asyncHandler(async (req, res) => {
+    const body = typeof req.body?.body === "string" ? req.body.body : "";
+    const status = await f4t.getStatus();
+    if (!status.room?.roomId) {
+      res.status(409).json({ error: "Integration unavailable", reason: "Paste a room URL first." });
+      return;
+    }
+    const settings = getSettings(db);
+    if (settings.emergencyStop) {
+      res.status(409).json({ error: "Emergency stop is on. Nothing will send." });
+      return;
+    }
+    const asSignedInAccount = req.body?.asSignedInAccount === true;
+    const simulate =
+      req.body?.simulate === true ||
+      !asSignedInAccount ||
+      settings.simulationEnabled ||
+      !settings.liveSendEnabled;
+    if (asSignedInAccount && simulate && req.body?.simulate !== true) {
+      res.status(409).json({
+        error:
+          "Live send is off or simulation is on. Enable Live send and turn simulation off in Settings (or on this page), then send as the signed-in room account. This app will not click Send until then.",
+        simulated: true,
+        liveSendEnabled: settings.liveSendEnabled,
+        simulationEnabled: settings.simulationEnabled,
+      });
+      return;
+    }
+    const result = await f4t.sendMessage(status.room.roomId, body, { simulate });
+    if (!result.simulated) {
+      const convoId = runtime.upsertConversation("free4talk", status.room.roomId, `Free4Talk room ${status.room.roomId}`, result.sentAt);
+      runtime.insertMessage(convoId, {
+        platform: "free4talk",
+        externalId: result.externalId || `dom-${Date.now()}`,
+        conversationExternalId: status.room.roomId,
+        conversationTitle: `Free4Talk room ${status.room.roomId}`,
+        direction: "outbound",
+        senderName: "Me (signed-in room account)",
+        body,
+        sentAt: result.sentAt,
+        rawType: "free4talk.visible-dom.myself",
+      });
+      db.prepare(
+        `INSERT INTO sent_messages (id, platform, conversation_id, draft_id, body, mode, simulated, external_id, error, created_at)
+         VALUES (?, 'free4talk', ?, NULL, ?, 'approval', 0, ?, NULL, ?)`,
+      ).run(randomUUID(), convoId, body, result.externalId || null, result.sentAt);
+    }
+    logEvent(db, {
+      event: result.simulated ? "free4talk_simulated_type" : "free4talk_live_type",
+      platform: "free4talk",
+      detail: { simulated: result.simulated, asSignedInAccount },
+    });
+    res.json({ ...result, asSignedInAccount: asSignedInAccount && !result.simulated });
+  }));
+
+  app.post("/api/platforms/free4talk/monitor", asyncHandler(async (req, res) => {
+    const on = req.body?.on !== false;
+    const result = await runtime.setFree4TalkMonitoring(on);
+    res.json(result);
+  }));
+
+  app.get("/api/platforms/free4talk/monitor", asyncHandler(async (_req, res) => {
+    const status = await f4t.getStatus();
+    const appSettings = getSettings(db);
+    const f4tAuto = Boolean(
+      (db.prepare(`SELECT auto_enabled FROM platform_settings WHERE platform = 'free4talk'`).get() as any)?.auto_enabled,
+    );
+    res.json({
+      monitoring: Boolean(status.monitoring),
+      autoEnabled: f4tAuto,
+      autoReplyActive:
+        Boolean(status.monitoring) &&
+        f4tAuto &&
+        !appSettings.simulationEnabled &&
+        appSettings.liveSendEnabled &&
+        !appSettings.emergencyStop,
+      simulationEnabled: appSettings.simulationEnabled,
+      liveSendEnabled: appSettings.liveSendEnabled,
+      emergencyStop: appSettings.emergencyStop,
+    });
+  }));
+
+  app.post("/api/platforms/free4talk/screenshot", asyncHandler(async (req, res) => {
+    const dest =
+      typeof req.body?.path === "string" && req.body.path.startsWith("/cursor/stores/")
+        ? req.body.path
+        : "/cursor/stores/bc-f656d379-f884-4f88-b220-1f2fcee9c42e/media/free4talk-live.png";
+    const result = await f4t.screenshotTo(dest);
+    res.status(result.ok ? 200 : 409).json({ ...result, path: dest });
   }));
 
   app.post("/api/platforms/:id/connect", asyncHandler(async (req, res) => {
@@ -347,12 +525,20 @@ export function createApp(options?: { dbFile?: string; fetchFn?: typeof fetch })
 export async function main() {
   const bindHost = host();
   assertLocalhostBind(bindHost);
-  const { app, runtime } = createApp();
+  const { app, runtime, connectors } = createApp();
   const listenPort = port();
   const server = app.listen(listenPort, bindHost, () => {
     console.log(`Personal AI Messaging Agent API on http://${bindHost}:${listenPort}`);
     console.log(`UI (dev): http://127.0.0.1:${frontendPort()}`);
     console.log("Default mode: approval. Simulation is ON. Live send is OFF.");
+    connectors.free4talk
+      .setRoomUrl(HILDA_ROOM_URL)
+      .then((opened) => {
+        console.log(opened.message);
+        return runtime.setFree4TalkMonitoring(true);
+      })
+      .then(() => console.log("Free4Talk monitoring ON for", HILDA_ROOM_URL, "(will not click Send while simulation is on)"))
+      .catch((err) => console.error("Free4Talk room open failed", err instanceof Error ? err.message : err));
   });
   const timer = setInterval(() => {
     runtime.ingestFromConnectors().then(() => runtime.processInbox()).catch((err) => {

@@ -1,8 +1,8 @@
 # Personal AI Messaging Agent
 
-Local-first personal messaging assistant. It runs on your computer, binds to **localhost**, stores data in **SQLite**, and never asks for a Google, Microsoft, or Free4Talk password.
+Standalone local-first personal messaging assistant. **Not related to Talkora or Vextorn.**
 
-This directory is the application. It lives alongside the existing Vextorn/Talkora language-exchange app in the repo parent; Replit is not required.
+It runs on your computer, binds to **localhost**, stores data in **SQLite**, and never asks for a Google, Microsoft, or Free4Talk password.
 
 ## Layout
 
@@ -19,24 +19,26 @@ logging/                  Activity log (no secrets)
 tests/
 ```
 
-## How to run locally
+## How to run
 
 ```bash
-cd personal-ai-messaging-agent
 cp .env.example .env
 npm install
 npm run test
 npm run dev
 ```
 
-Then open `http://127.0.0.1:5173`. The API listens on `http://127.0.0.1:8787`.
+- Desk UI: `http://127.0.0.1:5173`
+- API + live status: `http://127.0.0.1:8787` (`/` shows that the process is up; `/api/health` is JSON)
 
 ```bash
-npm run build    # typecheck + production UI build
-npm start        # serve API + built UI (after build), still localhost
+npm run build
+npm start    # production UI served from this same localhost process after build
 ```
 
 Do not set `HOST` to `0.0.0.0`. The process refuses non-localhost binds.
+
+`127.0.0.1` is **this machine**. Opening it on a different computer will refuse the connection.
 
 ## Defaults (safety)
 
@@ -51,20 +53,18 @@ Graph chat APIs exist for **work or school** accounts only. Register a public cl
 
 Connect in the UI. You will get a code and `https://microsoft.com/devicelogin`. Sign in on Microsoft’s page. This app never collects your Microsoft password.
 
-Live send calls `POST https://graph.microsoft.com/v1.0/chats/{id}/messages` only when simulation is off **and** live send is enabled **and** a draft is approved (or auto is fully opted in).
-
 ## Free4Talk
 
-**Integration unavailable** for inbox retrieve and send. Free4Talk has no official public messaging API. Connect can open the real site so you can sign in there yourself. See the integration report in the project docs.
+No official API. **Authorized headed browser only.**
 
-## Optional drafts
+1. In the desk UI, **Connect** — a local Chromium window opens with a persistent profile. Sign in on [free4talk.com](https://www.free4talk.com/) yourself (Google prompt belongs to them).
+2. **Room URL** prefills `https://www.free4talk.com/room/z2ee2`. Open that public room page (heroku hosts are rejected). **Monitoring** watches visible ChatBox; it does not click Send while simulation is on.
+3. The agent reads currently **visible** public chat from the page DOM. **ReplyEngine** drafts a **companion** line (present, kind, same language — not assistant voice). **Send as signed-in account** / Approve types into the page’s own “Type a message…” box only when Simulation is off, Live send is on, and STOP is off. **AUTO REPLY IS ACTIVE** also requires Free4Talk Auto.
 
-Leave `OPENAI_API_KEY` empty to use the on-device heuristic drafter. Set it only if you want OpenAI-compatible draft generation. That key is not a platform login.
+It will not ask for a Google/Free4Talk password, export cookies, decrypt room tokens, sniff websockets, or call undocumented heroku hosts. Simulation (default) types without clicking Send. Off-screen virtualized history and private/PM bubbles are not read.
 
 ## Honest limitations
 
-- Free4Talk DMs and room chat cannot be automated without an unpublished, unofficial protocol. This app will not scrape, intercept cookies, or report a fake send.
+- Free4Talk DMs, voice, and off-screen virtualized chat are not automated. Room send/read only works while you are signed in in the local window and the ChatBox textarea is actually on the page.
 - Teams personal Microsoft accounts are not supported by Graph chat APIs.
-- `markChatReadForUser` needs your directory tenant GUID in `TEAMS_TENANT_ID`, not `organizations`.
-- Polling Graph chats is not the same as a Teams bot with change notifications.
-- This app is not deployed. Do not point production DNS at it.
+- This app is not deployed.

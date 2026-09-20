@@ -78,7 +78,7 @@ function Page({ path, go }: { path: string; go: (h: string) => void }) {
     case "/platforms":
       return <PlatformsPage />;
     case "/free4talk":
-      return <PlatformDetail id="free4talk" />;
+      return <Free4TalkPage />;
     case "/teams":
       return <PlatformDetail id="teams" />;
     case "/sent":
@@ -162,7 +162,7 @@ function InboxPage({ go, title = "Unified Inbox" }: { go: (h: string) => void; t
   useEffect(() => { api("/api/inbox").then(setData); }, []);
   return (
     <>
-      <Shell title={title} sub="Normalized conversations from connectors. Free4Talk stays empty until an official API exists." />
+      <Shell title={title} sub="Normalized conversations. Free4Talk only lists the room whose URL you pasted, and only currently visible public chat." />
       <table>
         <thead><tr><th>Platform</th><th>Title</th><th>Category</th><th>Last</th></tr></thead>
         <tbody>
@@ -227,13 +227,14 @@ function PendingPage() {
   };
   return (
     <>
-      <Shell title="Pending Replies" sub="Default mode is Approval. Nothing leaves the machine until you approve, and live send is still off in simulation." />
+      <Shell title="Pending Replies" sub="Default mode is Approval. Free4Talk approve types into the signed-in room ChatBox only when Live send is on and simulation is off." />
       {err ? <p className="pill bad">{err}</p> : null}
       {(data?.drafts || []).filter((d: any) => d.status === "pending").map((d: any) => (
         <div className="card" key={d.id} style={{ marginBottom: 12 }}>
           <h2>{d.platform} · {d.conversation_title || d.conversation_id}</h2>
           <textarea defaultValue={d.body} onBlur={(e) => api(`/api/drafts/${d.id}/edit`, { method: "POST", body: JSON.stringify({ body: e.target.value }) })} />
-          <p className="muted">{d.reason} · {d.language} · confidence {d.confidence}</p>
+          <p className="muted">Why this reply: {d.reason}</p>
+          <p className="muted">{d.language} · confidence {d.confidence}</p>
           <div className="row">
             <button className="good" onClick={() => act(d.id, "approve")}>Approve</button>
             <button className="danger" onClick={() => act(d.id, "reject")}>Reject</button>
@@ -260,9 +261,278 @@ function PlatformsPage() {
               <p className="pill bad">Integration unavailable</p>
               <pre>{JSON.stringify(p.integration, null, 2)}</pre>
             </div>
-          ) : <p className="muted">Official API path available when configured.</p>}
+          ) : (
+            <p className="muted">
+              {p.integration?.mode === "authorized_browser"
+                ? "Authorized headed browser. Paste a room URL after you sign in on their site."
+                : "Official API path available when configured."}
+            </p>
+          )}
         </div>
       ))}
+    </>
+  );
+}
+
+const HILDA_ROOM_URL = "https://www.free4talk.com/room/z2ee2";
+
+function Free4TalkPage() {
+  const [data, setData] = useState<any>(null);
+  const [busy, setBusy] = useState("");
+  const [roomUrl, setRoomUrl] = useState(HILDA_ROOM_URL);
+  const [roomMsg, setRoomMsg] = useState("");
+  const [messages, setMessages] = useState<any[]>([]);
+  const [companionDrafts, setCompanionDrafts] = useState<any[]>([]);
+  const [draft, setDraft] = useState("");
+  const [sendMsg, setSendMsg] = useState("");
+  const [settings, setSettings] = useState<any>(null);
+  const [monitor, setMonitor] = useState<any>(null);
+  const refresh = () => api("/api/platforms").then(setData);
+  const refreshSettings = () => api<{ settings: any }>("/api/settings").then((r) => setSettings(r.settings));
+  const refreshMonitor = () =>
+    api("/api/platforms/free4talk/monitor").then(setMonitor).catch(() => undefined);
+  const refreshCompanion = () =>
+    api<{ drafts?: any[] }>("/api/drafts")
+      .then((r) => {
+        const list = (r.drafts || []).filter((d: any) => d.platform === "free4talk");
+        setCompanionDrafts(list.slice(0, 8));
+      })
+      .catch(() => undefined);
+  useEffect(() => { refresh(); refreshSettings(); refreshMonitor(); refreshCompanion(); }, []);
+  useEffect(() => {
+    api<{ url?: string; suggestedUrl?: string }>("/api/platforms/free4talk/room").then((r) => {
+      setRoomUrl(r.url || r.suggestedUrl || HILDA_ROOM_URL);
+    }).catch(() => undefined);
+  }, []);
+  useEffect(() => {
+    const tick = () => {
+      api<{ messages?: any[] }>("/api/platforms/free4talk/room/messages")
+        .then((r) => { if (Array.isArray(r.messages)) setMessages(r.messages); })
+        .catch(() => undefined);
+      refreshMonitor();
+      refreshCompanion();
+    };
+    tick();
+    const id = setInterval(tick, 4000);
+    return () => clearInterval(id);
+  }, []);
+  const p = (data?.platforms || []).find((x: any) => x.id === "free4talk");
+  const call = async (path: string) => {
+    setBusy(path);
+    try {
+      await api(path, { method: "POST" });
+      await refresh();
+    } finally {
+      setBusy("");
+    }
+  };
+  const saveSettings = async (patch: any) => {
+    const r = await api<{ settings: any }>("/api/settings", { method: "PUT", body: JSON.stringify(patch) });
+    setSettings(r.settings);
+    await refreshMonitor();
+  };
+  const openRoom = async () => {
+    setBusy("room");
+    setRoomMsg("");
+    try {
+      const r = await api<{ message: string; ok: boolean }>("/api/platforms/free4talk/room", {
+        method: "POST",
+        body: JSON.stringify({ url: roomUrl }),
+      });
+      setRoomMsg(r.message);
+      await refresh();
+    } catch (e: any) {
+      setRoomMsg(e.message || "Could not open room URL");
+    } finally {
+      setBusy("");
+    }
+  };
+  const send = async (asSignedInAccount: boolean) => {
+    setBusy("send");
+    setSendMsg("");
+    try {
+      const r = await api<{ simulated: boolean; asSignedInAccount?: boolean }>("/api/platforms/free4talk/room/send", {
+        method: "POST",
+        body: JSON.stringify({ body: draft, asSignedInAccount }),
+      });
+      setSendMsg(
+        r.asSignedInAccount
+          ? "Sent as the signed-in room account: typed into the page input and clicked Send."
+          : "Simulation: typed into the page input, then cleared — Send was not clicked.",
+      );
+      setDraft("");
+    } catch (e: any) {
+      setSendMsg(e.message || "Send failed");
+    } finally {
+      setBusy("");
+    }
+  };
+  const open = async () => {
+    const r = await api<{ url: string }>("/api/platforms/free4talk/open");
+    window.open(r.url, "_blank", "noopener");
+  };
+  const liveReady = settings && !settings.simulationEnabled && settings.liveSendEnabled && !settings.emergencyStop;
+  const autoReplyActive = Boolean(monitor?.autoReplyActive);
+  const setMonitoring = async (on: boolean) => {
+    setBusy("monitor");
+    try {
+      await api("/api/platforms/free4talk/monitor", { method: "POST", body: JSON.stringify({ on }) });
+      await refreshMonitor();
+      await refresh();
+    } finally {
+      setBusy("");
+    }
+  };
+  const setAuto = async (auto: boolean) => {
+    setBusy("auto");
+    try {
+      await api("/api/platforms/free4talk/auto", { method: "POST", body: JSON.stringify({ auto }) });
+      await refreshMonitor();
+      await refresh();
+    } finally {
+      setBusy("");
+    }
+  };
+  const stopAll = async () => {
+    setBusy("stop");
+    try {
+      await api("/api/emergency-stop", { method: "POST" });
+      await refreshSettings();
+      await refreshMonitor();
+    } finally {
+      setBusy("");
+    }
+  };
+  return (
+    <>
+      <Shell title="Free4Talk" sub="You sign in on free4talk.com. Room URL defaults to https://www.free4talk.com/room/z2ee2. Watching ChatBox does not click Send while simulation is on." />
+      {!p ? <p>Loading…</p> : (
+        <div className="stack">
+          {autoReplyActive ? <div className="banner live">AUTO REPLY IS ACTIVE</div> : null}
+          {settings?.emergencyStop ? <div className="banner halt">STOP ALL AGENTS is on. Nothing will send.</div> : null}
+          <div className="card">
+            <h2>1. Connect</h2>
+            <p><span className={`pill ${p.status === "connected" ? "ok" : "warn"}`}>{p.status}</span></p>
+            <p>{p.message}</p>
+            <div className="row">
+              <button className="primary" disabled={!!busy} onClick={() => call("/api/platforms/free4talk/connect")}>Connect</button>
+              <button disabled={!!busy} onClick={() => call("/api/platforms/free4talk/disconnect")}>Disconnect</button>
+              <button disabled={!!busy} onClick={() => call("/api/platforms/free4talk/reconnect")}>Reconnect</button>
+              <button disabled={!!busy} onClick={() => call("/api/platforms/free4talk/logout")}>Logout</button>
+              <button onClick={open}>Open Platform</button>
+            </div>
+            <p className="muted">A headed Chromium window opens with a local profile. Sign in with Google on their page. Never paste that password here.</p>
+          </div>
+          <div className="card">
+            <h2>2. Room URL</h2>
+            <p className="muted">Prefills https://www.free4talk.com/room/z2ee2. Only that public host is accepted. Heroku hosts and tokens are rejected.</p>
+            <div className="row">
+              <input
+                placeholder="https://www.free4talk.com/room/z2ee2"
+                value={roomUrl}
+                onChange={(e) => setRoomUrl(e.target.value)}
+              />
+              <button className="primary" disabled={!!busy || !roomUrl.trim()} onClick={openRoom}>Open room</button>
+            </div>
+            {roomMsg ? <p>{roomMsg}</p> : null}
+          </div>
+          <div className="card">
+            <h2>Live monitor</h2>
+            <p className="muted">Watch the signed-in ChatBox. Each new public inbound (not you, not PM) gets a companion draft immediately. Send is clicked only if Free4Talk Auto is on, simulation is off, Live send is on, and STOP is off. Otherwise Approve uses the same ChatBox path. Default stays simulation.</p>
+            <div className="row">
+              <button className={monitor?.monitoring ? "good" : ""} disabled={!!busy} onClick={() => setMonitoring(!monitor?.monitoring)}>
+                Monitoring {monitor?.monitoring ? "ON" : "OFF"}
+              </button>
+              <button className={monitor?.autoEnabled ? "danger" : ""} disabled={!!busy} onClick={() => setAuto(!monitor?.autoEnabled)}>
+                Free4Talk Auto {monitor?.autoEnabled ? "ON" : "off"}
+              </button>
+              <button className="danger" disabled={!!busy} onClick={stopAll}>STOP ALL AGENTS</button>
+              <span className={`pill ${monitor?.monitoring ? "ok" : "warn"}`}>{monitor?.monitoring ? "watching ChatBox" : "not watching"}</span>
+              <span className={`pill ${autoReplyActive ? "ok" : "warn"}`}>{autoReplyActive ? "AUTO REPLY IS ACTIVE" : "will not click Send"}</span>
+            </div>
+          </div>
+          <div className="card">
+            <h2>3. Visible public chat</h2>
+            <p className="muted">Only messages currently rendered in the room DOM. Your own bubbles are labeled as the signed-in room account. Private/PM bubbles are skipped.</p>
+            {(messages || []).map((m: any) => (
+              <div className="card" key={m.externalId} style={{ marginTop: 8 }}>
+                <h2>{m.direction === "outbound" ? "You (signed-in account)" : m.senderName} · {m.direction}</h2>
+                <p>{m.body}</p>
+              </div>
+            ))}
+            {!messages.length ? <p className="muted">No visible public messages yet. Connect, sign in, paste a room URL, and wait for ChatBox to mount.</p> : null}
+          </div>
+          <div className="card">
+            <h2>Companion reply</h2>
+            <p className="muted">Present, kind, same language as the room. Not assistant voice. Approve types into ChatBox as the signed-in account only when Live send is on and simulation is off.</p>
+            {companionDrafts.filter((d: any) => d.status === "pending" || d.status === "simulated" || d.status === "sent").map((d: any) => (
+              <div className="card" key={d.id} style={{ marginTop: 8 }}>
+                <h2>{d.status === "pending" ? "Pending" : d.status} · companion</h2>
+                <p style={{ whiteSpace: "pre-wrap" }}>{d.body}</p>
+                <p className="muted">Why this reply: {d.reason}</p>
+                {d.status === "pending" ? (
+                  <div className="row" style={{ marginTop: 8 }}>
+                    <button className="good" disabled={!!busy} onClick={async () => {
+                      setBusy("approve");
+                      try {
+                        await api(`/api/drafts/${d.id}/approve`, { method: "POST" });
+                        await refreshCompanion();
+                      } catch (e: any) {
+                        setSendMsg(e.message || "Approve failed");
+                      } finally {
+                        setBusy("");
+                      }
+                    }}>Approve into ChatBox</button>
+                    <button className="danger" disabled={!!busy} onClick={async () => {
+                      setBusy("reject");
+                      try {
+                        await api(`/api/drafts/${d.id}/reject`, { method: "POST" });
+                        await refreshCompanion();
+                      } finally {
+                        setBusy("");
+                      }
+                    }}>Reject</button>
+                  </div>
+                ) : null}
+              </div>
+            ))}
+            {!companionDrafts.filter((d: any) => d.status === "pending" || d.status === "simulated" || d.status === "sent").length ? (
+              <p className="muted">No companion draft yet. Monitoring watches ChatBox; a new public inbound generates one here.</p>
+            ) : null}
+          </div>
+          <div className="card">
+            <h2>4. Send as signed-in room account</h2>
+            <p className="muted">Live send types into Free4Talk’s “Type a message…” box and clicks Send while you are signed in. Simulation never clicks Send. Approving a draft uses the same path.</p>
+            {settings ? (
+              <div className="row" style={{ marginBottom: 8 }}>
+                <button className={settings.simulationEnabled ? "good" : ""} onClick={() => saveSettings({ simulationEnabled: !settings.simulationEnabled })}>
+                  Simulation {settings.simulationEnabled ? "ON" : "off"}
+                </button>
+                <button className={settings.liveSendEnabled ? "danger" : ""} onClick={() => saveSettings({ liveSendEnabled: !settings.liveSendEnabled })}>
+                  Live send {settings.liveSendEnabled ? "ENABLED" : "off"}
+                </button>
+                <span className={`pill ${liveReady ? "ok" : "warn"}`}>{liveReady ? "will click Send as signed-in account" : "will not click Send yet"}</span>
+              </div>
+            ) : null}
+            <textarea value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Reply to type into the room as the signed-in account…" />
+            <div className="row">
+              <button disabled={!!busy || !draft.trim()} onClick={() => send(false)}>Simulate only</button>
+              <button className="primary" disabled={!!busy || !draft.trim()} onClick={() => send(true)}>Send as signed-in account</button>
+            </div>
+            {sendMsg ? <p>{sendMsg}</p> : null}
+          </div>
+          {p.integration ? (
+            <div className="card">
+              <h2>{p.integration.available ? "Authorized browser" : "Integration unavailable"}</h2>
+              <p>{p.integration.reason}</p>
+              <p className="muted">Exists</p>
+              <ul>{(p.integration.exists || []).map((x: string) => <li key={x}>{x}</li>)}</ul>
+              <p className="muted">Does not exist / not used</p>
+              <ul>{(p.integration.missing || []).map((x: string) => <li key={x}>{x}</li>)}</ul>
+            </div>
+          ) : null}
+        </div>
+      )}
     </>
   );
 }
@@ -316,7 +586,9 @@ function PlatformDetail({ id }: { id: "free4talk" | "teams" }) {
                 {p.status === "not_configured"
                   ? "Not configured"
                   : p.integration.available
-                    ? "Official API"
+                    ? p.integration.mode === "authorized_browser"
+                      ? "Authorized browser"
+                      : "Official API"
                     : "Integration unavailable"}
               </h2>
               <p>{p.integration.reason}</p>
@@ -452,7 +724,7 @@ function SettingsPage() {
         </div>
         <div className="card">
           <h2>Simulation / live send</h2>
-          <p className="muted">Live send calls Microsoft Graph POST /chats/{"{id}"}/messages. Simulation never does.</p>
+          <p className="muted">Live send: Teams uses Graph POST /chats/{"{id}"}/messages. Free4Talk types into the signed-in room ChatBox and clicks Send. Simulation never does.</p>
           <div className="row">
             <button className={settings.simulationEnabled ? "good" : ""} onClick={() => save({ simulationEnabled: !settings.simulationEnabled })}>
               Simulation {settings.simulationEnabled ? "ON" : "off"}
