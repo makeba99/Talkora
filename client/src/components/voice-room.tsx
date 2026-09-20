@@ -2444,6 +2444,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     // The raw capture, not the processed one: its track stays live while the
     // user is muted to the room, so the AI keeps hearing them either way.
     getAiMicStream: () => rawMicStreamRef.current ?? localStream.current,
+    isRoomMicOpen: !isMuted,
   });
 
   // Backward-compatible aliases so all existing JSX keeps working unchanged
@@ -9271,7 +9272,16 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         setAutoTranslatePreview(null);
         setMentionQuery(null);
         setReplyingTo(null);
-        setAiPersonaPickerOpen(true);
+        if (isMuted) return;
+        if (wake.persona === "ai") {
+          setAiPersonaPickerOpen(true);
+          return;
+        }
+        if (wake.persona === "miles") startWithPersona("Male", "Miles");
+        else startWithPersona("Female", "Maya");
+        if (wake.afterText) {
+          setTimeout(() => sendAiMessage(wake.afterText), 1100);
+        }
         return;
       }
     }
@@ -18009,7 +18019,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     <div>
                       <span className="text-[11px] font-semibold block" style={{ color: "rgba(255,255,255,0.70)" }}>Hands-Free</span>
                       <span className="text-[9px] leading-tight block mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
-                        {aiTutorSettings.wakeWordEnabled ? `Say Maya or Miles to open the picker. Say "bye Maya" to close.` : "Wake word disabled"}
+                        {aiTutorSettings.wakeWordEnabled ? `Unmute, then say Maya or Miles. Say "bye Maya" to close.` : "Wake word disabled"}
                       </span>
                     </div>
                     <div

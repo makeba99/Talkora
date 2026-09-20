@@ -67,6 +67,8 @@ export interface AiTutorDeps {
    * the browser recognizer from hearing anything inside a voice room.
    */
   getAiMicStream?: () => MediaStream | null;
+  /** Room talk mic is unmuted. Name-call only starts Maya/Miles when this is true. */
+  isRoomMicOpen?: boolean;
 }
 
 /** Words shared between a transcript and the AI's own speech, 0-1. */
@@ -155,7 +157,7 @@ function loadSavedAiSettings(): AiTutorSettings {
 }
 
 export function useAiTutor(deps: AiTutorDeps) {
-  const { socket, roomId, roomLanguage, userId, username, activeYoutubeId, showYoutube, onWakeOpenPicker, getAiMicStream } = deps;
+  const { socket, roomId, roomLanguage, userId, username, activeYoutubeId, showYoutube, onWakeOpenPicker, getAiMicStream, isRoomMicOpen = false } = deps;
 
   // ── AI State ─────────────────────────────────────────────────────────────
   const [aiActive, setAiActive] = useState(false);
@@ -219,7 +221,7 @@ export function useAiTutor(deps: AiTutorDeps) {
   const lastUserHeardRef = useRef("");
   const ttsBusyRef = useRef(false);
   const ttsStartedAtRef = useRef(0);
-  const getMicStreamRef = useRef<(() => MediaStream | null) | undefined>(undefined);
+  const isRoomMicOpenRef = useRef(false);
   const handleWakeRef = useRef<((match: WakeMatch) => void) | null>(null);
   const startMicRef = useRef<(() => void) | null>(null);
   const roomLanguageRef = useRef(roomLanguage);
@@ -238,6 +240,7 @@ export function useAiTutor(deps: AiTutorDeps) {
 
   // Keep refs in sync with state
   useEffect(() => { getMicStreamRef.current = getAiMicStream; }, [getAiMicStream]);
+  useEffect(() => { isRoomMicOpenRef.current = isRoomMicOpen; }, [isRoomMicOpen]);
   useEffect(() => { activeRef.current = aiActive; }, [aiActive]);
   useEffect(() => { speakingRef.current = aiSpeaking; }, [aiSpeaking]);
   useEffect(() => { loadingRef.current = aiLoading; }, [aiLoading]);
@@ -613,6 +616,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       {
         onTranscript: text => {
           if (activeRef.current) return;
+          if (!isRoomMicOpenRef.current) return;
           const match = matchWakePhrase(text);
           if (!match) return;
           handleWakeRef.current?.(match);
@@ -1088,13 +1092,25 @@ export function useAiTutor(deps: AiTutorDeps) {
   // "hey AI" starts a session hands-free. Whichever recognizer is in use stops
   // as soon as the session begins, so the two never share the microphone.
   const handleWake = useCallback((match: WakeMatch) => {
+    if (!isRoomMicOpenRef.current) {
+      addDebug("info", `Heard ${match.persona} while muted — not opening AI`);
+      return;
+    }
     const { persona, afterText } = match;
-    addDebug("info", `Wake word heard (${persona})${afterText ? ` — "${afterText}"` : ""} — picker only, not speaking`);
+    addDebug("info", `Wake word detected (${persona})${afterText ? ` — "${afterText}"` : ""}`);
     cloudWakeRef.current?.stop();
     setWakeListening(false);
-    // Name-call with no tutor session must not start talking. Open the picker
-    // so the user taps Maya/Miles (that opens the AI mic).
-    onWakeOpenPickerRef.current?.();
+    if (persona === "miles") {
+      startWithPersonaRef.current?.("Male", "Miles");
+    } else {
+      startWithPersonaRef.current?.("Female", "Maya");
+    }
+    const leftover = afterText && !/^(i|aye|eye|ai|a\.i\.?)$/i.test(afterText) ? afterText : "";
+    if (leftover) {
+      setTimeout(() => {
+        sendAiMessageRef.current?.(leftover);
+      }, 1100);
+    }
   }, [addDebug]);
 
   useEffect(() => { handleWakeRef.current = handleWake; }, [handleWake]);
@@ -1117,7 +1133,7 @@ export function useAiTutor(deps: AiTutorDeps) {
 
   // Start / stop wake listening based on AI active state and user preference
   useEffect(() => {
-    if (aiActive || !aiSettings.wakeWordEnabled || !aiRoomEnabled) {
+    if (aiActive || !aiSettings.wakeWordEnabled || !aiRoomEnabled || !isRoomMicOpen) {
       wakeWordRef.current?.stop();
       cloudWakeRef.current?.stop();
       setWakeListening(false);
@@ -1152,10 +1168,10 @@ export function useAiTutor(deps: AiTutorDeps) {
     }
     cloudWakeRef.current?.stop();
     wakeWordRef.current?.start();
-  }, [aiActive, aiSettings.wakeWordEnabled, aiRoomEnabled, sttMode]);
+  }, [aiActive, aiSettings.wakeWordEnabled, aiRoomEnabled, sttMode, isRoomMicOpen]);
 
   const primeWakeWord = useCallback(() => {
-    if (aiActive || !aiSettings.wakeWordEnabled || !aiRoomEnabled) return;
+    if (aiActive || !aiSettings.wakeWordEnabled || !aiRoomEnabled || !isRoomMicOpen) return;
     if (sttModeRef.current === "cloud") {
       const engine = cloudWakeRef.current;
       if (!engine) return;
@@ -1165,7 +1181,7 @@ export function useAiTutor(deps: AiTutorDeps) {
       return;
     }
     wakeWordRef.current?.restart();
-  }, [aiActive, aiSettings.wakeWordEnabled, aiRoomEnabled]);
+  }, [aiActive, aiSettings.wakeWordEnabled, aiRoomEnabled, isRoomMicOpen]);
 
   // Keep wake detector language in sync with room language changes
   useEffect(() => {
