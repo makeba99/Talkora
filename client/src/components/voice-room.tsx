@@ -9273,10 +9273,6 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         setMentionQuery(null);
         setReplyingTo(null);
         if (isMuted) return;
-        if (wake.persona === "ai") {
-          setAiPersonaPickerOpen(true);
-          return;
-        }
         if (wake.persona === "miles") startWithPersona("Male", "Miles");
         else startWithPersona("Female", "Maya");
         if (wake.afterText) {
