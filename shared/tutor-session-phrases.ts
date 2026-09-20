@@ -5,6 +5,8 @@ const AGENT =
 const AGENT_OR_STT_AI = `${AGENT}|i|aye|eye|a`;
 const FAREWELL_TAIL =
   "(?:have a (?:wonderful|great|good|nice|lovely) (?:day|one|evening|night)|see you(?: later)?|take care|thanks|thank you|talk soon)";
+/** "alright bye", "ok bye", "yeah bye Maya" */
+const SOFT_PREFIX = "(?:ok(?:ay)?|alright|all\\s+right|yeah|yep|yes|thanks|thank you)\\s+";
 
 export function matchStopTutorPhrase(raw: string): boolean {
   const t = String(raw || "")
@@ -13,12 +15,12 @@ export function matchStopTutorPhrase(raw: string): boolean {
     .replace(/\s+/g, " ")
     .trim();
   if (!t) return false;
-  if (new RegExp(`^(?:ok(?:ay)?\\s+)?(?:close|stop)(?:\\s+${AGENT})?$`).test(t)) return true;
+  if (new RegExp(`^(?:${SOFT_PREFIX})?(?:close|stop)(?:\\s+${AGENT})?$`).test(t)) return true;
   if (/^(turn off|stop listening|that'?s enough|that'?s all)$/.test(t)) return true;
-  // "bye" / "goodbye" / "bye AI" / STT "bye I" / "bye Maya have a great day"
+  // "bye" / "alright bye" / "bye AI" / STT "bye I" / "bye Maya have a great day"
   if (
     new RegExp(
-      `^(?:ok(?:ay)?\\s+)?(?:bye|goodbye|bye bye)(?:\\s+(?:${AGENT_OR_STT_AI}))?(?:\\s+${FAREWELL_TAIL})?$`,
+      `^(?:${SOFT_PREFIX})?(?:bye|goodbye|bye bye)(?:\\s+(?:${AGENT_OR_STT_AI}))?(?:\\s+${FAREWELL_TAIL})?$`,
     ).test(t)
   ) {
     return true;
