@@ -29,7 +29,7 @@ import {
   stripLeadingAgentCall,
   type WakeMatch,
 } from "@/lib/ai-tutor/stt";
-import { matchStopTutorPhrase } from "@shared/tutor-session-phrases";
+import { isNearDuplicateTurn, matchStopTutorPhrase } from "@shared/tutor-session-phrases";
 import {
   CloudSttEngine,
   fetchCloudSttAvailability,
@@ -219,6 +219,9 @@ export function useAiTutor(deps: AiTutorDeps) {
   const lastSpokenRef = useRef("");
   /** Last user transcript we already sent, so delayed STT cannot cancel the reply. */
   const lastUserHeardRef = useRef("");
+  const closingTutorRef = useRef(false);
+  const closeTutorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ignoreTtsEndUntilRef = useRef(0);
   const ttsBusyRef = useRef(false);
   const ttsStartedAtRef = useRef(0);
   const getMicStreamRef = useRef<(() => MediaStream | null) | undefined>(undefined);
@@ -228,6 +231,7 @@ export function useAiTutor(deps: AiTutorDeps) {
   const roomLanguageRef = useRef(roomLanguage);
   // Stable refs so the wake callback never has a stale closure
   const toggleAiTutorRef = useRef<(() => void) | null>(null);
+  const closeTutorWithFarewellRef = useRef<(() => void) | null>(null);
   const startWithPersonaRef = useRef<((voice: VoicePersona, pName: string) => void) | null>(null);
   const onWakeOpenPickerRef = useRef<(() => void) | undefined>(undefined);
   // Persists the admin-configured ElevenLabs voiceId across renders/persona switches.
@@ -350,7 +354,22 @@ export function useAiTutor(deps: AiTutorDeps) {
     sttRef.current?.stopBargeIn();
     socket?.emit("room:ai-tutor-speaking", { roomId, userId, speaking: false });
     setTimeout(() => {
+      if (Date.now() < ignoreTtsEndUntilRef.current) return;
+      if (closingTutorRef.current) {
+        if (closeTutorTimerRef.current) {
+          clearTimeout(closeTutorTimerRef.current);
+          closeTutorTimerRef.current = null;
+        }
+        closingTutorRef.current = false;
+        toggleAiTutorRef.current?.();
+        return;
+      }
       if (loadingRef.current) return;
+      if (pendingUserTurnsRef.current.length > 0) {
+        const combined = pendingUserTurnsRef.current.splice(0).join(" ");
+        sendAiMessageRef.current?.(combined);
+        return;
+      }
       if (aiQueueRef.current.length > 0) {
         processNextQueuedRef.current?.();
         return;
@@ -418,9 +437,8 @@ export function useAiTutor(deps: AiTutorDeps) {
     const raw = text.trim();
     const trimmed = stripLeadingAgentCall(raw) || raw;
     if (activeRef.current && (matchStopTutorPhrase(raw) || matchStopTutorPhrase(trimmed))) {
-      addDebug("info", "Stop phrase — closing Maya/Miles");
-      interruptAiRef.current?.();
-      toggleAiTutorRef.current?.();
+      addDebug("info", "Stop phrase — short bye then close");
+      closeTutorWithFarewellRef.current?.();
       return;
     }
     // Ignore fragments shorter than 3 characters — almost always echo artifacts
@@ -451,7 +469,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     // are almost always incomplete thoughts. Ask for clarification rather than
     // guessing — this keeps the conversation natural and avoids wrong assumptions.
     const wordCount = trimmed.replace(/[^a-zA-Z0-9\s]/g, "").trim().split(/\s+/).filter(Boolean).length;
-    if (wordCount === 1 && trimmed.length <= 8) {
+    if (wordCount === 1 && trimmed.length <= 8 && !lastUserHeardRef.current) {
       addDebug("info", `Short input "${trimmed}" — asking for clarification`);
       setVoiceInterimText(null);
       setVoiceListening(false);
@@ -464,8 +482,19 @@ export function useAiTutor(deps: AiTutorDeps) {
     setVoiceInterimText(null);
     setVoiceListening(false);
     addDebug("info", `Recognized: "${trimmed.slice(0, 80)}${trimmed.length > 80 ? "…" : ""}"`);
+    const busy = loadingRef.current || ttsBusyRef.current || speakingRef.current || !!ttsRef.current?.isActive;
+    if (busy) {
+      const lastPending = pendingUserTurnsRef.current[pendingUserTurnsRef.current.length - 1] || "";
+      if (isNearDuplicateTurn(trimmed, lastUserHeardRef.current) || isNearDuplicateTurn(trimmed, lastPending)) {
+        addDebug("info", "Duplicate of the current turn — keeping the original.");
+        return;
+      }
+      pendingUserTurnsRef.current.push(trimmed);
+      if (pendingUserTurnsRef.current.length > 8) pendingUserTurnsRef.current.shift();
+      addDebug("info", `Queued follow-up (${pendingUserTurnsRef.current.length}) so nothing is missed.`);
+      return;
+    }
     interruptAiRef.current?.();
-    // Use ref to avoid stale closure — sendAiMessage changes when aiConversation changes
     sendAiMessageRef.current?.(trimmed);
   }, [addDebug, speakAi]);
 
@@ -482,27 +511,13 @@ export function useAiTutor(deps: AiTutorDeps) {
     const trimmed = text.trim();
     if (!trimmed || !activeRef.current) return;
     const words = trimmed.split(/\s+/).filter(Boolean);
-    const isUserLeftover = speechOverlap(trimmed, lastUserHeardRef.current) >= 0.45;
-    const ttsPlaying = speakingRef.current || ttsBusyRef.current || !!ttsRef.current?.isActive;
-
-    if (ttsPlaying) {
-      // Stricter while the AI talks: echo cancellation is imperfect, and
-      // cutting the AI off because it heard itself is worse than missing a
-      // barge-in the user can simply repeat.
-      const withinGrace = Date.now() - ttsStartedAtRef.current < 1800;
-      const isEcho = speechOverlap(trimmed, lastSpokenRef.current) >= 0.4;
-      if (withinGrace || words.length < 3 || isEcho || isUserLeftover) return;
-      addDebug("info", "Barge-in detected — interrupting AI.");
-      setVoiceBargeInActive(false);
-      interruptAiRef.current?.();
-    } else if (loadingRef.current) {
-      addDebug("info", `Heard "${trimmed.slice(0, 40)}" while the reply was loading — ignored`);
-      return;
-    } else if (isUserLeftover) {
-      addDebug("info", "Dropped a leftover of the same user turn.");
-      return;
-    } else if (words.length > 2 && speechOverlap(trimmed, lastSpokenRef.current) >= 0.75) {
+    const isEcho = words.length > 2 && speechOverlap(trimmed, lastSpokenRef.current) >= 0.7;
+    if (isEcho) {
       addDebug("info", "Dropped an echo of the AI's own reply.");
+      return;
+    }
+    if (isNearDuplicateTurn(trimmed, lastUserHeardRef.current)) {
+      addDebug("info", "Dropped a leftover of the same user turn.");
       return;
     }
 
@@ -611,7 +626,7 @@ export function useAiTutor(deps: AiTutorDeps) {
         onNotice: msg => addDebug("warn", `Transcription: ${msg}`),
         onUnavailable: reason => fallBackToBrowserSttRef.current?.(reason),
       },
-      { roomId, maxRequestsPerMinute: 90 },
+      { roomId, maxRequestsPerMinute: 120, minSpeechMs: 280, maxSpeechMs: 20000, overflow: "continue" },
     );
     const wake = new CloudSttEngine(
       {
@@ -722,6 +737,29 @@ export function useAiTutor(deps: AiTutorDeps) {
     sttRef.current?.stopBargeIn();
   }, []);
 
+  const TUTOR_FAREWELLS = [
+    "Bye. Have a wonderful day.",
+    "Bye. Have a great day.",
+    "Take care. Talk soon.",
+  ];
+
+  const closeTutorWithFarewell = useCallback(() => {
+    if (!activeRef.current || closingTutorRef.current) return;
+    closingTutorRef.current = true;
+    pendingUserTurnsRef.current = [];
+    addDebug("info", "Bye heard — short farewell then close");
+    ignoreTtsEndUntilRef.current = Date.now() + 150;
+    interruptAi();
+    const line = TUTOR_FAREWELLS[Math.floor(Math.random() * TUTOR_FAREWELLS.length)];
+    speakAi(line);
+    if (closeTutorTimerRef.current) clearTimeout(closeTutorTimerRef.current);
+    closeTutorTimerRef.current = setTimeout(() => {
+      closeTutorTimerRef.current = null;
+      closingTutorRef.current = false;
+      if (activeRef.current) toggleAiTutorRef.current?.();
+    }, 2200);
+  }, [addDebug, interruptAi, speakAi]);
+
   // ── Request queue processor ───────────────────────────────────────────────
   // Drains aiQueueRef one item at a time. Called after each sendAiMessage
   // completes so multiple users are answered sequentially, never simultaneously.
@@ -750,11 +788,10 @@ export function useAiTutor(deps: AiTutorDeps) {
   const sendAiMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
     if (matchStopTutorPhrase(text)) {
-      interruptAi();
-      toggleAiTutorRef.current?.();
+      closeTutorWithFarewellRef.current?.();
       return;
     }
-    if (speechOverlap(text, lastUserHeardRef.current) >= 0.72 && (loadingRef.current || ttsBusyRef.current)) {
+    if (isNearDuplicateTurn(text, lastUserHeardRef.current) && (loadingRef.current || ttsBusyRef.current)) {
       return;
     }
     if (loadingRef.current) {
@@ -1051,6 +1088,11 @@ export function useAiTutor(deps: AiTutorDeps) {
       stopMicAll();
       ttsRef.current?.cancel();
       abortRef.current?.abort();
+      if (closeTutorTimerRef.current) {
+        clearTimeout(closeTutorTimerRef.current);
+        closeTutorTimerRef.current = null;
+      }
+      closingTutorRef.current = false;
       socket?.emit("room:ai-tutor-stop", { roomId, userId });
       setAiActive(false);
       setAiSpeaking(false);
@@ -1070,6 +1112,7 @@ export function useAiTutor(deps: AiTutorDeps) {
 
   // Keep the wake callback's ref current every time toggleAiTutor is recreated
   useEffect(() => { toggleAiTutorRef.current = toggleAiTutor; }, [toggleAiTutor]);
+  useEffect(() => { closeTutorWithFarewellRef.current = closeTutorWithFarewell; }, [closeTutorWithFarewell]);
   useEffect(() => { startWithPersonaRef.current = startWithPersona; }, [startWithPersona]);
   useEffect(() => { onWakeOpenPickerRef.current = onWakeOpenPicker; }, [onWakeOpenPicker]);
 
@@ -1343,6 +1386,7 @@ export function useAiTutor(deps: AiTutorDeps) {
 
     // Core actions
     toggleAiTutor,
+    closeTutorWithFarewell,
     startWithPersona,
     sendAiMessage,
     interruptAi,

@@ -2425,6 +2425,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     clearDebugLog,
     setRoomAiTutorEnabled,
     toggleAiTutor,
+    closeTutorWithFarewell,
     startWithPersona,
     sendAiMessage,
     interruptAi,
@@ -9262,7 +9263,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
       setAutoTranslatePreview(null);
       setMentionQuery(null);
       setReplyingTo(null);
-      try { toggleAiTutor(); } catch (_) {}
+      try { closeTutorWithFarewell(); } catch (_) {}
       return;
     }
     if (!aiTutorActive && featAiTutor && roomAiTutorEnabled) {

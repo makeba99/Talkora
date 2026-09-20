@@ -54,11 +54,12 @@ const TARGET_SAMPLE_RATE = 16000;
 const FRAME_SIZE = 1024;
 /** Audio kept before speech onset so the first syllable is never clipped. */
 const PREROLL_MS = 400;
-/** Silence that ends a phrase. Long enough to survive mid-sentence pauses. */
-const HANGOVER_MS = 700;
+/** Silence that ends a phrase. Survive mid-thought pauses so later sentences are not cut. */
+const HANGOVER_MS = 1100;
 /** Consecutive loud frames required to open a phrase. */
 const ONSET_FRAMES = 2;
-const MAX_IN_FLIGHT = 2;
+const MAX_IN_FLIGHT = 6;
+const MAX_PENDING_UPLOADS = 8;
 const MAX_CONSECUTIVE_FAILURES = 3;
 
 function hasAudioSupport(): boolean {
@@ -141,6 +142,7 @@ export class CloudSttEngine {
   private noiseFloor = 0.004;
 
   private inFlight = 0;
+  private pendingUploads: Float32Array[][] = [];
   private requestTimes: number[] = [];
   private consecutiveFailures = 0;
   /** Set once transcription is declared unusable — no more uploads. */
@@ -151,8 +153,8 @@ export class CloudSttEngine {
     this.options = {
       roomId: options.roomId,
       maxRequestsPerMinute: options.maxRequestsPerMinute ?? 60,
-      minSpeechMs: options.minSpeechMs ?? 350,
-      maxSpeechMs: options.maxSpeechMs ?? 12000,
+      minSpeechMs: options.minSpeechMs ?? 280,
+      maxSpeechMs: options.maxSpeechMs ?? 20000,
       overflow: options.overflow ?? "continue",
     };
   }
@@ -256,6 +258,7 @@ export class CloudSttEngine {
     }
     this.ownsStream = false;
     this.stream = null;
+    this.pendingUploads = [];
     this.resetSegment();
   }
 
@@ -358,11 +361,14 @@ export class CloudSttEngine {
   private async upload(frames: Float32Array[]) {
     if (this.disabled) return;
     if (this.inFlight >= MAX_IN_FLIGHT) {
-      this.callbacks.onNotice?.("Skipped a phrase — still transcribing the previous one.");
+      this.pendingUploads.push(frames);
+      if (this.pendingUploads.length > MAX_PENDING_UPLOADS) this.pendingUploads.shift();
       return;
     }
     if (!this.budgetAllows()) {
-      this.callbacks.onNotice?.("Speech rate limit reached — waiting a moment.");
+      this.pendingUploads.push(frames);
+      if (this.pendingUploads.length > MAX_PENDING_UPLOADS) this.pendingUploads.shift();
+      this.callbacks.onNotice?.("Speech busy — holding the next phrase.");
       return;
     }
 
@@ -415,6 +421,8 @@ export class CloudSttEngine {
       }
     } finally {
       this.inFlight--;
+      const next = this.pendingUploads.shift();
+      if (next) void this.upload(next);
     }
   }
 
