@@ -147,6 +147,8 @@ export class CloudSttEngine {
   private consecutiveFailures = 0;
   /** Set once transcription is declared unusable — no more uploads. */
   private disabled = false;
+  /** Ignore speaker energy while Maya/Miles are talking so their voice is not a user turn. */
+  private holdPlayback = false;
 
   constructor(callbacks: CloudSttCallbacks, options: CloudSttOptions = {}) {
     this.callbacks = callbacks;
@@ -175,6 +177,15 @@ export class CloudSttEngine {
   setOptions(options: CloudSttOptions) {
     this.options = { ...this.options, ...options };
     this.recomputeFrameBudgets();
+  }
+
+  /**
+   * While TTS is in the room, do not treat speaker audio as the user talking.
+   * Follow-ups after the reply stay a clean new phrase instead of a mixed echo.
+   */
+  holdForPlayback(hold: boolean) {
+    this.holdPlayback = hold;
+    if (hold) this.resetSegment();
   }
 
   /**
@@ -232,8 +243,9 @@ export class CloudSttEngine {
       this.recomputeFrameBudgets();
       this.resetSegment();
       this.consecutiveFailures = 0;
-      this.disabled = false;
-      this.running = true;
+    this.disabled = false;
+    this.holdPlayback = false;
+    this.running = true;
       return true;
     } catch (err: any) {
       this.stop();
@@ -244,6 +256,7 @@ export class CloudSttEngine {
 
   stop() {
     this.running = false;
+    this.holdPlayback = false;
     try { this.processor?.disconnect(); } catch {}
     try { this.source?.disconnect(); } catch {}
     try { this.sink?.disconnect(); } catch {}
@@ -299,6 +312,10 @@ export class CloudSttEngine {
 
   private onFrame(input: Float32Array) {
     if (!this.running) return;
+    if (this.holdPlayback) {
+      this.resetSegment();
+      return;
+    }
 
     // Copy: the callback reuses its buffer on the next frame.
     const frame = new Float32Array(input);

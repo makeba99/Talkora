@@ -51,3 +51,21 @@ export function isNearDuplicateTurn(a: string, b: string): boolean {
   const lenRatio = Math.min(aw.length, bw.length) / Math.max(aw.length, bw.length);
   return jaccard >= 0.88 && lenRatio >= 0.75;
 }
+
+/**
+ * If the mic heard the AI plus a new user question in one blob, keep the question.
+ * Empty string means drop (pure echo).
+ */
+export function userSpeechWithoutAiEcho(transcript: string, spokenAi: string): string {
+  const heard = turnWords(transcript);
+  const said = new Set(turnWords(spokenAi));
+  if (!heard.length) return "";
+  if (!said.size) return String(transcript || "").trim();
+  const overlap = heard.filter((w) => said.has(w)).length / heard.length;
+  if (overlap < 0.7) return String(transcript || "").trim();
+  const firstUnique = heard.findIndex((w) => !said.has(w));
+  if (firstUnique < 0) return "";
+  const rest = heard.slice(firstUnique);
+  if (rest.filter((w) => !said.has(w)).length < 2) return "";
+  return rest.join(" ");
+}

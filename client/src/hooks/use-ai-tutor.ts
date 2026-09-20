@@ -29,7 +29,7 @@ import {
   stripLeadingAgentCall,
   type WakeMatch,
 } from "@/lib/ai-tutor/stt";
-import { isNearDuplicateTurn, matchStopTutorPhrase } from "@shared/tutor-session-phrases";
+import { isNearDuplicateTurn, matchStopTutorPhrase, userSpeechWithoutAiEcho } from "@shared/tutor-session-phrases";
 import {
   CloudSttEngine,
   fetchCloudSttAvailability,
@@ -69,23 +69,6 @@ export interface AiTutorDeps {
   getAiMicStream?: () => MediaStream | null;
   /** Room talk mic is unmuted. Name-call only starts Maya/Miles when this is true. */
   isRoomMicOpen?: boolean;
-}
-
-/** Words shared between a transcript and the AI's own speech, 0-1. */
-function speechOverlap(transcript: string, spoken: string): number {
-  // Punctuation is stripped per word rather than by character class so the
-  // comparison works in every script the room languages cover.
-  const words = (s: string) =>
-    s
-      .toLowerCase()
-      .split(/\s+/)
-      .map(w => w.replace(/[.,!?;:"'`()\[\]{}…—–-]/g, ""))
-      .filter(Boolean);
-  const heard = words(transcript);
-  if (heard.length === 0) return 0;
-  const said = new Set(words(spoken));
-  if (said.size === 0) return 0;
-  return heard.filter((w) => said.has(w)).length / heard.length;
 }
 
 const FEMALE_INTROS = [
@@ -224,6 +207,8 @@ export function useAiTutor(deps: AiTutorDeps) {
   const ignoreTtsEndUntilRef = useRef(0);
   const ttsBusyRef = useRef(false);
   const ttsStartedAtRef = useRef(0);
+  const pendingUserTurnsRef = useRef<string[]>([]);
+  const lastUserHeardAtRef = useRef(0);
   const getMicStreamRef = useRef<(() => MediaStream | null) | undefined>(undefined);
   const isRoomMicOpenRef = useRef(false);
   const handleWakeRef = useRef<((match: WakeMatch) => void) | null>(null);
@@ -337,6 +322,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     speakingRef.current = true;
     ttsStartedAtRef.current = Date.now();
     socket?.emit("room:ai-tutor-speaking", { roomId, userId, speaking: true });
+    cloudSessionRef.current?.holdForPlayback(true);
     // Delay barge-in until audio is actually in the room — starting it at
     // fetch-time made Maya interrupt herself (voice sounded cut off).
     window.setTimeout(() => {
@@ -353,6 +339,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     setVoiceBargeInActive(false);
     sttRef.current?.stopBargeIn();
     socket?.emit("room:ai-tutor-speaking", { roomId, userId, speaking: false });
+    window.setTimeout(() => cloudSessionRef.current?.holdForPlayback(false), 220);
     setTimeout(() => {
       if (Date.now() < ignoreTtsEndUntilRef.current) return;
       if (closingTutorRef.current) {
@@ -510,18 +497,18 @@ export function useAiTutor(deps: AiTutorDeps) {
     setVoiceInterimText(null);
     const trimmed = text.trim();
     if (!trimmed || !activeRef.current) return;
-    const words = trimmed.split(/\s+/).filter(Boolean);
-    const isEcho = words.length > 2 && speechOverlap(trimmed, lastSpokenRef.current) >= 0.7;
-    if (isEcho) {
+    const kept = userSpeechWithoutAiEcho(trimmed, lastSpokenRef.current);
+    if (!kept) {
       addDebug("info", "Dropped an echo of the AI's own reply.");
       return;
     }
-    if (isNearDuplicateTurn(trimmed, lastUserHeardRef.current)) {
+    const leftoverWindow = Date.now() - lastUserHeardAtRef.current < 2800;
+    if (leftoverWindow && isNearDuplicateTurn(kept, lastUserHeardRef.current)) {
       addDebug("info", "Dropped a leftover of the same user turn.");
       return;
     }
 
-    onFinalTranscript(trimmed);
+    onFinalTranscript(kept);
   }, [addDebug, onFinalTranscript]);
 
   const onCloudTranscriptRef = useRef(onCloudTranscript);
@@ -735,6 +722,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     setAiSpeaking(false);
     setVoiceBargeInActive(false);
     sttRef.current?.stopBargeIn();
+    cloudSessionRef.current?.holdForPlayback(false);
   }, []);
 
   const TUTOR_FAREWELLS = [
@@ -803,6 +791,7 @@ export function useAiTutor(deps: AiTutorDeps) {
 
     loadingRef.current = true;
     lastUserHeardRef.current = text.trim();
+    lastUserHeardAtRef.current = Date.now();
     setVoiceInterimText(null);
 
     const userMsg: ConversationEntry = { id: `u-${Date.now()}`, role: "user", text: text.trim() };
@@ -841,15 +830,15 @@ export function useAiTutor(deps: AiTutorDeps) {
     try {
       let spokeAny = false;
       const pendingSpeak: string[] = [];
-      const flushPacked = (force: boolean) => {
+      const flushPacked = () => {
         while (pendingSpeak.length >= 2) {
           for (const chunk of packSpokenUtterances(pendingSpeak.splice(0, 2), 2)) {
             spokeAny = true;
             speakAi(chunk);
           }
         }
-        if (force && pendingSpeak.length) {
-          for (const chunk of packSpokenUtterances(pendingSpeak.splice(0), 2)) {
+        if (pendingSpeak.length) {
+          for (const chunk of packSpokenUtterances(pendingSpeak.splice(0), 1)) {
             spokeAny = true;
             speakAi(chunk);
           }
@@ -883,7 +872,7 @@ export function useAiTutor(deps: AiTutorDeps) {
             const [sentences, remainder] = extractCompleteSentences(sentenceBuffer);
             sentenceBuffer = remainder;
             pendingSpeak.push(...sentences);
-            flushPacked(false);
+            flushPacked();
           },
           onMeta: event => {
             if (event === "switching_to_backup") addDebug("warn", "Primary AI unavailable — switching to backup.");
@@ -894,7 +883,7 @@ export function useAiTutor(deps: AiTutorDeps) {
               pendingSpeak.push(sentenceBuffer.trim());
             }
             sentenceBuffer = "";
-            flushPacked(true);
+            flushPacked();
             if (!spokeAny && fullReply.trim()) {
               const rescue = sanitizeSpokenTutorLine(`${fullReply.trim().replace(/[.!?]*$/, "")}.`);
               if (rescue) {
@@ -992,6 +981,11 @@ export function useAiTutor(deps: AiTutorDeps) {
       // leftover transcript was cancelling Miles/Maya before they spoke.
       setTimeout(() => {
         if (ttsBusyRef.current || ttsRef.current?.isActive || speakingRef.current) return;
+        if (pendingUserTurnsRef.current.length > 0) {
+          const combined = pendingUserTurnsRef.current.splice(0).join(" ");
+          sendAiMessageRef.current?.(combined);
+          return;
+        }
         if (aiQueueRef.current.length > 0) {
           setTimeout(processNextQueued, 400);
           return;
@@ -999,7 +993,7 @@ export function useAiTutor(deps: AiTutorDeps) {
         if (activeRef.current && !loadingRef.current) {
           startMicRef.current?.();
         }
-      }, 2200);
+      }, 400);
     }
   }, [aiConversation, aiSettings, roomLanguage, activeYoutubeId, showYoutube, roomId, userId, socket, addDebug, interruptAi, processNextQueued, pauseMic, speakAi]);
 
