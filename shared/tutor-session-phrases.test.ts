@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isNearDuplicateTurn, matchStopTutorPhrase } from "./tutor-session-phrases";
+import { isNearDuplicateTurn, matchStopTutorPhrase, userSpeechWithoutAiEcho } from "./tutor-session-phrases";
 import { tutorPlaybackRate } from "./tutor-tts-pace";
 
 describe("matchStopTutorPhrase", () => {
@@ -34,6 +34,19 @@ describe("isNearDuplicateTurn", () => {
   it("flags the same utterance, not a follow-up sentence", () => {
     expect(isNearDuplicateTurn("I like Paris a lot", "i like paris a lot")).toBe(true);
     expect(isNearDuplicateTurn("I like Paris", "What should I visit next in Paris?")).toBe(false);
+  });
+});
+
+describe("userSpeechWithoutAiEcho", () => {
+  it("keeps a follow-up glued onto the AI's own words", () => {
+    const ai = "Oh wow, Paris is lovely in the spring. Tell me what you liked most.";
+    const heard = `${ai} how are the museums there`;
+    expect(userSpeechWithoutAiEcho(heard, ai)).toBe("how are the museums there");
+  });
+
+  it("drops a pure echo of the AI", () => {
+    const ai = "Oh wow, Paris is lovely in the spring.";
+    expect(userSpeechWithoutAiEcho(ai, ai)).toBe("");
   });
 });
 
