@@ -6,7 +6,7 @@ import { isAuthenticated } from "./replit_integrations/auth";
 import { insertRoomSchema, insertMessageSchema, insertFollowSchema, insertBlockSchema, insertReportSchema, insertUserCommentSchema, insertBadgeApplicationSchema, insertAnnouncementSchema, BADGE_TYPES, VIP_PLANS, vipPlanFromAmount, vipRank, BADGE_CELEBRATION_GIF, BADGE_CELEBRATION_MOOD, BADGE_CELEBRATION_DURATION_MS, VIP_SHOUTOUT_GIF, VIP_SHOUTOUT_DAILY_LIMIT, LOBBY_PROFILE_STYLES, LOBBY_PROFILE_SIZES } from "@shared/schema";
 import type { User } from "@shared/schema";
 import { SEO_STATIC_PAGES } from "@shared/seo-pages";
-import { SPOKEN_AUDIO_STYLE, MAYA_SPOKEN_STYLE } from "@shared/spoken-tutor-line";
+import { SPOKEN_AUDIO_STYLE, MAYA_SPOKEN_STYLE, MILES_SPOKEN_STYLE } from "@shared/spoken-tutor-line";
 import { z } from "zod";
 import multer, { type StorageEngine } from "multer";
 import path from "path";
@@ -2138,7 +2138,7 @@ export async function registerRoutes(
       const isAfiK = /afi\s*k|afik/i.test(personaName);
       const isEva = /^(eva|lebroskiu)$/i.test(personaName.trim());
       const isLebroski = /^lebroski$/i.test(personaName.trim());
-      const isMiles = isLebroski || /^miles$/i.test(personaName.trim());
+      const isMiles = isLebroski || /^miles$/i.test(personaName.trim()) || String(settings.voice || "") === "Male";
       const normalizedHistory = normalizeAiHistory(history, 12);
 
       // Anti-repetition: detect same or very similar AI replies in last 4 turns
@@ -2212,12 +2212,12 @@ export async function registerRoutes(
         `VOICE ACTIVATION: If the user says "hello", "are you there", "can you hear me", or similar check-ins, respond immediately and warmly — confirm you're listening in one short sentence.`,
         `Listen first: extract the user's exact intent, reference their words naturally, and answer that specific point. Never ignore or change the topic.`,
         isMiles
-          ? `Lead with the answer: put the most important part of your response first so it can be spoken within the first second. Context and elaboration come after.`
+          ? `Lead with a small reaction first. Put the key thought in the next sentence so there is a small breath before it. Never dump everything in the first rushed clause.`
           : `Lead with a soft reaction first. Put the key insight in the next sentence so there is a small breath before it. Never dump the insight in the first rushed clause.`,
         SPOKEN_AUDIO_STYLE,
-        isMiles ? "" : MAYA_SPOKEN_STYLE,
+        isMiles ? MILES_SPOKEN_STYLE : MAYA_SPOKEN_STYLE,
         isMiles
-          ? `Keep replies short and voice-first: usually two short sentences at a chatting pace.`
+          ? `Keep replies to two short sentences. First: a chill reaction. Then a breath. Second: the thought, slow like Maya. Linger, do not hurry.`
           : `Keep replies to two short sentences. First: a gentle reaction. Then a breath. Second: the insight, slow and thoughtful. Linger, do not hurry.`,
         `INCOMPLETE SPEECH: If the user's message trails off, is clearly a fragment, or references something unmentioned (e.g. "what about the..." or "so I was thinking..."), ask the single most useful clarification question — short, natural, spoken. If the input could mean two different things, briefly name both options instead of just asking: e.g., "Do you mean X, or more like Y?"`,
         `GARBLED INPUT: If the transcription appears cut off mid-word, makes no semantic sense, is a single disconnected syllable, or reads like random phonemes — say something natural like "I missed that — could you say it again?" Do not try to interpret or guess garbled input.`,
@@ -2402,7 +2402,7 @@ export async function registerRoutes(
         text: text.trim(),
         personaVoice: voice,
         voiceId: typeof voiceId === "string" && /^[a-z0-9_-]{2,64}$/i.test(voiceId) ? voiceId : null,
-        speed: typeof req.body?.speed === "number" ? req.body.speed : 1.24,
+        speed: typeof req.body?.speed === "number" ? req.body.speed : 0.92,
       });
       if (!result.ok || !result.body) {
         if (result.error === "browser-tts" || result.status === 501) {
@@ -2561,7 +2561,7 @@ export async function registerRoutes(
       const isAfiK = /afi\s*k|afik/i.test(personaName);
       const isEva = /^(eva|lebroskiu)$/i.test(personaName.trim());
       const isLebroski = /^lebroski$/i.test(personaName.trim());
-      const isMiles = isLebroski || /^miles$/i.test(personaName.trim());
+      const isMiles = isLebroski || /^miles$/i.test(personaName.trim()) || String(settings.voice || "") === "Male";
       const normalizedHistory = normalizeAiHistory(history, 12);
 
        const recentAiReplies = normalizedHistory
@@ -2625,12 +2625,12 @@ export async function registerRoutes(
         `VOICE ACTIVATION: If the user says "hello", "are you there", "can you hear me", or similar check-ins, respond immediately and warmly — confirm you're listening in one short sentence.`,
         `Listen first: extract the user's exact intent, reference their words naturally, and answer that specific point. Never ignore or change the topic.`,
         isMiles
-          ? `Lead with the answer: put the most important part of your response first so it can be spoken within the first second. Context and elaboration come after.`
+          ? `Lead with a small reaction first. Put the key thought in the next sentence so there is a small breath before it. Never dump everything in the first rushed clause.`
           : `Lead with a soft reaction first. Put the key insight in the next sentence so there is a small breath before it. Never dump the insight in the first rushed clause.`,
         SPOKEN_AUDIO_STYLE,
-        isMiles ? "" : MAYA_SPOKEN_STYLE,
+        isMiles ? MILES_SPOKEN_STYLE : MAYA_SPOKEN_STYLE,
         isMiles
-          ? `Keep replies short and natural: two short sentences unless they ask for more. Sound like a person taking a quick breath between thoughts.`
+          ? `Keep replies to two short sentences. First: a chill reaction. Then a breath. Second: the thought, slow like Maya. Linger, do not hurry. If they ask for detail, still stay unhurried.`
           : `Keep replies to two short sentences. First: a gentle reaction. Then a breath. Second: the insight, slow and thoughtful. Linger, do not hurry. If they ask for detail, still stay unhurried.`,
         `INCOMPLETE SPEECH: If the user's message trails off, is clearly a fragment, or references something unmentioned (e.g. "what about the..." or "so I was thinking..."), ask the single most useful clarification question — short, natural, spoken. If the input could mean two different things, briefly name both options: e.g., "Do you mean X, or more like Y?"`,
         `GARBLED INPUT: If the transcription appears cut off mid-word, makes no semantic sense, is a single disconnected syllable, or reads like random phonemes — say something natural like "I missed that — could you say it again?" Do not try to interpret or guess garbled input.`,

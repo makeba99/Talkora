@@ -199,6 +199,7 @@ export function useAiTutor(deps: AiTutorDeps) {
   // Latest-version refs prevent stale closures in STT/TTS callbacks
   const sendAiMessageRef = useRef<((text: string) => void) | null>(null);
   const interruptAiRef = useRef<(() => void) | null>(null);
+  const processNextQueuedRef = useRef<(() => void) | null>(null);
   // ── Request queue — handles questions from other room participants ─────────
   const aiQueueRef = useRef<AiQueueItem[]>([]);
   const queueProcessingRef = useRef(false);
@@ -213,6 +214,9 @@ export function useAiTutor(deps: AiTutorDeps) {
   const sttModeRef = useRef<"browser" | "cloud">("browser");
   /** Recent AI speech, used to tell the user's voice from speaker echo. */
   const lastSpokenRef = useRef("");
+  /** Last user transcript we already sent, so delayed STT cannot cancel the reply. */
+  const lastUserHeardRef = useRef("");
+  const ttsBusyRef = useRef(false);
   const ttsStartedAtRef = useRef(0);
   const getMicStreamRef = useRef<(() => MediaStream | null) | undefined>(undefined);
   const handleWakeRef = useRef<((match: WakeMatch) => void) | null>(null);
@@ -311,6 +315,7 @@ export function useAiTutor(deps: AiTutorDeps) {
   const speakAi = useCallback((text: string) => {
     const cleaned = sanitizeSpokenTutorLine(text);
     if (!cleaned) return;
+    ttsBusyRef.current = true;
     lastSpokenRef.current = `${lastSpokenRef.current} ${cleaned}`
       .split(/\s+/)
       .slice(-80)
@@ -335,14 +340,18 @@ export function useAiTutor(deps: AiTutorDeps) {
   const onTtsEnd = useCallback(() => {
     setAiSpeaking(false);
     speakingRef.current = false;
+    ttsBusyRef.current = false;
     setVoiceBargeInActive(false);
     sttRef.current?.stopBargeIn();
     socket?.emit("room:ai-tutor-speaking", { roomId, userId, speaking: false });
-    // 180ms delay — lets room echo fade while keeping the turnaround snappy.
-    // Reduced from 300ms to minimize perceived dead-air between AI response and mic ready.
-    if (activeRef.current && !loadingRef.current) {
-      setTimeout(() => startMicRef.current?.(), 180);
-    }
+    setTimeout(() => {
+      if (loadingRef.current) return;
+      if (aiQueueRef.current.length > 0) {
+        processNextQueuedRef.current?.();
+        return;
+      }
+      if (activeRef.current) startMicRef.current?.();
+    }, 280);
   }, [socket, roomId, userId]);
 
   const onTtsSentenceEnd = useCallback(() => {}, []);
@@ -461,19 +470,24 @@ export function useAiTutor(deps: AiTutorDeps) {
     const trimmed = text.trim();
     if (!trimmed || !activeRef.current) return;
     const words = trimmed.split(/\s+/).filter(Boolean);
+    const isUserLeftover = speechOverlap(trimmed, lastUserHeardRef.current) >= 0.45;
+    const ttsPlaying = speakingRef.current || ttsBusyRef.current || !!ttsRef.current?.isActive;
 
-    if (speakingRef.current) {
+    if (ttsPlaying) {
       // Stricter while the AI talks: echo cancellation is imperfect, and
       // cutting the AI off because it heard itself is worse than missing a
       // barge-in the user can simply repeat.
-      const withinGrace = Date.now() - ttsStartedAtRef.current < 1400;
+      const withinGrace = Date.now() - ttsStartedAtRef.current < 1800;
       const isEcho = speechOverlap(trimmed, lastSpokenRef.current) >= 0.4;
-      if (withinGrace || words.length < 3 || isEcho) return;
+      if (withinGrace || words.length < 3 || isEcho || isUserLeftover) return;
       addDebug("info", "Barge-in detected — interrupting AI.");
       setVoiceBargeInActive(false);
       interruptAiRef.current?.();
     } else if (loadingRef.current) {
       addDebug("info", `Heard "${trimmed.slice(0, 40)}" while the reply was loading — ignored`);
+      return;
+    } else if (isUserLeftover) {
+      addDebug("info", "Dropped a leftover of the same user turn.");
       return;
     } else if (words.length > 2 && speechOverlap(trimmed, lastSpokenRef.current) >= 0.75) {
       addDebug("info", "Dropped an echo of the AI's own reply.");
@@ -689,6 +703,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     abortRef.current = null;
     ttsRef.current?.cancel();
     speakingRef.current = false;
+    ttsBusyRef.current = false;
     setAiSpeaking(false);
     setVoiceBargeInActive(false);
     sttRef.current?.stopBargeIn();
@@ -720,11 +735,19 @@ export function useAiTutor(deps: AiTutorDeps) {
 
   // ── Send message to AI (streaming pipeline) ───────────────────────────────
   const sendAiMessage = useCallback(async (text: string) => {
-    if (!text.trim() || loadingRef.current) return;
+    if (!text.trim()) return;
+    if (speechOverlap(text, lastUserHeardRef.current) >= 0.72 && (loadingRef.current || ttsBusyRef.current)) {
+      return;
+    }
+    if (loadingRef.current) {
+      aiQueueRef.current.push({ text: text.trim() });
+      return;
+    }
 
     interruptAi();
 
     loadingRef.current = true;
+    lastUserHeardRef.current = text.trim();
     setVoiceInterimText(null);
 
     const userMsg: ConversationEntry = { id: `u-${Date.now()}`, role: "user", text: text.trim() };
@@ -761,6 +784,7 @@ export function useAiTutor(deps: AiTutorDeps) {
     pauseMic();
 
     try {
+      let spokeAny = false;
       const gotTokens = await streamTokens(
         {
           roomId,
@@ -788,14 +812,26 @@ export function useAiTutor(deps: AiTutorDeps) {
             // Flush complete sentences to TTS immediately (speak before full response)
             const [sentences, remainder] = extractCompleteSentences(sentenceBuffer);
             sentenceBuffer = remainder;
-            sentences.forEach(s => speakAi(s));
+            sentences.forEach(s => {
+              spokeAny = true;
+              speakAi(s);
+            });
           },
           onMeta: event => {
             if (event === "switching_to_backup") addDebug("warn", "Primary AI unavailable — switching to backup.");
           },
           onDone: (model, latencyMs) => {
             addDebug("info", `Stream complete in ${latencyMs}ms · model: ${model}`);
-            if (sanitizeSpokenTutorLine(sentenceBuffer)) speakAi(sentenceBuffer.trim());
+            if (sanitizeSpokenTutorLine(sentenceBuffer)) {
+              spokeAny = true;
+              speakAi(sentenceBuffer.trim());
+            } else if (!spokeAny && fullReply.trim()) {
+              const rescue = sanitizeSpokenTutorLine(`${fullReply.trim().replace(/[.!?]*$/, "")}.`);
+              if (rescue) {
+                spokeAny = true;
+                speakAi(rescue);
+              }
+            }
             sentenceBuffer = "";
             if (fullReply.trim()) {
               setAiLastBroadcast(fullReply);
@@ -852,12 +888,14 @@ export function useAiTutor(deps: AiTutorDeps) {
           ? "That's all the free Talking AI for today. VIP keeps the conversation going."
           : needsKey
             ? "My brain is offline — an admin needs to set a Groq or OpenAI API key in Admin → AI Tutor."
-            : null;
+            : "I missed that — say it one more time?";
         if (errText) {
           const lastAi = [...aiConversation].reverse().find((m) => m.role === "ai")?.text || "";
           if (lastAi !== errText) {
-            const fbMsg: ConversationEntry = { id: `a-${Date.now()}`, role: "ai", text: errText };
-            setAiConversation(prev => [...prev, fbMsg]);
+            if (quota || needsKey) {
+              const fbMsg: ConversationEntry = { id: `a-${Date.now()}`, role: "ai", text: errText };
+              setAiConversation(prev => [...prev, fbMsg]);
+            }
             try {
               const errVoiceId =
                 aiSettings.voice === "Male"
@@ -880,22 +918,26 @@ export function useAiTutor(deps: AiTutorDeps) {
       setAiAcknowledging(false);
       loadingRef.current = false;
       abortRef.current = null;
-      // Safety: if TTS never fires onEnd (empty response), restart listening anyway
+      // Safety: if TTS never fires onEnd (empty response), restart listening anyway.
+      // Do not reopen the mic while a reply is still fetching/playing — that
+      // leftover transcript was cancelling Miles/Maya before they spoke.
       setTimeout(() => {
-        if (activeRef.current && !speakingRef.current && !loadingRef.current) {
+        if (ttsBusyRef.current || ttsRef.current?.isActive || speakingRef.current) return;
+        if (aiQueueRef.current.length > 0) {
+          setTimeout(processNextQueued, 400);
+          return;
+        }
+        if (activeRef.current && !loadingRef.current) {
           startMicRef.current?.();
         }
-        // Auto-drain queue — process next queued question if any
-        if (aiQueueRef.current.length > 0) {
-          setTimeout(processNextQueued, 600);
-        }
-      }, 1000);
+      }, 2200);
     }
   }, [aiConversation, aiSettings, roomLanguage, activeYoutubeId, showYoutube, roomId, userId, socket, addDebug, interruptAi, processNextQueued, pauseMic, speakAi]);
 
   // Keep latest-version refs in sync so STT callbacks never call a stale closure
   useEffect(() => { sendAiMessageRef.current = sendAiMessage; }, [sendAiMessage]);
   useEffect(() => { interruptAiRef.current = interruptAi; }, [interruptAi]);
+  useEffect(() => { processNextQueuedRef.current = processNextQueued; }, [processNextQueued]);
 
   // Enqueue a question from another room participant
   const enqueueAiRequest = useCallback((text: string, fromUsername?: string) => {

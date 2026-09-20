@@ -12,6 +12,7 @@
  */
 
 import { sanitizeSpokenTutorLine } from "@shared/spoken-tutor-line";
+import { TUTOR_TTS_PLAYBACK_RATE, tutorTtsSpeed } from "@shared/tutor-tts-pace";
 import { TtsEngine, type TtsCallbacks } from "./tts";
 export type { TtsCallbacks };
 import type { Viseme } from "./lipsync";
@@ -209,7 +210,7 @@ export class EvaTtsEngine {
       this.fallback = new TtsEngine(this.callbacks);
     }
     // Match gender so Maya stays female and Miles stays male on fallback.
-    this.fallback.configure(this.voice === "Male" ? "Male" : "Female", this.speed, null);
+    this.fallback.configure(this.voice === "Male" ? "Male" : "Female", TUTOR_TTS_PLAYBACK_RATE, null);
     return this.fallback;
   }
 
@@ -275,7 +276,7 @@ export class EvaTtsEngine {
         body: JSON.stringify({
           text: item.text,
           voice: this.voice,
-          speed: this.voice === "Male" ? this.speed : Math.min(0.93, this.speed > 1 ? 0.92 : this.speed),
+          speed: tutorTtsSpeed(this.speed),
           language: this.language,
           voiceId: this.voiceId,
         }),
@@ -376,8 +377,7 @@ export class EvaTtsEngine {
     if (signal?.aborted || this.queue.length === 0) return Promise.resolve();
     return new Promise((resolve) => {
       const audio = ensurePrimedAudio();
-      const thoughtfulMaya = this.voice !== "Male";
-      const url = breathWavUrl(thoughtfulMaya);
+      const url = breathWavUrl(true);
       const done = () => {
         audio.onended = null;
         audio.onerror = null;
@@ -387,12 +387,12 @@ export class EvaTtsEngine {
       try {
         audio.pause();
       } catch {}
-      audio.volume = thoughtfulMaya ? 0.28 : 0.42;
+      audio.volume = this.voice === "Male" ? 0.34 : 0.28;
       audio.playbackRate = 1;
       audio.src = url;
       audio.onended = done;
       audio.onerror = done;
-      const t = window.setTimeout(done, thoughtfulMaya ? 620 : 400);
+      const t = window.setTimeout(done, 620);
       signal?.addEventListener("abort", () => {
         window.clearTimeout(t);
         try { audio.pause(); } catch {}
@@ -417,10 +417,7 @@ export class EvaTtsEngine {
     audio.setAttribute("playsinline", "true");
     audio.volume = this.voice === "Male" ? 1 : 0.86;
     audio.src = url;
-    audio.playbackRate =
-      this.voice === "Male"
-        ? Math.max(1.12, Math.min(1.28, this.speed || 1.18))
-        : Math.max(0.88, Math.min(0.96, 0.92));
+    audio.playbackRate = TUTOR_TTS_PLAYBACK_RATE;
     this.htmlAudio = audio;
     this.startFakeVisemeLoop();
 

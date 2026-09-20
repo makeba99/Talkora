@@ -18,6 +18,7 @@ export async function openAiSynthesize(
   voice: string,
   model: string,
   apiKey: string,
+  speed = 0.92,
 ): Promise<OpenAiTtsResult> {
   if (!apiKey) {
     return { ok: false, status: 501, contentType: "", error: "no OpenAI API key configured" };
@@ -41,6 +42,7 @@ export async function openAiSynthesize(
         input: trimmed.slice(0, 4096),
         voice: voice || "nova",
         response_format: "mp3",
+        speed: Math.max(0.25, Math.min(4, speed)),
       }),
       signal: controller.signal,
     });
