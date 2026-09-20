@@ -71,6 +71,7 @@ import { NeuParticipantSlider } from "@/components/neu-participant-slider";
 import { UserNotePopover } from "@/components/social-panel";
 import { useAiTutor } from "@/hooks/use-ai-tutor";
 import { matchWakePhrase } from "@/lib/ai-tutor/stt";
+import { matchStopTutorPhrase } from "@shared/tutor-session-phrases";
 import { setYoutubeActive, isYoutubeActive } from "@/lib/perf-bus";
 import { checkGrammarAll, applyAllSuggestions, getWordAlternatives, applyWordAlternative, type GrammarSuggestion, CATEGORY_META, SEVERITY_META } from "@/lib/grammar-check";
 import type { Room, User, Follow } from "@shared/schema";
@@ -9255,6 +9256,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     socket.emit("room:typing-stop", { roomId: room.id, userId: user.id });
 
     let textToSend = chatText.trim();
+    if (aiTutorActive && featAiTutor && roomAiTutorEnabled && matchStopTutorPhrase(chatText.trim())) {
+      setChatText("");
+      setAutoTranslatePreview(null);
+      setMentionQuery(null);
+      setReplyingTo(null);
+      try { toggleAiTutor(); } catch (_) {}
+      return;
+    }
     if (!aiTutorActive && featAiTutor && roomAiTutorEnabled) {
       const wake = matchWakePhrase(textToSend);
       if (wake) {
@@ -9262,11 +9271,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         setAutoTranslatePreview(null);
         setMentionQuery(null);
         setReplyingTo(null);
-        if (wake.persona === "miles") startWithPersona("Male", "Miles");
-        else startWithPersona("Female", "Maya");
-        if (wake.afterText) {
-          setTimeout(() => sendAiMessage(wake.afterText), 1100);
-        }
+        setAiPersonaPickerOpen(true);
         return;
       }
     }
@@ -18004,7 +18009,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     <div>
                       <span className="text-[11px] font-semibold block" style={{ color: "rgba(255,255,255,0.70)" }}>Hands-Free</span>
                       <span className="text-[9px] leading-tight block mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
-                        {aiTutorSettings.wakeWordEnabled ? `Say Maya, Miles, or "hey AI"` : "Wake word disabled"}
+                        {aiTutorSettings.wakeWordEnabled ? `Say Maya or Miles to open the picker. Say "bye Maya" to close.` : "Wake word disabled"}
                       </span>
                     </div>
                     <div

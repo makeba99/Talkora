@@ -12,7 +12,7 @@
  */
 
 import { sanitizeSpokenTutorLine } from "@shared/spoken-tutor-line";
-import { TUTOR_TTS_PLAYBACK_RATE, tutorTtsSpeed } from "@shared/tutor-tts-pace";
+import { TUTOR_TTS_PLAYBACK_RATE, tutorPlaybackRate, tutorTtsSpeed } from "@shared/tutor-tts-pace";
 import { TtsEngine, type TtsCallbacks } from "./tts";
 export type { TtsCallbacks };
 import type { Viseme } from "./lipsync";
@@ -392,7 +392,7 @@ export class EvaTtsEngine {
       audio.src = url;
       audio.onended = done;
       audio.onerror = done;
-      const t = window.setTimeout(done, 620);
+      const t = window.setTimeout(done, 360);
       signal?.addEventListener("abort", () => {
         window.clearTimeout(t);
         try { audio.pause(); } catch {}
@@ -415,9 +415,9 @@ export class EvaTtsEngine {
     } catch {}
     audio.preload = "auto";
     audio.setAttribute("playsinline", "true");
-    audio.volume = this.voice === "Male" ? 1 : 0.86;
+    audio.volume = 1;
     audio.src = url;
-    audio.playbackRate = TUTOR_TTS_PLAYBACK_RATE;
+    audio.playbackRate = tutorPlaybackRate(type, audioData);
     this.htmlAudio = audio;
     this.startFakeVisemeLoop();
 

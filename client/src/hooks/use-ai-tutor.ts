@@ -29,6 +29,7 @@ import {
   stripLeadingAgentCall,
   type WakeMatch,
 } from "@/lib/ai-tutor/stt";
+import { matchStopTutorPhrase } from "@shared/tutor-session-phrases";
 import {
   CloudSttEngine,
   fetchCloudSttAvailability,
@@ -410,11 +411,18 @@ export function useAiTutor(deps: AiTutorDeps) {
   }, [addDebug]);
 
   const onFinalTranscript = useCallback((text: string) => {
-    const trimmed = stripLeadingAgentCall(text.trim()) || text.trim();
+    const raw = text.trim();
+    const trimmed = stripLeadingAgentCall(raw) || raw;
+    if (activeRef.current && (matchStopTutorPhrase(raw) || matchStopTutorPhrase(trimmed))) {
+      addDebug("info", "Stop phrase — closing Maya/Miles");
+      interruptAiRef.current?.();
+      toggleAiTutorRef.current?.();
+      return;
+    }
     // Ignore fragments shorter than 3 characters — almost always echo artifacts
     if (trimmed.length < 3) return;
     // Bare agent name while already in session — stay listening.
-    if (/^(maya|maia|mya|mia|may|miles|myles|eva|evelyn|dude|afi(?:\s*k)?|afik|ai)$/i.test(trimmed)) {
+    if (/^(maya|maia|mya|mia|may|miles|myles|niles|eva|evelyn|dude|afi(?:\s*k)?|afik|ai)$/i.test(trimmed)) {
       addDebug("info", `Addressed as ${trimmed} — already listening`);
       setTimeout(() => {
         if (activeRef.current && !speakingRef.current && !loadingRef.current) {
@@ -736,6 +744,11 @@ export function useAiTutor(deps: AiTutorDeps) {
   // ── Send message to AI (streaming pipeline) ───────────────────────────────
   const sendAiMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
+    if (matchStopTutorPhrase(text)) {
+      interruptAi();
+      toggleAiTutorRef.current?.();
+      return;
+    }
     if (speechOverlap(text, lastUserHeardRef.current) >= 0.72 && (loadingRef.current || ttsBusyRef.current)) {
       return;
     }
@@ -1076,20 +1089,12 @@ export function useAiTutor(deps: AiTutorDeps) {
   // as soon as the session begins, so the two never share the microphone.
   const handleWake = useCallback((match: WakeMatch) => {
     const { persona, afterText } = match;
-    addDebug("info", `Wake word detected (${persona})${afterText ? ` — "${afterText}"` : ""}`);
+    addDebug("info", `Wake word heard (${persona})${afterText ? ` — "${afterText}"` : ""} — picker only, not speaking`);
     cloudWakeRef.current?.stop();
     setWakeListening(false);
-    if (persona === "miles") {
-      startWithPersonaRef.current?.("Male", "Miles");
-    } else {
-      startWithPersonaRef.current?.("Female", "Maya");
-    }
-    const leftover = afterText && !/^(i|aye|eye|ai|a\.i\.?)$/i.test(afterText) ? afterText : "";
-    if (leftover) {
-      setTimeout(() => {
-        sendAiMessageRef.current?.(leftover);
-      }, 1100);
-    }
+    // Name-call with no tutor session must not start talking. Open the picker
+    // so the user taps Maya/Miles (that opens the AI mic).
+    onWakeOpenPickerRef.current?.();
   }, [addDebug]);
 
   useEffect(() => { handleWakeRef.current = handleWake; }, [handleWake]);
