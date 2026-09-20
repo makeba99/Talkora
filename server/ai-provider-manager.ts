@@ -21,7 +21,7 @@ import { openAiSynthesize } from "./openai-tts";
 import { edgeSynthesize, resolveEdgeVoiceId, isMalePersona } from "./edge-tts";
 import { isSesameSpeakerId } from "@shared/talking-partners";
 import { getSesameProvider, getSesameHostSnapshot, sesameHostAlertFromSnapshot } from "./voice";
-import { sesameHfToken, sesameFalKey, sesameDeepinfraKey, sesameHasPaidGpu, sesameUserMessage, splitSesameUtterances, concatWavArrayBuffers } from "./voice/sesame-payload";
+import { TUTOR_EDGE_RATE, tutorTtsSpeed } from "@shared/tutor-tts-pace";
 
 export type KeySlot = "primary" | "secondary";
 export type ProviderKind = "brain" | "voice";
@@ -611,13 +611,10 @@ export async function generateSpeech(opts: {
     (clientVid && clientVid === configured ? clientVid : configured);
   const model = cfg.voice.model || "tts-1-hd";
   const text = opts.text.trim();
-  const speakSpeed = Number.isFinite(opts.speed) ? Number(opts.speed) : 1.24;
-  const mayaThoughtful = !isMale;
-  const ttsSpeed = mayaThoughtful ? Math.min(0.94, Math.max(0.86, speakSpeed > 1 ? 0.92 : speakSpeed)) : speakSpeed;
-  const edgeRate = mayaThoughtful
-    ? "-12%"
-    : `${ttsSpeed >= 1 ? "+" : ""}${Math.round((Math.max(0.95, Math.min(1.35, ttsSpeed)) - 1) * 100)}%`;
-  const edgeVoiceOpts = mayaThoughtful ? { pitch: "-2Hz", volume: "-6%" } : undefined;
+  const speakSpeed = Number.isFinite(opts.speed) ? Number(opts.speed) : 0.92;
+  const ttsSpeed = tutorTtsSpeed(speakSpeed);
+  const edgeRate = TUTOR_EDGE_RATE;
+  const edgeVoiceOpts = isMale ? { pitch: "-1Hz", volume: "-4%" } : { pitch: "-2Hz", volume: "-6%" };
   if (!text) {
     return { ok: false, status: 400, contentType: "", error: "empty text", usedSlot: null, failover: false, voiceUsed: voiceName };
   }
@@ -746,13 +743,13 @@ export async function generateSpeech(opts: {
   if (!configuredSlots.length) {
     // No OpenAI keys — fall through to Edge free path automatically
     voiceName = resolveEdgeVoiceId(configured, isMale ? "male" : "female");
-    const edge = await edgeSynthesize(text, voiceName);
-    if (edge.ok && edge.body) {
+    const result = await edgeSynthesize(text, voiceName, edgeRate, edgeVoiceOpts);
+    if (result.ok && result.body) {
       return {
         ok: true,
         status: 200,
-        contentType: edge.contentType || "audio/mpeg",
-        body: edge.body,
+        contentType: result.contentType || "audio/mpeg",
+        body: result.body,
         usedSlot: null,
         failover: true,
         voiceUsed: voiceName,
@@ -779,7 +776,7 @@ export async function generateSpeech(opts: {
     const key = getKey(cfg, "voice", slot);
     if (!key) continue;
 
-    const result = await openAiSynthesize(text, voiceName, model, key);
+    const result = await openAiSynthesize(text, voiceName, model, key, ttsSpeed);
     if (!result.ok) {
       const classified = classifyProviderError(result.status, result.error || "");
       markFailure("voice", slot, classified.status, classified.message);

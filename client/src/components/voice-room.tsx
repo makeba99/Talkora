@@ -71,6 +71,7 @@ import { NeuParticipantSlider } from "@/components/neu-participant-slider";
 import { UserNotePopover } from "@/components/social-panel";
 import { useAiTutor } from "@/hooks/use-ai-tutor";
 import { matchWakePhrase } from "@/lib/ai-tutor/stt";
+import { matchStopTutorPhrase } from "@shared/tutor-session-phrases";
 import { setYoutubeActive, isYoutubeActive } from "@/lib/perf-bus";
 import { checkGrammarAll, applyAllSuggestions, getWordAlternatives, applyWordAlternative, type GrammarSuggestion, CATEGORY_META, SEVERITY_META } from "@/lib/grammar-check";
 import type { Room, User, Follow } from "@shared/schema";
@@ -2443,6 +2444,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     // The raw capture, not the processed one: its track stays live while the
     // user is muted to the room, so the AI keeps hearing them either way.
     getAiMicStream: () => rawMicStreamRef.current ?? localStream.current,
+    isRoomMicOpen: !isMuted,
   });
 
   // Backward-compatible aliases so all existing JSX keeps working unchanged
@@ -9255,6 +9257,14 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
     socket.emit("room:typing-stop", { roomId: room.id, userId: user.id });
 
     let textToSend = chatText.trim();
+    if (aiTutorActive && featAiTutor && roomAiTutorEnabled && matchStopTutorPhrase(chatText.trim())) {
+      setChatText("");
+      setAutoTranslatePreview(null);
+      setMentionQuery(null);
+      setReplyingTo(null);
+      try { toggleAiTutor(); } catch (_) {}
+      return;
+    }
     if (!aiTutorActive && featAiTutor && roomAiTutorEnabled) {
       const wake = matchWakePhrase(textToSend);
       if (wake) {
@@ -9262,6 +9272,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
         setAutoTranslatePreview(null);
         setMentionQuery(null);
         setReplyingTo(null);
+        if (isMuted) return;
         if (wake.persona === "miles") startWithPersona("Male", "Miles");
         else startWithPersona("Female", "Maya");
         if (wake.afterText) {
@@ -18004,7 +18015,7 @@ export function VoiceRoom({ room: roomProp, onLeave, watchUserId }: VoiceRoomPro
                     <div>
                       <span className="text-[11px] font-semibold block" style={{ color: "rgba(255,255,255,0.70)" }}>Hands-Free</span>
                       <span className="text-[9px] leading-tight block mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
-                        {aiTutorSettings.wakeWordEnabled ? `Say Maya, Miles, or "hey AI"` : "Wake word disabled"}
+                        {aiTutorSettings.wakeWordEnabled ? `Unmute, then say Maya or Miles. Say "bye Maya" to close.` : "Wake word disabled"}
                       </span>
                     </div>
                     <div

@@ -34,7 +34,7 @@ const WAKE_HARD_GREET = "(?:ok|okay|yo|wake\\s+up|start|listen|activate)";
 const WAKE_GREET = `(?:${WAKE_SOFT_GREET}|${WAKE_HARD_GREET})`;
 /** STT hears "Maya" as "may" / "Mia" / "Maia" often enough to accept all of them. */
 const WAKE_MAYA = "(?:maya|maia|mya|mia|may)";
-const WAKE_MILES = "(?:miles|myles)";
+const WAKE_MILES = "(?:miles|myles|niles)";
 const WAKE_EVA = "(?:eva|evelyn)";
 const WAKE_AFI = "(?:afi(?:\\s*k)?|afik)";
 const WAKE_DUDE = "(?:dude)";
@@ -60,7 +60,7 @@ function normalizeWakeText(raw: string): string {
  */
 function personaFromAgentToken(token: string): WakePersona {
   const t = token.toLowerCase().replace(/\s+/g, "");
-  if (/^(miles|myles|dude)$/.test(t)) return "miles";
+  if (/^(miles|myles|niles|dude)$/.test(t)) return "miles";
   return "maya";
 }
 
