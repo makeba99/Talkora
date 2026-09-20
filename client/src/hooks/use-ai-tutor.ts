@@ -221,6 +221,7 @@ export function useAiTutor(deps: AiTutorDeps) {
   const lastUserHeardRef = useRef("");
   const ttsBusyRef = useRef(false);
   const ttsStartedAtRef = useRef(0);
+  const getMicStreamRef = useRef<(() => MediaStream | null) | undefined>(undefined);
   const isRoomMicOpenRef = useRef(false);
   const handleWakeRef = useRef<((match: WakeMatch) => void) | null>(null);
   const startMicRef = useRef<(() => void) | null>(null);
