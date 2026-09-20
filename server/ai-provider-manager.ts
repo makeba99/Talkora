@@ -21,6 +21,15 @@ import { openAiSynthesize } from "./openai-tts";
 import { edgeSynthesize, resolveEdgeVoiceId, isMalePersona } from "./edge-tts";
 import { isSesameSpeakerId } from "@shared/talking-partners";
 import { getSesameProvider, getSesameHostSnapshot, sesameHostAlertFromSnapshot } from "./voice";
+import {
+  concatWavArrayBuffers,
+  sesameDeepinfraKey,
+  sesameFalKey,
+  sesameHasPaidGpu,
+  sesameHfToken,
+  splitSesameUtterances,
+} from "./voice/sesame-payload";
+import { sanitizeSpokenTutorLine, shapeSpokenProsody } from "@shared/spoken-tutor-line";
 import { TUTOR_EDGE_RATE, tutorTtsSpeed } from "@shared/tutor-tts-pace";
 
 export type KeySlot = "primary" | "secondary";
@@ -610,7 +619,8 @@ export async function generateSpeech(opts: {
     (voiceProvider === "sesame" && isSesameSpeakerId(clientVid) && clientVid) ||
     (clientVid && clientVid === configured ? clientVid : configured);
   const model = cfg.voice.model || "tts-1-hd";
-  const text = opts.text.trim();
+  const spoken = sanitizeSpokenTutorLine(opts.text.trim());
+  const text = shapeSpokenProsody(spoken || opts.text.trim());
   const speakSpeed = Number.isFinite(opts.speed) ? Number(opts.speed) : 0.92;
   const ttsSpeed = tutorTtsSpeed(speakSpeed);
   const edgeRate = TUTOR_EDGE_RATE;
@@ -646,7 +656,7 @@ export async function generateSpeech(opts: {
     if (!isSesameSpeakerId(String(voiceName)) || /Neural$/i.test(String(voiceName))) {
       voiceName = isMale ? "conversational_b" : "conversational_a";
     }
-    const chunks = splitSesameUtterances(text, sesameFalKey() ? 450 : 200);
+    const chunks = splitSesameUtterances(text, sesameFalKey() ? 720 : 200);
     const toSynth = chunks.length ? chunks : [text];
     const wavs: ArrayBuffer[] = [];
     let lastError = "sesame-failed";

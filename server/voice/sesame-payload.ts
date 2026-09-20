@@ -4,6 +4,7 @@ import {
   type SesameSpeakerId,
 } from "@shared/talking-partners";
 import { SESAME_INFER_API } from "./types";
+import { shapeSpokenProsody } from "@shared/spoken-tutor-line";
 
 export const DEFAULT_SESAME_SPACE = "sesame/csm-1b";
 export const DEFAULT_SPEAKER_A: SesameSpeakerId = "conversational_a";
@@ -42,7 +43,7 @@ export function resolveSesameSpeaker(
 
 /** Single-utterance conversation so playback is only the AI line (speaker A). */
 export function conversationForAiUtterance(text: string): string {
-  return text.replace(/\s+/g, " ").trim().slice(0, MAX_UTTERANCE_CHARS);
+  return shapeSpokenProsody(text).slice(0, MAX_UTTERANCE_CHARS);
 }
 
 export function buildSesameInferPayload(opts: {
